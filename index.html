@@ -3,6 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#08111f">
+
   <title>BOAT RACE AI予想</title>
 
   <style>
@@ -14,99 +16,103 @@
       margin: 0;
       padding: 0;
       background: #08111f;
-      color: white;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: #ffffff;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI",
+                   "Hiragino Kaku Gothic ProN", "Yu Gothic", sans-serif;
     }
 
     .container {
       width: 100%;
-      max-width: 700px;
-      margin: auto;
-      padding: 16px;
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 28px 16px 80px;
     }
 
-    h1 {
+    .header {
       text-align: center;
-      font-size: 28px;
-      margin-bottom: 5px;
+      padding: 25px 0 30px;
     }
 
-    .sub-title {
-      text-align: center;
-      color: #9fb3c8;
-      font-size: 13px;
-      margin-bottom: 20px;
+    .header h1 {
+      margin: 0;
+      font-size: 30px;
+      font-weight: 800;
+      letter-spacing: 0.5px;
+    }
+
+    .subtitle {
+      margin-top: 9px;
+      color: #9caec3;
+      font-size: 14px;
     }
 
     .card {
-      background: #111c2d;
-      border: 1px solid #24344c;
-      border-radius: 16px;
-      padding: 16px;
-      margin-bottom: 16px;
-      box-shadow: 0 6px 20px rgba(0,0,0,0.25);
+      background: #101e31;
+      border: 1px solid #2c405b;
+      border-radius: 24px;
+      padding: 22px;
+      margin-bottom: 20px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.15);
     }
 
-    .card-title {
-      font-size: 17px;
-      font-weight: bold;
-      margin-bottom: 12px;
-      color: #5ec8ff;
+    .section-title {
+      margin: 0 0 22px;
+      color: #49c5ff;
+      font-size: 23px;
+      font-weight: 800;
     }
 
     label {
       display: block;
-      margin-top: 12px;
-      margin-bottom: 6px;
-      font-size: 13px;
-      color: #b8c8da;
+      color: #b8c5d6;
+      font-size: 16px;
+      margin-bottom: 10px;
+    }
+
+    .field {
+      margin-bottom: 22px;
     }
 
     select,
     input {
       width: 100%;
-      padding: 13px;
-      border: 1px solid #31445e;
-      border-radius: 10px;
-      background: #0b1524;
-      color: white;
-      font-size: 16px;
+      height: 60px;
+      border: 2px solid #304864;
+      background: #081524;
+      color: #fff;
+      border-radius: 16px;
+      padding: 0 16px;
+      font-size: 18px;
       outline: none;
     }
 
     input:focus,
     select:focus {
-      border-color: #35b9ff;
+      border-color: #21d4f3;
+      box-shadow: 0 0 0 3px rgba(33,212,243,0.12);
     }
 
-    .grid2 {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 10px;
-    }
-
-    .racer-grid {
+    .boat-grid {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
-      gap: 8px;
-      margin-top: 10px;
+      gap: 12px;
+      margin-bottom: 25px;
     }
 
-    .boat {
-      border-radius: 12px;
-      padding: 12px 6px;
-      text-align: center;
-      font-weight: bold;
-      font-size: 14px;
-      border: 2px solid transparent;
+    .boat-btn {
+      border: none;
+      border-radius: 18px;
+      height: 72px;
+      font-size: 18px;
+      font-weight: 800;
       cursor: pointer;
-      user-select: none;
+      transition: 0.2s;
     }
 
-    .boat.selected {
-      transform: scale(1.04);
-      border-color: #00e0ff;
-      box-shadow: 0 0 12px rgba(0,224,255,0.6);
+    .boat-btn.active {
+      box-shadow: 0 0 0 4px #20d8ef,
+                  0 0 18px rgba(32,216,239,0.55);
+      transform: scale(1.02);
     }
 
     .b1 {
@@ -115,204 +121,280 @@
     }
 
     .b2 {
-      background: #444;
-      color: white;
+      background: #4f4f4f;
+      color: #fff;
     }
 
     .b3 {
-      background: #e53935;
-      color: white;
+      background: #ee3737;
+      color: #fff;
     }
 
     .b4 {
-      background: #1565c0;
-      color: white;
+      background: #176cc5;
+      color: #fff;
     }
 
     .b5 {
-      background: #f5d442;
+      background: #f5d43e;
       color: #111;
     }
 
     .b6 {
-      background: #43a047;
-      color: white;
+      background: #3da648;
+      color: #fff;
     }
 
-    button {
-      width: 100%;
-      border: none;
-      border-radius: 13px;
-      padding: 16px;
-      margin-top: 16px;
+    .data-title {
+      margin: 28px 0 14px;
+      color: #fff;
       font-size: 18px;
-      font-weight: bold;
-      cursor: pointer;
+      font-weight: 800;
+    }
+
+    .boat-data {
+      border: 1px solid #2d455f;
+      background: #0b1828;
+      border-radius: 18px;
+      padding: 16px;
+      margin-bottom: 14px;
+    }
+
+    .boat-data-head {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 14px;
+      font-weight: 800;
+      font-size: 18px;
+    }
+
+    .boat-num {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 900;
+    }
+
+    .num1 {
+      background: #fff;
+      color: #111;
+    }
+
+    .num2 {
+      background: #555;
+      color: #fff;
+    }
+
+    .num3 {
+      background: #e93636;
+    }
+
+    .num4 {
+      background: #176ac1;
+    }
+
+    .num5 {
+      background: #f4d43a;
+      color: #111;
+    }
+
+    .num6 {
+      background: #3fa84b;
+    }
+
+    .mini-grid {
+      display: grid;
+      grid-template-columns: repeat(2,1fr);
+      gap: 12px;
+    }
+
+    .mini-field label {
+      font-size: 13px;
+      margin-bottom: 6px;
+    }
+
+    .mini-field input,
+    .mini-field select {
+      height: 48px;
+      font-size: 16px;
+      border-radius: 12px;
+      padding: 0 10px;
     }
 
     .predict-btn {
-      background: linear-gradient(135deg, #00a8ff, #00e0ff);
-      color: #00101a;
-      box-shadow: 0 6px 18px rgba(0,184,255,0.3);
+      width: 100%;
+      border: none;
+      background: linear-gradient(135deg,#18cbea,#1478ff);
+      color: white;
+      height: 68px;
+      border-radius: 18px;
+      font-size: 21px;
+      font-weight: 900;
+      cursor: pointer;
+      margin-top: 10px;
+      box-shadow: 0 8px 22px rgba(17,131,255,0.28);
     }
 
-    .reset-btn {
-      background: #27374d;
-      color: white;
-      margin-top: 10px;
-      font-size: 14px;
-      padding: 12px;
+    .predict-btn:active {
+      transform: scale(0.98);
     }
 
     .result {
       display: none;
     }
 
-    .rank {
-      display: flex;
-      justify-content: space-between;
+    .rank-row {
+      display: grid;
+      grid-template-columns: 80px 1fr;
+      gap: 12px;
       align-items: center;
-      border-radius: 12px;
-      padding: 12px;
-      margin-bottom: 9px;
-      background: #0b1524;
-      border-left: 5px solid #00bfff;
+      border-bottom: 1px solid #263c54;
+      padding: 14px 0;
     }
 
-    .rank-main {
-      font-size: 19px;
-      font-weight: bold;
+    .rank-label {
+      color: #8fa4bc;
+      font-size: 14px;
     }
 
-    .rank-sub {
-      font-size: 12px;
-      color: #9eb2c8;
-      margin-top: 3px;
+    .rank-value {
+      font-size: 22px;
+      font-weight: 900;
     }
 
     .confidence {
-      text-align: center;
-      margin-bottom: 15px;
+      margin-top: 20px;
+      padding: 17px;
+      background: #091726;
+      border-radius: 16px;
     }
 
-    .confidence-badge {
-      display: inline-block;
-      padding: 8px 18px;
-      border-radius: 30px;
-      font-size: 24px;
-      font-weight: bold;
+    .confidence-top {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 10px;
+      font-weight: 800;
     }
 
-    .s {
-      background: #ff3b30;
-      color: white;
+    .meter {
+      height: 14px;
+      background: #25364a;
+      border-radius: 20px;
+      overflow: hidden;
     }
 
-    .a {
-      background: #ff9500;
-      color: white;
-    }
-
-    .b {
-      background: #ffd60a;
-      color: #111;
-    }
-
-    .c {
-      background: #636366;
-      color: white;
+    .meter-inner {
+      height: 100%;
+      background: linear-gradient(90deg,#21d6ec,#2f81ff);
+      width: 0%;
+      border-radius: 20px;
+      transition: 0.5s;
     }
 
     .bet-section {
-      margin-top: 14px;
+      margin-top: 22px;
     }
 
     .bet-title {
-      font-size: 15px;
-      font-weight: bold;
-      margin: 15px 0 8px;
+      font-weight: 900;
+      font-size: 19px;
+      margin-bottom: 12px;
     }
 
-    .bet {
+    .main-title {
+      color: #49d7ff;
+    }
+
+    .cover-title {
+      color: #ffd64c;
+    }
+
+    .hole-title {
+      color: #ff7272;
+    }
+
+    .ticket {
+      background: #091725;
+      border: 1px solid #2a4158;
+      border-radius: 14px;
+      padding: 13px 14px;
       display: flex;
       justify-content: space-between;
       align-items: center;
-      background: #0b1524;
-      border-radius: 10px;
-      padding: 11px 12px;
-      margin-bottom: 7px;
+      margin-bottom: 9px;
     }
 
-    .bet-number {
-      font-size: 19px;
-      font-weight: bold;
-      letter-spacing: 1px;
+    .combo {
+      font-size: 21px;
+      font-weight: 900;
+      letter-spacing: 2px;
     }
 
-    .bet-money {
-      color: #6ee7ff;
-      font-weight: bold;
+    .amount {
+      color: #89d9ff;
+      font-weight: 800;
     }
 
-    .main {
-      border-left: 4px solid #00d4ff;
-    }
-
-    .cover {
-      border-left: 4px solid #ffd60a;
-    }
-
-    .hole {
-      border-left: 4px solid #ff375f;
-    }
-
-    .formation {
-      background: #091321;
-      border-radius: 12px;
-      padding: 13px;
-      line-height: 1.7;
+    .reason {
+      margin-top: 20px;
+      line-height: 1.8;
+      color: #c7d2df;
+      background: #091725;
+      border-radius: 15px;
+      padding: 16px;
       font-size: 14px;
-      margin-top: 12px;
-      color: #d7e6f5;
-    }
-
-    .memo {
-      background: #0b1524;
-      border-radius: 12px;
-      padding: 13px;
-      font-size: 13px;
-      line-height: 1.7;
-      color: #afc1d5;
-      margin-top: 12px;
-    }
-
-    .highlight {
-      color: #4bd6ff;
-      font-weight: bold;
     }
 
     .warning {
-      color: #ffcb66;
+      margin-top: 16px;
+      background: rgba(255,190,0,0.08);
+      border: 1px solid rgba(255,190,0,0.35);
+      border-radius: 14px;
+      padding: 13px;
+      color: #ffd96a;
+      font-size: 13px;
+      line-height: 1.6;
     }
 
-    footer {
-      text-align: center;
-      color: #61758d;
-      font-size: 11px;
-      padding: 20px 0 30px;
+    .total {
+      margin-top: 17px;
+      border-top: 1px solid #33465b;
+      padding-top: 16px;
+      display: flex;
+      justify-content: space-between;
+      font-size: 18px;
+      font-weight: 900;
     }
 
     @media (max-width: 480px) {
       .container {
-        padding: 12px;
+        padding-left: 13px;
+        padding-right: 13px;
       }
 
-      h1 {
-        font-size: 24px;
+      .card {
+        padding: 18px;
+        border-radius: 20px;
       }
 
-      .grid2 {
-        grid-template-columns: 1fr;
+      .header h1 {
+        font-size: 27px;
+      }
+
+      .section-title {
+        font-size: 21px;
+      }
+
+      .boat-btn {
+        height: 68px;
+      }
+
+      .mini-grid {
+        grid-template-columns: 1fr 1fr;
       }
     }
   </style>
@@ -322,788 +404,1140 @@
 
 <div class="container">
 
-  <h1>🚤 BOAT RACE AI予想</h1>
-  <div class="sub-title">
-    データ入力型・3連単予想ツール
+  <div class="header">
+    <h1>🚤 BOAT RACE AI予想</h1>
+    <div class="subtitle">
+      データ入力型・3連単予想ツール
+    </div>
   </div>
 
+  <!-- レース情報 -->
   <div class="card">
 
-    <div class="card-title">① レース情報</div>
+    <div class="section-title">
+      ① レース情報
+    </div>
 
-    <label>開催場</label>
-    <select id="stadium">
-      <option>桐生</option>
-      <option>戸田</option>
-      <option>江戸川</option>
-      <option>平和島</option>
-      <option>多摩川</option>
-      <option>浜名湖</option>
-      <option>蒲郡</option>
-      <option>常滑</option>
-      <option>津</option>
-      <option>三国</option>
-      <option>びわこ</option>
-      <option>住之江</option>
-      <option>尼崎</option>
-      <option>鳴門</option>
-      <option>丸亀</option>
-      <option>児島</option>
-      <option>宮島</option>
-      <option selected>徳山</option>
-      <option>下関</option>
-      <option>若松</option>
-      <option>芦屋</option>
-      <option>福岡</option>
-      <option>唐津</option>
-      <option>大村</option>
-    </select>
+    <div class="field">
+      <label>開催場</label>
+      <select id="venue">
+        <option>桐生</option>
+        <option>戸田</option>
+        <option>江戸川</option>
+        <option>平和島</option>
+        <option>多摩川</option>
+        <option>浜名湖</option>
+        <option>蒲郡</option>
+        <option>常滑</option>
+        <option>津</option>
+        <option>三国</option>
+        <option>びわこ</option>
+        <option>住之江</option>
+        <option>尼崎</option>
+        <option>鳴門</option>
+        <option>丸亀</option>
+        <option>児島</option>
+        <option>宮島</option>
+        <option>徳山</option>
+        <option>下関</option>
+        <option>若松</option>
+        <option>芦屋</option>
+        <option>福岡</option>
+        <option>唐津</option>
+        <option>大村</option>
+      </select>
+    </div>
 
-    <div class="grid2">
+    <div class="field">
+      <label>レース</label>
+      <select id="race"></select>
+    </div>
 
-      <div>
-        <label>レース</label>
-        <select id="race">
-          <option>1R</option>
-          <option>2R</option>
-          <option>3R</option>
-          <option>4R</option>
-          <option>5R</option>
-          <option>6R</option>
-          <option>7R</option>
-          <option>8R</option>
-          <option>9R</option>
-          <option>10R</option>
-          <option>11R</option>
-          <option>12R</option>
-        </select>
-      </div>
-
-      <div>
-        <label>購入資金</label>
-        <select id="budget">
-          <option value="1000">1,000円</option>
-          <option value="2000">2,000円</option>
-          <option value="3000" selected>3,000円</option>
-          <option value="5000">5,000円</option>
-          <option value="10000">10,000円</option>
-        </select>
-      </div>
-
+    <div class="field">
+      <label>購入資金</label>
+      <select id="budget">
+        <option value="1000">1,000円</option>
+        <option value="2000">2,000円</option>
+        <option value="3000" selected>3,000円</option>
+        <option value="5000">5,000円</option>
+        <option value="10000">10,000円</option>
+      </select>
     </div>
 
   </div>
 
+  <!-- レース傾向 -->
   <div class="card">
 
-    <div class="card-title">② 注目する艇を選択</div>
+    <div class="section-title">
+      ② レース傾向
+    </div>
 
-    <div class="racer-grid">
+    <label>注目する艇を選択</label>
 
-      <div class="boat b1 selected" data-boat="1">
+    <div class="boat-grid">
+
+      <button class="boat-btn b1 active" data-boat="1">
         1号艇
-      </div>
+      </button>
 
-      <div class="boat b2" data-boat="2">
+      <button class="boat-btn b2" data-boat="2">
         2号艇
-      </div>
+      </button>
 
-      <div class="boat b3" data-boat="3">
+      <button class="boat-btn b3" data-boat="3">
         3号艇
-      </div>
+      </button>
 
-      <div class="boat b4" data-boat="4">
+      <button class="boat-btn b4" data-boat="4">
         4号艇
-      </div>
+      </button>
 
-      <div class="boat b5" data-boat="5">
+      <button class="boat-btn b5" data-boat="5">
         5号艇
-      </div>
+      </button>
 
-      <div class="boat b6" data-boat="6">
+      <button class="boat-btn b6" data-boat="6">
         6号艇
-      </div>
+      </button>
 
     </div>
 
-    <label>イン逃げ信頼度</label>
-    <select id="inner">
-      <option value="high">高い</option>
-      <option value="normal" selected>普通</option>
-      <option value="low">低い</option>
-    </select>
+    <div class="field">
+      <label>イン逃げ信頼度</label>
 
-    <label>荒れ度</label>
-    <select id="rough">
-      <option value="low">低い</option>
-      <option value="normal" selected>普通</option>
-      <option value="high">高い・穴狙い</option>
-    </select>
+      <select id="inside">
+        <option value="5">かなり高い</option>
+        <option value="4">高い</option>
+        <option value="3" selected>普通</option>
+        <option value="2">低い</option>
+        <option value="1">かなり低い</option>
+      </select>
+
+    </div>
+
+    <div class="field">
+
+      <label>荒れ度</label>
+
+      <select id="rough">
+
+        <option value="1">
+          堅い
+        </option>
+
+        <option value="2">
+          やや堅い
+        </option>
+
+        <option value="3" selected>
+          普通
+        </option>
+
+        <option value="4">
+          荒れそう
+        </option>
+
+        <option value="5">
+          大荒れ狙い
+        </option>
+
+      </select>
+
+    </div>
 
   </div>
 
+  <!-- 選手・展示データ -->
   <div class="card">
 
-    <div class="card-title">③ 展示・水面情報</div>
+    <div class="section-title">
+      ③ 選手・展示データ
+    </div>
 
-    <div class="grid2">
+    <div style="
+      color:#9fb2c8;
+      font-size:14px;
+      line-height:1.7;
+      margin-bottom:20px;
+    ">
+      分かる項目だけ入力してください。
+      空欄でも予想できます。
+    </div>
 
-      <div>
-        <label>風速</label>
-        <select id="wind">
-          <option value="0">0〜2m</option>
-          <option value="1">3〜4m</option>
-          <option value="2">5m以上</option>
-        </select>
-      </div>
+    <div id="boatData"></div>
 
-      <div>
-        <label>展示気配</label>
-        <select id="exhibition">
-          <option value="normal">普通</option>
-          <option value="inside">内枠良好</option>
-          <option value="outside">外枠良好</option>
-        </select>
-      </div>
+  </div>
+
+  <!-- 水面 -->
+  <div class="card">
+
+    <div class="section-title">
+      ④ 水面・展示情報
+    </div>
+
+    <div class="field">
+      <label>風速</label>
+
+      <select id="wind">
+
+        <option value="0">0〜1m</option>
+        <option value="2">2〜3m</option>
+        <option value="4">4〜5m</option>
+        <option value="6">6m以上</option>
+
+      </select>
 
     </div>
 
-    <label>メモ</label>
-    <input
-      id="raceMemo"
-      type="text"
-      placeholder="例：3号艇の展示が良い、向かい風など"
-    >
+    <div class="field">
+
+      <label>水面状況</label>
+
+      <select id="water">
+
+        <option value="0">
+          穏やか
+        </option>
+
+        <option value="1">
+          普通
+        </option>
+
+        <option value="2">
+          やや荒れ
+        </option>
+
+        <option value="3">
+          荒れ
+        </option>
+
+      </select>
+
+    </div>
 
     <button class="predict-btn" onclick="predictRace()">
-      🤖 AI予想する
-    </button>
-
-    <button class="reset-btn" onclick="resetRace()">
-      入力をリセット
+      🔍 AI予想を開始
     </button>
 
   </div>
 
-  <div class="card result" id="resultCard">
+  <!-- 結果 -->
+  <div class="card result" id="result">
 
-    <div class="card-title">④ AI予想結果</div>
-
-    <div class="confidence">
-
-      <div>
-        勝負度
-      </div>
-
-      <div
-        id="confidence"
-        class="confidence-badge a"
-      >
-        A
-      </div>
-
+    <div class="section-title">
+      ⑤ AI予想結果
     </div>
 
     <div id="ranking"></div>
 
+    <div class="confidence">
+
+      <div class="confidence-top">
+        <span>予想信頼度</span>
+        <span id="confidenceText"></span>
+      </div>
+
+      <div class="meter">
+        <div class="meter-inner" id="confidenceBar"></div>
+      </div>
+
+    </div>
+
     <div class="bet-section">
 
-      <div class="bet-title">
+      <div class="bet-title main-title">
         🔵 本線
       </div>
 
       <div id="mainBets"></div>
 
-      <div class="bet-title">
+    </div>
+
+    <div class="bet-section">
+
+      <div class="bet-title cover-title">
         🟡 押さえ
       </div>
 
       <div id="coverBets"></div>
 
-      <div class="bet-title">
-        🔴 穴
+    </div>
+
+    <div class="bet-section">
+
+      <div class="bet-title hole-title">
+        🔴 穴狙い
       </div>
 
       <div id="holeBets"></div>
 
     </div>
 
-    <div class="formation" id="formation"></div>
+    <div class="total">
 
-    <div class="memo" id="analysis"></div>
+      <span>購入合計</span>
+
+      <span id="totalAmount"></span>
+
+    </div>
+
+    <div class="reason" id="reason"></div>
+
+    <div class="warning">
+      ※ この予想は入力データを独自スコア化した参考予想です。
+      的中や利益を保証するものではありません。
+      オッズを確認し、無理のない資金で利用してください。
+    </div>
 
   </div>
-
-  <footer>
-    BOAT RACE AI予想ツール<br>
-    ※予想結果は参考情報です。的中や利益を保証するものではありません。
-  </footer>
 
 </div>
 
 <script>
 
+  /*
+  ---------------------------------
+  レース番号生成
+  ---------------------------------
+  */
+
+  const raceSelect = document.getElementById("race");
+
+  for (let i = 1; i <= 12; i++) {
+
+    const option = document.createElement("option");
+
+    option.value = i;
+    option.textContent = i + "R";
+
+    raceSelect.appendChild(option);
+  }
+
+
+  /*
+  ---------------------------------
+  注目艇
+  ---------------------------------
+  */
+
   let selectedBoat = 1;
 
-  document
-    .querySelectorAll(".boat")
-    .forEach(function(element) {
+  document.querySelectorAll(".boat-btn").forEach(btn => {
 
-      element.addEventListener(
-        "click",
-        function() {
+    btn.addEventListener("click", function(){
 
-          document
-            .querySelectorAll(".boat")
-            .forEach(function(item) {
-              item.classList.remove("selected");
-            });
+      document.querySelectorAll(".boat-btn").forEach(b => {
+        b.classList.remove("active");
+      });
 
-          element.classList.add("selected");
+      this.classList.add("active");
 
-          selectedBoat =
-            Number(element.dataset.boat);
+      selectedBoat = Number(this.dataset.boat);
 
+    });
+
+  });
+
+
+  /*
+  ---------------------------------
+  6艇入力欄
+  ---------------------------------
+  */
+
+  const boatData = document.getElementById("boatData");
+
+  for (let i = 1; i <= 6; i++) {
+
+    boatData.innerHTML += `
+
+      <div class="boat-data">
+
+        <div class="boat-data-head">
+
+          <div class="boat-num num${i}">
+            ${i}
+          </div>
+
+          ${i}号艇
+
+        </div>
+
+        <div class="mini-grid">
+
+          <div class="mini-field">
+            <label>全国勝率</label>
+            <input
+              id="rate${i}"
+              type="number"
+              step="0.01"
+              placeholder="例 6.50"
+            >
+          </div>
+
+          <div class="mini-field">
+            <label>当地勝率</label>
+            <input
+              id="local${i}"
+              type="number"
+              step="0.01"
+              placeholder="例 6.80"
+            >
+          </div>
+
+          <div class="mini-field">
+            <label>モーター2連率</label>
+            <input
+              id="motor${i}"
+              type="number"
+              step="0.1"
+              placeholder="例 42.5"
+            >
+          </div>
+
+          <div class="mini-field">
+            <label>展示タイム</label>
+            <input
+              id="exhibition${i}"
+              type="number"
+              step="0.01"
+              placeholder="例 6.72"
+            >
+          </div>
+
+          <div class="mini-field">
+            <label>展示ST</label>
+            <input
+              id="st${i}"
+              type="number"
+              step="0.01"
+              placeholder="例 0.10"
+            >
+          </div>
+
+          <div class="mini-field">
+
+            <label>級別</label>
+
+            <select id="class${i}">
+
+              <option value="0">
+                不明
+              </option>
+
+              <option value="4">
+                A1
+              </option>
+
+              <option value="3">
+                A2
+              </option>
+
+              <option value="2">
+                B1
+              </option>
+
+              <option value="1">
+                B2
+              </option>
+
+            </select>
+
+          </div>
+
+        </div>
+
+      </div>
+    `;
+  }
+
+
+  /*
+  ---------------------------------
+  数値取得
+  ---------------------------------
+  */
+
+  function num(id, fallback = 0){
+
+    const value =
+      parseFloat(document.getElementById(id).value);
+
+    return isNaN(value)
+      ? fallback
+      : value;
+  }
+
+
+  /*
+  ---------------------------------
+  スコア計算
+  ---------------------------------
+  */
+
+  function calculateScores(){
+
+    const inside =
+      Number(document.getElementById("inside").value);
+
+    const rough =
+      Number(document.getElementById("rough").value);
+
+    const wind =
+      Number(document.getElementById("wind").value);
+
+    const water =
+      Number(document.getElementById("water").value);
+
+    const scores = [];
+
+    const defaultCourseScore = [
+      24,
+      15,
+      12,
+      10,
+      7,
+      5
+    ];
+
+    for(let i = 1; i <= 6; i++){
+
+      let score =
+        defaultCourseScore[i - 1];
+
+      const rate =
+        num("rate" + i);
+
+      const local =
+        num("local" + i);
+
+      const motor =
+        num("motor" + i);
+
+      const exhibition =
+        num("exhibition" + i);
+
+      const st =
+        num("st" + i);
+
+      const classPoint =
+        Number(
+          document.getElementById(
+            "class" + i
+          ).value
+        );
+
+
+      // 級別
+      score +=
+        classPoint * 3;
+
+
+      // 全国勝率
+      if(rate > 0){
+        score += rate * 3;
+      }
+
+
+      // 当地勝率
+      if(local > 0){
+        score += local * 2;
+      }
+
+
+      // モーター
+      if(motor > 0){
+        score += motor * 0.18;
+      }
+
+
+      // 展示タイム
+      // 小さいほど評価
+      if(exhibition > 0){
+
+        score +=
+          Math.max(
+            0,
+            (7.10 - exhibition) * 30
+          );
+
+      }
+
+
+      // 展示ST
+      // 早いほど評価
+      if(st > 0){
+
+        score +=
+          Math.max(
+            0,
+            (0.25 - st) * 30
+          );
+
+      }
+
+
+      // 注目艇
+      if(i === selectedBoat){
+        score += 7;
+      }
+
+
+      // イン信頼度
+      if(i === 1){
+
+        score +=
+          (inside - 3) * 7;
+
+      }
+
+
+      // 荒れるほど外艇を上げる
+      if(i >= 3){
+
+        score +=
+          (rough - 3) *
+          (i - 1) *
+          1.6;
+
+      }
+
+
+      // 強風・荒水面
+      // インを少し下げて外を評価
+      if(wind >= 4 || water >= 2){
+
+        if(i === 1){
+          score -= 3;
         }
-      );
+
+        if(i >= 3){
+          score += 2;
+        }
+
+      }
+
+
+      scores.push({
+        boat:i,
+        score:score
+      });
+
+    }
+
+
+    return scores.sort(
+      (a,b) => b.score - a.score
+    );
+  }
+
+
+  /*
+  ---------------------------------
+  買い目作成
+  ---------------------------------
+  */
+
+  function uniqueCombos(combos){
+
+    const seen = new Set();
+
+    return combos.filter(c => {
+
+      const key = c.join("-");
+
+      if(
+        c[0] === c[1] ||
+        c[0] === c[2] ||
+        c[1] === c[2]
+      ){
+        return false;
+      }
+
+      if(seen.has(key)){
+        return false;
+      }
+
+      seen.add(key);
+
+      return true;
+
+    });
+
+  }
+
+
+  function createBets(order){
+
+    const a = order[0];
+    const b = order[1];
+    const c = order[2];
+    const d = order[3];
+    const e = order[4];
+    const f = order[5];
+
+    let main = [
+
+      [a,b,c],
+      [a,c,b],
+      [b,a,c]
+
+    ];
+
+
+    let cover = [
+
+      [a,b,d],
+      [b,c,a],
+      [c,a,b]
+
+    ];
+
+
+    let hole = [
+
+      [c,b,a],
+      [d,a,b]
+
+    ];
+
+
+    return {
+
+      main:
+        uniqueCombos(main),
+
+      cover:
+        uniqueCombos(cover),
+
+      hole:
+        uniqueCombos(hole)
+
+    };
+  }
+
+
+  /*
+  ---------------------------------
+  資金配分
+  ---------------------------------
+  */
+
+  function distributeMoney(
+    bets,
+    budget
+  ){
+
+    /*
+      本線 50%
+      押さえ 30%
+      穴   20%
+
+      100円単位
+    */
+
+    const groups = [
+
+      {
+        bets:bets.main,
+        ratio:0.50
+      },
+
+      {
+        bets:bets.cover,
+        ratio:0.30
+      },
+
+      {
+        bets:bets.hole,
+        ratio:0.20
+      }
+
+    ];
+
+
+    let result = [];
+
+    let used = 0;
+
+
+    groups.forEach((group,index) => {
+
+      const groupMoney =
+        budget *
+        group.ratio;
+
+      const per =
+        Math.floor(
+          groupMoney /
+          group.bets.length /
+          100
+        ) * 100;
+
+
+      group.bets.forEach(bet => {
+
+        const amount =
+          Math.max(100,per);
+
+        used += amount;
+
+        result.push({
+
+          type:index,
+
+          combo:bet,
+
+          amount:amount
+
+        });
+
+      });
 
     });
 
 
-  function shuffle(array) {
+    /*
+    予算超過時調整
+    */
 
-    let copy = [...array];
+    while(
+      used > budget
+    ){
 
-    for (
-      let i = copy.length - 1;
-      i > 0;
-      i--
-    ) {
+      let changed = false;
 
-      let j =
-        Math.floor(
-          Math.random() * (i + 1)
-        );
+      for(
+        let i = result.length - 1;
+        i >= 0;
+        i--
+      ){
 
-      [
-        copy[i],
-        copy[j]
-      ] = [
-        copy[j],
-        copy[i]
-      ];
+        if(
+          result[i].amount > 100 &&
+          used > budget
+        ){
+
+          result[i].amount -= 100;
+          used -= 100;
+
+          changed = true;
+
+        }
+
+      }
+
+      if(!changed){
+        break;
+      }
 
     }
 
-    return copy;
-  }
+
+    /*
+    余りを本線1点目へ
+    */
+
+    while(
+      used + 100 <= budget
+    ){
+
+      result[0].amount += 100;
+
+      used += 100;
+    }
 
 
-  function makeCombination(
-    first,
-    second,
-    third
-  ) {
-
-    return (
-      first +
-      "-" +
-      second +
-      "-" +
-      third
-    );
-
-  }
-
-
-  function getRanking() {
-
-    const inner =
-      document.getElementById("inner").value;
-
-    const rough =
-      document.getElementById("rough").value;
-
-    const exhibition =
-      document.getElementById("exhibition").value;
-
-    let scores = {
-      1: 75,
-      2: 58,
-      3: 55,
-      4: 49,
-      5: 42,
-      6: 38
+    return {
+      tickets:result,
+      total:used
     };
 
-
-    scores[selectedBoat] += 16;
-
-
-    if (inner === "high") {
-
-      scores[1] += 18;
-      scores[2] += 5;
-
-    }
+  }
 
 
-    if (inner === "low") {
+  /*
+  ---------------------------------
+  表示
+  ---------------------------------
+  */
 
-      scores[1] -= 17;
-      scores[3] += 8;
-      scores[4] += 8;
+  function renderTickets(
+    tickets,
+    type,
+    elementId
+  ){
 
-    }
+    const target =
+      document.getElementById(elementId);
 
-
-    if (rough === "high") {
-
-      scores[3] += 8;
-      scores[4] += 10;
-      scores[5] += 7;
-      scores[6] += 5;
-
-    }
-
-
-    if (exhibition === "inside") {
-
-      scores[1] += 7;
-      scores[2] += 5;
-      scores[3] += 3;
-
-    }
+    target.innerHTML = "";
 
 
-    if (exhibition === "outside") {
+    tickets
+      .filter(t => t.type === type)
+      .forEach(t => {
 
-      scores[4] += 7;
-      scores[5] += 6;
-      scores[6] += 5;
+        target.innerHTML += `
 
-    }
+          <div class="ticket">
+
+            <span class="combo">
+              ${t.combo.join("-")}
+            </span>
+
+            <span class="amount">
+              ${t.amount.toLocaleString()}円
+            </span>
+
+          </div>
+        `;
+
+      });
+
+  }
 
 
-    Object.keys(scores)
-      .forEach(function(key) {
+  /*
+  ---------------------------------
+  AI予想開始
+  ---------------------------------
+  */
 
-        scores[key] +=
-          Math.random() * 6;
+  function predictRace(){
+
+    const scores =
+      calculateScores();
+
+    const order =
+      scores.map(s => s.boat);
+
+
+    const ranking =
+      document.getElementById("ranking");
+
+    ranking.innerHTML = "";
+
+
+    const names = [
+      "◎ 本命",
+      "○ 対抗",
+      "▲ 単穴",
+      "△ 連下"
+    ];
+
+
+    scores
+      .slice(0,4)
+      .forEach((item,index) => {
+
+        ranking.innerHTML += `
+
+          <div class="rank-row">
+
+            <div class="rank-label">
+              ${names[index]}
+            </div>
+
+            <div class="rank-value">
+              ${item.boat}号艇
+            </div>
+
+          </div>
+
+        `;
 
       });
 
 
-    return Object
-      .entries(scores)
-      .sort(
-        function(a, b) {
-          return b[1] - a[1];
-        }
-      )
-      .map(
-        function(item) {
-          return Number(item[0]);
-        }
+    /*
+    信頼度
+    */
+
+    const difference =
+      scores[0].score -
+      scores[1].score;
+
+    let confidence =
+      55 +
+      difference * 2;
+
+    confidence =
+      Math.max(
+        48,
+        Math.min(88,confidence)
       );
 
-  }
+
+    const rough =
+      Number(
+        document.getElementById(
+          "rough"
+        ).value
+      );
+
+    confidence -=
+      Math.max(
+        0,
+        rough - 3
+      ) * 4;
 
 
-  function predictRace() {
+    confidence =
+      Math.round(confidence);
 
-    const ranking =
-      getRanking();
+
+    document.getElementById(
+      "confidenceText"
+    ).textContent =
+      confidence + "%";
+
+
+    document.getElementById(
+      "confidenceBar"
+    ).style.width =
+      confidence + "%";
+
+
+    /*
+    買い目
+    */
+
+    const bets =
+      createBets(order);
 
     const budget =
       Number(
-        document.getElementById("budget").value
+        document.getElementById(
+          "budget"
+        ).value
       );
 
-    const rough =
-      document.getElementById("rough").value;
-
-    const inner =
-      document.getElementById("inner").value;
-
-    const wind =
-      Number(
-        document.getElementById("wind").value
-      );
-
-    const stadium =
-      document.getElementById("stadium").value;
-
-    const race =
-      document.getElementById("race").value;
-
-    const memo =
-      document.getElementById("raceMemo").value;
-
-
-    const first =
-      ranking[0];
-
-    const second =
-      ranking[1];
-
-    const third =
-      ranking[2];
-
-    const fourth =
-      ranking[3];
-
-    const fifth =
-      ranking[4];
-
-
-    let mainBets = [
-      makeCombination(first, second, third),
-      makeCombination(first, third, second),
-      makeCombination(first, second, fourth)
-    ];
-
-
-    let coverBets = [
-      makeCombination(second, first, third),
-      makeCombination(first, third, fourth),
-      makeCombination(second, third, first)
-    ];
-
-
-    let holeBets = [
-      makeCombination(third, first, fourth),
-      makeCombination(fourth, first, third)
-    ];
-
-
-    if (rough === "high") {
-
-      holeBets = [
-        makeCombination(third, fourth, first),
-        makeCombination(fourth, third, first)
-      ];
-
-    }
-
-
-    let confidence = "A";
-
-
-    if (
-      inner === "high" &&
-      first === 1 &&
-      wind === 0
-    ) {
-
-      confidence = "S";
-
-    } else if (
-      wind === 2 ||
-      rough === "high"
-    ) {
-
-      confidence = "B";
-
-    }
-
-
-    const confidenceElement =
-      document.getElementById("confidence");
-
-    confidenceElement.textContent =
-      confidence;
-
-    confidenceElement.className =
-      "confidence-badge " +
-      confidence.toLowerCase();
-
-
-    document.getElementById(
-      "ranking"
-    ).innerHTML =
-
-      createRankHtml(
-        "◎ 本命",
-        ranking[0],
-        "軸候補"
-      ) +
-
-      createRankHtml(
-        "○ 対抗",
-        ranking[1],
-        "相手筆頭"
-      ) +
-
-      createRankHtml(
-        "▲ 単穴",
-        ranking[2],
-        "展開次第で頭まで"
-      ) +
-
-      createRankHtml(
-        "☆ 穴",
-        ranking[3],
-        "高配当候補"
+    const money =
+      distributeMoney(
+        bets,
+        budget
       );
 
 
-    const mainTotal =
-      Math.round(
-        budget * 0.55 / 100
-      ) * 100;
-
-    const coverTotal =
-      Math.round(
-        budget * 0.30 / 100
-      ) * 100;
-
-    let holeTotal =
-      budget -
-      mainTotal -
-      coverTotal;
-
-
-    renderBets(
-      "mainBets",
-      mainBets,
-      mainTotal,
-      "main"
+    renderTickets(
+      money.tickets,
+      0,
+      "mainBets"
     );
 
-    renderBets(
-      "coverBets",
-      coverBets,
-      coverTotal,
-      "cover"
+    renderTickets(
+      money.tickets,
+      1,
+      "coverBets"
     );
 
-    renderBets(
-      "holeBets",
-      holeBets,
-      holeTotal,
-      "hole"
+    renderTickets(
+      money.tickets,
+      2,
+      "holeBets"
     );
 
 
     document.getElementById(
-      "formation"
-    ).innerHTML =
-
-      "<b>3連単フォーメーション例</b><br>" +
-
-      "1着：" +
-      ranking[0] +
-      "・" +
-      ranking[1] +
-      "<br>" +
-
-      "2着：" +
-      ranking[0] +
-      "・" +
-      ranking[1] +
-      "・" +
-      ranking[2] +
-      "<br>" +
-
-      "3着：" +
-      ranking[0] +
-      "・" +
-      ranking[1] +
-      "・" +
-      ranking[2] +
-      "・" +
-      ranking[3];
-
-
-    let text =
-      "<span class='highlight'>" +
-      stadium +
-      " " +
-      race +
-      "</span><br><br>" +
-
-      "AI評価では <b>" +
-      ranking[0] +
-      "号艇</b> を中心視。" +
-
-      "対抗は <b>" +
-      ranking[1] +
-      "号艇</b>、" +
-
-      "穴候補は <b>" +
-      ranking[3] +
-      "号艇</b> です。<br><br>";
-
-
-    if (rough === "high") {
-
-      text +=
-        "<span class='warning'>" +
-        "荒れ想定のため、外枠・まくり差し展開を通常より高く評価しています。" +
-        "</span><br><br>";
-
-    }
-
-
-    if (memo !== "") {
-
-      text +=
-        "入力メモ： " +
-        memo +
-        "<br><br>";
-
-    }
-
-
-    text +=
-      "購入資金：" +
-      budget.toLocaleString() +
+      "totalAmount"
+    ).textContent =
+      money.total.toLocaleString() +
       "円";
 
 
+    /*
+    根拠
+    */
+
+    const venue =
+      document.getElementById(
+        "venue"
+      ).value;
+
+    const race =
+      document.getElementById(
+        "race"
+      ).value;
+
+
+    let comment = `
+
+      <strong>
+        ${venue}${race}R AI分析
+      </strong>
+
+      <br><br>
+
+      総合評価1位は
+      <strong>
+        ${order[0]}号艇
+      </strong>。
+
+      対抗は
+      <strong>
+        ${order[1]}号艇
+      </strong>、
+      3番手は
+      <strong>
+        ${order[2]}号艇
+      </strong>
+      と判定しました。
+
+      <br><br>
+
+      コース有利度・級別・全国勝率・当地成績・
+      モーター成績・展示タイム・展示ST・
+      イン逃げ信頼度・荒れ度・風・水面状況を
+      総合スコア化しています。
+
+    `;
+
+
+    if(rough >= 4){
+
+      comment += `
+
+        <br><br>
+
+        🔥 荒れ度が高いため、
+        1着固定だけでなく
+        3・4番手評価の頭まで含めた
+        穴狙いを採用しています。
+
+      `;
+
+    }
+
+
     document.getElementById(
-      "analysis"
+      "reason"
     ).innerHTML =
-      text;
+      comment;
 
 
-    document.getElementById(
-      "resultCard"
-    ).style.display =
+    /*
+    結果表示
+    */
+
+    const result =
+      document.getElementById(
+        "result"
+      );
+
+    result.style.display =
       "block";
 
 
-    document.getElementById(
-      "resultCard"
-    ).scrollIntoView({
-      behavior: "smooth"
-    });
+    setTimeout(() => {
 
-  }
+      result.scrollIntoView({
+        behavior:"smooth",
+        block:"start"
+      });
 
-
-  function createRankHtml(
-    mark,
-    boat,
-    description
-  ) {
-
-    return `
-      <div class="rank">
-        <div>
-          <div class="rank-main">
-            ${mark} ${boat}号艇
-          </div>
-
-          <div class="rank-sub">
-            ${description}
-          </div>
-        </div>
-      </div>
-    `;
-
-  }
-
-
-  function renderBets(
-    elementId,
-    bets,
-    total,
-    className
-  ) {
-
-    const element =
-      document.getElementById(elementId);
-
-    element.innerHTML = "";
-
-
-    const each =
-      Math.floor(
-        total /
-        bets.length /
-        100
-      ) * 100;
-
-
-    let remaining =
-      total;
-
-
-    bets.forEach(
-      function(bet, index) {
-
-        let money = each;
-
-
-        if (
-          index ===
-          bets.length - 1
-        ) {
-
-          money =
-            Math.max(
-              100,
-              remaining
-            );
-
-        }
-
-
-        remaining -= money;
-
-
-        element.innerHTML += `
-          <div class="bet ${className}">
-            <span class="bet-number">
-              ${bet}
-            </span>
-
-            <span class="bet-money">
-              ${money.toLocaleString()}円
-            </span>
-          </div>
-        `;
-
-      }
-    );
-
-  }
-
-
-  function resetRace() {
-
-    document.getElementById(
-      "raceMemo"
-    ).value = "";
-
-    document.getElementById(
-      "resultCard"
-    ).style.display =
-      "none";
-
-    selectedBoat = 1;
-
-
-    document
-      .querySelectorAll(".boat")
-      .forEach(
-        function(item) {
-          item.classList.remove(
-            "selected"
-          );
-        }
-      );
-
-
-    document
-      .querySelector(
-        '[data-boat="1"]'
-      )
-      .classList.add(
-        "selected"
-      );
+    },100);
 
   }
 
