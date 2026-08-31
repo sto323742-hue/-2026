@@ -39,6 +39,11 @@ td.name{text-align:left;font-weight:700}
 .pick:last-child{border-bottom:0}.combo{font-size:18px;font-weight:900;letter-spacing:1px}.yen{font-weight:800}
 .notice{font-size:12px;color:var(--muted);line-height:1.6}
 .good{color:#087c3f;font-weight:700}.warn{color:#b45309;font-weight:700}
+.bet-toolbar{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:10px 0}
+.bet-group{margin-top:12px;border-top:1px solid var(--line);padding-top:8px}
+.bet-group h4{margin:0 0 4px;font-size:14px}
+.bet-tag{font-size:11px;font-weight:800;padding:4px 8px;border-radius:999px;background:#eef4ff;color:#1259aa}
+.totalbar{display:flex;justify-content:space-between;align-items:center;background:#f7f9fc;border-radius:12px;padding:10px 12px;margin-top:10px;font-weight:800}
 @media(max-width:640px){.controls{grid-template-columns:1fr}.metrics{grid-template-columns:1fr 1fr 1fr}th:nth-child(5),td:nth-child(5){display:none}}
 </style>
 </head>
@@ -94,9 +99,14 @@ td.name{text-align:left;font-weight:700}
   </section>
 
   <section class="card" id="betsCard" style="display:none">
-    <h3 style="margin:0 0 4px">1,000円・参考6点</h3>
-    <div class="notice">S判定時のみ表示。オッズは買い目選定に使わず、最終的な資金配分調整にも未使用です。</div>
+    <h3 style="margin:0 0 4px">🤖 AI 3連単予想（スコアモデル）</h3>
+    <div class="notice">S判定時のみ表示。オッズではなく、選手力・進入・モーター・ST・展示・水面条件から買い目を作ります。</div>
+    <div class="bet-toolbar">
+      <div><label>資金</label><select id="budget"><option value="1000">1,000円</option><option value="3000" selected>3,000円</option><option value="5000">5,000円</option><option value="10000">10,000円</option></select></div>
+      <div><label>点数</label><select id="betMode"><option value="auto" selected>自動</option><option value="6">6点</option><option value="10">10点</option></select></div>
+    </div>
     <div id="bets" style="margin-top:8px"></div>
+    <div class="totalbar"><span>合計</span><span id="betTotal">0円</span></div>
   </section>
 
   <section class="card" id="scanCard" style="display:none">
@@ -238,19 +248,63 @@ function scoreRace(race){
 
   return {rows,top,second,gap,conf,grade,hasPreview,wind,wave};
 }
-function makeBets(evalr){
+function buildCombos(evalr, count){
   const a=evalr.rows.map(x=>x.lane);
   if(a.length<5) return [];
-  const [x,y,z,w,v]=a;
-  // 軸1着固定中心。相手上位を重視しつつ6点。
-  return [
-    [`${x}-${y}-${z}`,300],
-    [`${x}-${z}-${y}`,200],
-    [`${x}-${y}-${w}`,200],
-    [`${x}-${z}-${w}`,100],
-    [`${x}-${w}-${y}`,100],
-    [`${x}-${y}-${v}`,100]
-  ];
+  const [x,y,z,w,v,u]=a;
+  const candidates=[
+    [x,y,z],[x,z,y],[x,y,w],[x,z,w],[x,w,y],
+    [x,y,v],[x,w,z],[x,z,v],[y,x,z],[z,x,y],
+    [x,v,y],[y,x,w],[z,x,w],[x,w,v],[y,z,x]
+  ].filter(c=>c.every(Boolean) && new Set(c).size===3);
+  const seen=new Set();
+  const out=[];
+  for(const c of candidates){
+    const key=c.join('-');
+    if(!seen.has(key)){seen.add(key);out.push(c);}
+    if(out.length>=count) break;
+  }
+  return out;
+}
+function allocateBudget(total, weights){
+  const unit=100;
+  let base=weights.map(w=>Math.floor((total*w/weights.reduce((a,b)=>a+b,0))/unit)*unit);
+  let used=base.reduce((a,b)=>a+b,0);
+  let i=0;
+  while(used+unit<=total){base[i%base.length]+=unit;used+=unit;i++;}
+  return base;
+}
+function makeBets(evalr){
+  const budget=Number(document.getElementById('budget')?.value||3000);
+  const mode=document.getElementById('betMode')?.value||'auto';
+  const count=mode==='auto' ? (budget<=1000?6:10) : Number(mode);
+  const combos=buildCombos(evalr,count);
+  let labels,weights;
+  if(count<=6){
+    labels=['本線','本線','本線','押さえ','押さえ','穴'];
+    weights=[30,22,18,12,10,8];
+  }else{
+    labels=['本線','本線','本線','本線','本線','押さえ','押さえ','押さえ','穴','穴'];
+    weights=[18,15,13,11,10,9,8,6,5,5];
+  }
+  const money=allocateBudget(budget,weights.slice(0,combos.length));
+  return combos.map((c,i)=>({combo:c.join('-'),money:money[i],group:labels[i]||'押さえ'}));
+}
+function renderBets(evalr){
+  const bets=document.getElementById('bets'); bets.innerHTML='';
+  const rows=makeBets(evalr);
+  const groups=['本線','押さえ','穴'];
+  groups.forEach(g=>{
+    const list=rows.filter(r=>r.group===g); if(!list.length) return;
+    const wrap=document.createElement('div'); wrap.className='bet-group';
+    wrap.innerHTML=`<h4>${g==='本線'?'🔥':g==='押さえ'?'🟡':'💣'} ${g} <span class="bet-tag">${list.length}点</span></h4>`;
+    list.forEach(r=>{
+      const d=document.createElement('div'); d.className='pick';
+      d.innerHTML=`<span class="combo">${r.combo}</span><span class="yen">${r.money.toLocaleString()}円</span>`;
+      wrap.appendChild(d);
+    }); bets.appendChild(wrap);
+  });
+  document.getElementById('betTotal').textContent=rows.reduce((s,r)=>s+r.money,0).toLocaleString()+'円';
 }
 function renderCurrent(){
   if(!rawData) return;
@@ -293,11 +347,7 @@ function renderCurrent(){
   const betsCard=document.getElementById("betsCard");
   if(e.grade==="S"){
     betsCard.style.display="";
-    const bets=document.getElementById("bets");bets.innerHTML="";
-    makeBets(e).forEach(([c,m])=>{
-      const d=document.createElement("div");d.className="pick";
-      d.innerHTML=`<span class="combo">${c}</span><span class="yen">${m}円</span>`;bets.appendChild(d);
-    });
+    renderBets(e);
   }else betsCard.style.display="none";
 }
 function scanS(){
@@ -324,6 +374,8 @@ document.getElementById("stadium").addEventListener("change",()=>{populateRaces(
 document.getElementById("race").addEventListener("change",renderCurrent);
 document.getElementById("refresh").addEventListener("click",loadData);
 document.getElementById("scan").addEventListener("click",scanS);
+document.getElementById("budget").addEventListener("change",renderCurrent);
+document.getElementById("betMode").addEventListener("change",renderCurrent);
 loadData();
 </script>
 </body>
