@@ -39,145 +39,281 @@
     }
 
     .card {
-      background: #101c2d;
-      border: 1px solid #24364d;
-      border-radius: 14px;
+      background: #111c2d;
+      border: 1px solid #24344c;
+      border-radius: 16px;
       padding: 16px;
-      margin-bottom: 15px;
+      margin-bottom: 16px;
+      box-shadow: 0 6px 20px rgba(0,0,0,0.25);
     }
 
-    .card h2 {
-      margin-top: 0;
-      font-size: 18px;
-      color: #63b3ff;
+    .card-title {
+      font-size: 17px;
+      font-weight: bold;
+      margin-bottom: 12px;
+      color: #5ec8ff;
     }
 
     label {
       display: block;
       margin-top: 12px;
-      margin-bottom: 5px;
-      font-size: 14px;
-      color: #c7d4e4;
+      margin-bottom: 6px;
+      font-size: 13px;
+      color: #b8c8da;
     }
 
     select,
     input {
       width: 100%;
-      padding: 12px;
-      border-radius: 9px;
-      border: 1px solid #40546d;
-      background: #08111f;
+      padding: 13px;
+      border: 1px solid #31445e;
+      border-radius: 10px;
+      background: #0b1524;
       color: white;
       font-size: 16px;
+      outline: none;
     }
 
-    .racer {
-      background: #0b1625;
-      padding: 12px;
-      border-radius: 10px;
+    input:focus,
+    select:focus {
+      border-color: #35b9ff;
+    }
+
+    .grid2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .racer-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
       margin-top: 10px;
     }
 
-    .racer-title {
+    .boat {
+      border-radius: 12px;
+      padding: 12px 6px;
+      text-align: center;
       font-weight: bold;
-      margin-bottom: 8px;
+      font-size: 14px;
+      border: 2px solid transparent;
+      cursor: pointer;
+      user-select: none;
     }
 
-    .grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 8px;
+    .boat.selected {
+      transform: scale(1.04);
+      border-color: #00e0ff;
+      box-shadow: 0 0 12px rgba(0,224,255,0.6);
+    }
+
+    .b1 {
+      background: #f5f5f5;
+      color: #111;
+    }
+
+    .b2 {
+      background: #444;
+      color: white;
+    }
+
+    .b3 {
+      background: #e53935;
+      color: white;
+    }
+
+    .b4 {
+      background: #1565c0;
+      color: white;
+    }
+
+    .b5 {
+      background: #f5d442;
+      color: #111;
+    }
+
+    .b6 {
+      background: #43a047;
+      color: white;
     }
 
     button {
       width: 100%;
-      padding: 15px;
-      margin-top: 16px;
-      background: linear-gradient(90deg, #007aff, #00b8ff);
       border: none;
-      border-radius: 12px;
-      color: white;
+      border-radius: 13px;
+      padding: 16px;
+      margin-top: 16px;
       font-size: 18px;
       font-weight: bold;
       cursor: pointer;
     }
 
-    button:active {
-      transform: scale(0.98);
+    .predict-btn {
+      background: linear-gradient(135deg, #00a8ff, #00e0ff);
+      color: #00101a;
+      box-shadow: 0 6px 18px rgba(0,184,255,0.3);
     }
 
-    #result {
+    .reset-btn {
+      background: #27374d;
+      color: white;
+      margin-top: 10px;
+      font-size: 14px;
+      padding: 12px;
+    }
+
+    .result {
       display: none;
     }
 
-    .prediction {
-      font-size: 24px;
-      font-weight: bold;
-      color: #ffd54a;
-      text-align: center;
-      margin: 15px 0;
-    }
-
-    .rank-row {
+    .rank {
       display: flex;
       justify-content: space-between;
-      padding: 10px;
-      margin: 6px 0;
-      background: #0b1625;
-      border-radius: 8px;
+      align-items: center;
+      border-radius: 12px;
+      padding: 12px;
+      margin-bottom: 9px;
+      background: #0b1524;
+      border-left: 5px solid #00bfff;
     }
 
-    .rank-score {
-      color: #63b3ff;
+    .rank-main {
+      font-size: 19px;
       font-weight: bold;
     }
 
-    .bet-group {
-      margin-top: 15px;
-    }
-
-    .bet-title {
-      font-weight: bold;
-      color: #6fc3ff;
-      margin-bottom: 8px;
-    }
-
-    .bet {
-      display: inline-block;
-      background: #17263a;
-      padding: 8px 12px;
-      margin: 4px;
-      border-radius: 8px;
-      font-weight: bold;
-    }
-
-    .main {
-      border: 1px solid #ffcc33;
-    }
-
-    .cover {
-      border: 1px solid #4fc3f7;
-    }
-
-    .hole {
-      border: 1px solid #ff6b6b;
+    .rank-sub {
+      font-size: 12px;
+      color: #9eb2c8;
+      margin-top: 3px;
     }
 
     .confidence {
       text-align: center;
-      font-size: 18px;
-      margin-top: 15px;
+      margin-bottom: 15px;
     }
 
-    .confidence strong {
-      color: #ffd54a;
+    .confidence-badge {
+      display: inline-block;
+      padding: 8px 18px;
+      border-radius: 30px;
+      font-size: 24px;
+      font-weight: bold;
     }
 
-    .note {
-      margin-top: 15px;
-      font-size: 12px;
-      line-height: 1.6;
-      color: #93a5ba;
+    .s {
+      background: #ff3b30;
+      color: white;
+    }
+
+    .a {
+      background: #ff9500;
+      color: white;
+    }
+
+    .b {
+      background: #ffd60a;
+      color: #111;
+    }
+
+    .c {
+      background: #636366;
+      color: white;
+    }
+
+    .bet-section {
+      margin-top: 14px;
+    }
+
+    .bet-title {
+      font-size: 15px;
+      font-weight: bold;
+      margin: 15px 0 8px;
+    }
+
+    .bet {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #0b1524;
+      border-radius: 10px;
+      padding: 11px 12px;
+      margin-bottom: 7px;
+    }
+
+    .bet-number {
+      font-size: 19px;
+      font-weight: bold;
+      letter-spacing: 1px;
+    }
+
+    .bet-money {
+      color: #6ee7ff;
+      font-weight: bold;
+    }
+
+    .main {
+      border-left: 4px solid #00d4ff;
+    }
+
+    .cover {
+      border-left: 4px solid #ffd60a;
+    }
+
+    .hole {
+      border-left: 4px solid #ff375f;
+    }
+
+    .formation {
+      background: #091321;
+      border-radius: 12px;
+      padding: 13px;
+      line-height: 1.7;
+      font-size: 14px;
+      margin-top: 12px;
+      color: #d7e6f5;
+    }
+
+    .memo {
+      background: #0b1524;
+      border-radius: 12px;
+      padding: 13px;
+      font-size: 13px;
+      line-height: 1.7;
+      color: #afc1d5;
+      margin-top: 12px;
+    }
+
+    .highlight {
+      color: #4bd6ff;
+      font-weight: bold;
+    }
+
+    .warning {
+      color: #ffcb66;
+    }
+
+    footer {
+      text-align: center;
+      color: #61758d;
+      font-size: 11px;
+      padding: 20px 0 30px;
+    }
+
+    @media (max-width: 480px) {
+      .container {
+        padding: 12px;
+      }
+
+      h1 {
+        font-size: 24px;
+      }
+
+      .grid2 {
+        grid-template-columns: 1fr;
+      }
     }
   </style>
 </head>
@@ -188,13 +324,14 @@
 
   <h1>🚤 BOAT RACE AI予想</h1>
   <div class="sub-title">
-    選手・モーター・展示・STを総合分析
+    データ入力型・3連単予想ツール
   </div>
 
   <div class="card">
-    <h2>レース情報</h2>
 
-    <label>競艇場</label>
+    <div class="card-title">① レース情報</div>
+
+    <label>開催場</label>
     <select id="stadium">
       <option>桐生</option>
       <option>戸田</option>
@@ -213,7 +350,7 @@
       <option>丸亀</option>
       <option>児島</option>
       <option>宮島</option>
-      <option>徳山</option>
+      <option selected>徳山</option>
       <option>下関</option>
       <option>若松</option>
       <option>芦屋</option>
@@ -222,393 +359,753 @@
       <option>大村</option>
     </select>
 
-    <label>レース</label>
-    <select id="race">
-      <option>1R</option>
-      <option>2R</option>
-      <option>3R</option>
-      <option>4R</option>
-      <option>5R</option>
-      <option>6R</option>
-      <option>7R</option>
-      <option>8R</option>
-      <option>9R</option>
-      <option>10R</option>
-      <option>11R</option>
-      <option>12R</option>
-    </select>
-  </div>
+    <div class="grid2">
 
+      <div>
+        <label>レース</label>
+        <select id="race">
+          <option>1R</option>
+          <option>2R</option>
+          <option>3R</option>
+          <option>4R</option>
+          <option>5R</option>
+          <option>6R</option>
+          <option>7R</option>
+          <option>8R</option>
+          <option>9R</option>
+          <option>10R</option>
+          <option>11R</option>
+          <option>12R</option>
+        </select>
+      </div>
+
+      <div>
+        <label>購入資金</label>
+        <select id="budget">
+          <option value="1000">1,000円</option>
+          <option value="2000">2,000円</option>
+          <option value="3000" selected>3,000円</option>
+          <option value="5000">5,000円</option>
+          <option value="10000">10,000円</option>
+        </select>
+      </div>
+
+    </div>
+
+  </div>
 
   <div class="card">
-    <h2>選手データ入力</h2>
 
-    <div id="racers"></div>
+    <div class="card-title">② 注目する艇を選択</div>
 
-    <button onclick="predictRace()">
-      AI予想を実行
-    </button>
+    <div class="racer-grid">
+
+      <div class="boat b1 selected" data-boat="1">
+        1号艇
+      </div>
+
+      <div class="boat b2" data-boat="2">
+        2号艇
+      </div>
+
+      <div class="boat b3" data-boat="3">
+        3号艇
+      </div>
+
+      <div class="boat b4" data-boat="4">
+        4号艇
+      </div>
+
+      <div class="boat b5" data-boat="5">
+        5号艇
+      </div>
+
+      <div class="boat b6" data-boat="6">
+        6号艇
+      </div>
+
+    </div>
+
+    <label>イン逃げ信頼度</label>
+    <select id="inner">
+      <option value="high">高い</option>
+      <option value="normal" selected>普通</option>
+      <option value="low">低い</option>
+    </select>
+
+    <label>荒れ度</label>
+    <select id="rough">
+      <option value="low">低い</option>
+      <option value="normal" selected>普通</option>
+      <option value="high">高い・穴狙い</option>
+    </select>
+
   </div>
 
+  <div class="card">
 
-  <div class="card" id="result">
+    <div class="card-title">③ 展示・水面情報</div>
 
-    <h2>AI予想結果</h2>
+    <div class="grid2">
 
-    <div class="prediction" id="prediction"></div>
+      <div>
+        <label>風速</label>
+        <select id="wind">
+          <option value="0">0〜2m</option>
+          <option value="1">3〜4m</option>
+          <option value="2">5m以上</option>
+        </select>
+      </div>
+
+      <div>
+        <label>展示気配</label>
+        <select id="exhibition">
+          <option value="normal">普通</option>
+          <option value="inside">内枠良好</option>
+          <option value="outside">外枠良好</option>
+        </select>
+      </div>
+
+    </div>
+
+    <label>メモ</label>
+    <input
+      id="raceMemo"
+      type="text"
+      placeholder="例：3号艇の展示が良い、向かい風など"
+    >
+
+    <button class="predict-btn" onclick="predictRace()">
+      🤖 AI予想する
+    </button>
+
+    <button class="reset-btn" onclick="resetRace()">
+      入力をリセット
+    </button>
+
+  </div>
+
+  <div class="card result" id="resultCard">
+
+    <div class="card-title">④ AI予想結果</div>
+
+    <div class="confidence">
+
+      <div>
+        勝負度
+      </div>
+
+      <div
+        id="confidence"
+        class="confidence-badge a"
+      >
+        A
+      </div>
+
+    </div>
 
     <div id="ranking"></div>
 
-    <div class="confidence">
-      勝負度：
-      <strong id="confidence"></strong>
-    </div>
+    <div class="bet-section">
 
-    <div class="bet-group">
-      <div class="bet-title">🔥 本線</div>
+      <div class="bet-title">
+        🔵 本線
+      </div>
+
       <div id="mainBets"></div>
-    </div>
 
-    <div class="bet-group">
-      <div class="bet-title">✅ 押さえ</div>
+      <div class="bet-title">
+        🟡 押さえ
+      </div>
+
       <div id="coverBets"></div>
-    </div>
 
-    <div class="bet-group">
-      <div class="bet-title">💣 穴</div>
+      <div class="bet-title">
+        🔴 穴
+      </div>
+
       <div id="holeBets"></div>
+
     </div>
 
-    <div class="note">
-      ※この予想は入力されたデータをもとにした簡易AIスコアです。
-      実際の舟券購入では直前展示・進入・風・水面状況・オッズも確認してください。
-    </div>
+    <div class="formation" id="formation"></div>
+
+    <div class="memo" id="analysis"></div>
 
   </div>
 
-</div>
+  <footer>
+    BOAT RACE AI予想ツール<br>
+    ※予想結果は参考情報です。的中や利益を保証するものではありません。
+  </footer>
 
+</div>
 
 <script>
 
-const racersDiv = document.getElementById("racers");
+  let selectedBoat = 1;
 
-for (let i = 1; i <= 6; i++) {
+  document
+    .querySelectorAll(".boat")
+    .forEach(function(element) {
 
-  racersDiv.innerHTML += `
+      element.addEventListener(
+        "click",
+        function() {
 
-    <div class="racer">
+          document
+            .querySelectorAll(".boat")
+            .forEach(function(item) {
+              item.classList.remove("selected");
+            });
 
-      <div class="racer-title">
-        ${i}号艇
-      </div>
+          element.classList.add("selected");
 
-      <div class="grid">
+          selectedBoat =
+            Number(element.dataset.boat);
 
-        <div>
-          <label>全国勝率</label>
-          <input
-            type="number"
-            step="0.01"
-            id="rate${i}"
-            placeholder="例 6.50"
-          >
-        </div>
+        }
+      );
 
-        <div>
-          <label>当地勝率</label>
-          <input
-            type="number"
-            step="0.01"
-            id="local${i}"
-            placeholder="例 6.20"
-          >
-        </div>
-
-        <div>
-          <label>モーター2連率</label>
-          <input
-            type="number"
-            step="0.1"
-            id="motor${i}"
-            placeholder="例 40"
-          >
-        </div>
-
-        <div>
-          <label>展示タイム</label>
-          <input
-            type="number"
-            step="0.01"
-            id="exhibition${i}"
-            placeholder="例 6.75"
-          >
-        </div>
-
-        <div>
-          <label>平均ST</label>
-          <input
-            type="number"
-            step="0.01"
-            id="st${i}"
-            placeholder="例 0.15"
-          >
-        </div>
-
-        <div>
-          <label>展示ST</label>
-          <input
-            type="number"
-            step="0.01"
-            id="exst${i}"
-            placeholder="例 0.08"
-          >
-        </div>
-
-      </div>
-
-    </div>
-
-  `;
-}
+    });
 
 
-function getNumber(id, defaultValue) {
+  function shuffle(array) {
 
-  const value = parseFloat(
-    document.getElementById(id).value
-  );
+    let copy = [...array];
 
-  return isNaN(value)
-    ? defaultValue
-    : value;
-}
+    for (
+      let i = copy.length - 1;
+      i > 0;
+      i--
+    ) {
+
+      let j =
+        Math.floor(
+          Math.random() * (i + 1)
+        );
+
+      [
+        copy[i],
+        copy[j]
+      ] = [
+        copy[j],
+        copy[i]
+      ];
+
+    }
+
+    return copy;
+  }
 
 
-function predictRace() {
+  function makeCombination(
+    first,
+    second,
+    third
+  ) {
 
-  let racers = [];
+    return (
+      first +
+      "-" +
+      second +
+      "-" +
+      third
+    );
 
-  for (let i = 1; i <= 6; i++) {
+  }
 
-    const rate =
-      getNumber("rate" + i, 5);
 
-    const local =
-      getNumber("local" + i, 5);
+  function getRanking() {
 
-    const motor =
-      getNumber("motor" + i, 30);
+    const inner =
+      document.getElementById("inner").value;
+
+    const rough =
+      document.getElementById("rough").value;
 
     const exhibition =
-      getNumber("exhibition" + i, 6.85);
+      document.getElementById("exhibition").value;
 
-    const st =
-      getNumber("st" + i, 0.18);
-
-    const exst =
-      getNumber("exst" + i, 0.15);
-
-
-    let courseBonus = 0;
-
-    if (i === 1) courseBonus = 22;
-    if (i === 2) courseBonus = 12;
-    if (i === 3) courseBonus = 9;
-    if (i === 4) courseBonus = 7;
-    if (i === 5) courseBonus = 4;
-    if (i === 6) courseBonus = 2;
+    let scores = {
+      1: 75,
+      2: 58,
+      3: 55,
+      4: 49,
+      5: 42,
+      6: 38
+    };
 
 
-    let score =
-
-      rate * 7 +
-
-      local * 4 +
-
-      motor * 0.45 +
-
-      (7.20 - exhibition) * 30 +
-
-      (0.25 - st) * 35 +
-
-      (0.25 - exst) * 25 +
-
-      courseBonus;
+    scores[selectedBoat] += 16;
 
 
-    racers.push({
-      boat: i,
-      score: score
+    if (inner === "high") {
+
+      scores[1] += 18;
+      scores[2] += 5;
+
+    }
+
+
+    if (inner === "low") {
+
+      scores[1] -= 17;
+      scores[3] += 8;
+      scores[4] += 8;
+
+    }
+
+
+    if (rough === "high") {
+
+      scores[3] += 8;
+      scores[4] += 10;
+      scores[5] += 7;
+      scores[6] += 5;
+
+    }
+
+
+    if (exhibition === "inside") {
+
+      scores[1] += 7;
+      scores[2] += 5;
+      scores[3] += 3;
+
+    }
+
+
+    if (exhibition === "outside") {
+
+      scores[4] += 7;
+      scores[5] += 6;
+      scores[6] += 5;
+
+    }
+
+
+    Object.keys(scores)
+      .forEach(function(key) {
+
+        scores[key] +=
+          Math.random() * 6;
+
+      });
+
+
+    return Object
+      .entries(scores)
+      .sort(
+        function(a, b) {
+          return b[1] - a[1];
+        }
+      )
+      .map(
+        function(item) {
+          return Number(item[0]);
+        }
+      );
+
+  }
+
+
+  function predictRace() {
+
+    const ranking =
+      getRanking();
+
+    const budget =
+      Number(
+        document.getElementById("budget").value
+      );
+
+    const rough =
+      document.getElementById("rough").value;
+
+    const inner =
+      document.getElementById("inner").value;
+
+    const wind =
+      Number(
+        document.getElementById("wind").value
+      );
+
+    const stadium =
+      document.getElementById("stadium").value;
+
+    const race =
+      document.getElementById("race").value;
+
+    const memo =
+      document.getElementById("raceMemo").value;
+
+
+    const first =
+      ranking[0];
+
+    const second =
+      ranking[1];
+
+    const third =
+      ranking[2];
+
+    const fourth =
+      ranking[3];
+
+    const fifth =
+      ranking[4];
+
+
+    let mainBets = [
+      makeCombination(first, second, third),
+      makeCombination(first, third, second),
+      makeCombination(first, second, fourth)
+    ];
+
+
+    let coverBets = [
+      makeCombination(second, first, third),
+      makeCombination(first, third, fourth),
+      makeCombination(second, third, first)
+    ];
+
+
+    let holeBets = [
+      makeCombination(third, first, fourth),
+      makeCombination(fourth, first, third)
+    ];
+
+
+    if (rough === "high") {
+
+      holeBets = [
+        makeCombination(third, fourth, first),
+        makeCombination(fourth, third, first)
+      ];
+
+    }
+
+
+    let confidence = "A";
+
+
+    if (
+      inner === "high" &&
+      first === 1 &&
+      wind === 0
+    ) {
+
+      confidence = "S";
+
+    } else if (
+      wind === 2 ||
+      rough === "high"
+    ) {
+
+      confidence = "B";
+
+    }
+
+
+    const confidenceElement =
+      document.getElementById("confidence");
+
+    confidenceElement.textContent =
+      confidence;
+
+    confidenceElement.className =
+      "confidence-badge " +
+      confidence.toLowerCase();
+
+
+    document.getElementById(
+      "ranking"
+    ).innerHTML =
+
+      createRankHtml(
+        "◎ 本命",
+        ranking[0],
+        "軸候補"
+      ) +
+
+      createRankHtml(
+        "○ 対抗",
+        ranking[1],
+        "相手筆頭"
+      ) +
+
+      createRankHtml(
+        "▲ 単穴",
+        ranking[2],
+        "展開次第で頭まで"
+      ) +
+
+      createRankHtml(
+        "☆ 穴",
+        ranking[3],
+        "高配当候補"
+      );
+
+
+    const mainTotal =
+      Math.round(
+        budget * 0.55 / 100
+      ) * 100;
+
+    const coverTotal =
+      Math.round(
+        budget * 0.30 / 100
+      ) * 100;
+
+    let holeTotal =
+      budget -
+      mainTotal -
+      coverTotal;
+
+
+    renderBets(
+      "mainBets",
+      mainBets,
+      mainTotal,
+      "main"
+    );
+
+    renderBets(
+      "coverBets",
+      coverBets,
+      coverTotal,
+      "cover"
+    );
+
+    renderBets(
+      "holeBets",
+      holeBets,
+      holeTotal,
+      "hole"
+    );
+
+
+    document.getElementById(
+      "formation"
+    ).innerHTML =
+
+      "<b>3連単フォーメーション例</b><br>" +
+
+      "1着：" +
+      ranking[0] +
+      "・" +
+      ranking[1] +
+      "<br>" +
+
+      "2着：" +
+      ranking[0] +
+      "・" +
+      ranking[1] +
+      "・" +
+      ranking[2] +
+      "<br>" +
+
+      "3着：" +
+      ranking[0] +
+      "・" +
+      ranking[1] +
+      "・" +
+      ranking[2] +
+      "・" +
+      ranking[3];
+
+
+    let text =
+      "<span class='highlight'>" +
+      stadium +
+      " " +
+      race +
+      "</span><br><br>" +
+
+      "AI評価では <b>" +
+      ranking[0] +
+      "号艇</b> を中心視。" +
+
+      "対抗は <b>" +
+      ranking[1] +
+      "号艇</b>、" +
+
+      "穴候補は <b>" +
+      ranking[3] +
+      "号艇</b> です。<br><br>";
+
+
+    if (rough === "high") {
+
+      text +=
+        "<span class='warning'>" +
+        "荒れ想定のため、外枠・まくり差し展開を通常より高く評価しています。" +
+        "</span><br><br>";
+
+    }
+
+
+    if (memo !== "") {
+
+      text +=
+        "入力メモ： " +
+        memo +
+        "<br><br>";
+
+    }
+
+
+    text +=
+      "購入資金：" +
+      budget.toLocaleString() +
+      "円";
+
+
+    document.getElementById(
+      "analysis"
+    ).innerHTML =
+      text;
+
+
+    document.getElementById(
+      "resultCard"
+    ).style.display =
+      "block";
+
+
+    document.getElementById(
+      "resultCard"
+    ).scrollIntoView({
+      behavior: "smooth"
     });
 
   }
 
 
-  racers.sort(
-    (a, b) =>
-      b.score - a.score
-  );
+  function createRankHtml(
+    mark,
+    boat,
+    description
+  ) {
 
+    return `
+      <div class="rank">
+        <div>
+          <div class="rank-main">
+            ${mark} ${boat}号艇
+          </div>
 
-  const first =
-    racers[0].boat;
-
-  const second =
-    racers[1].boat;
-
-  const third =
-    racers[2].boat;
-
-  const fourth =
-    racers[3].boat;
-
-
-  document.getElementById(
-    "prediction"
-  ).innerHTML =
-
-    `${first} → ${second} → ${third}`;
-
-
-  let rankingHTML = "";
-
-  racers.forEach(
-    (racer, index) => {
-
-      rankingHTML += `
-
-        <div class="rank-row">
-
-          <span>
-            ${index + 1}位　
-            ${racer.boat}号艇
-          </span>
-
-          <span class="rank-score">
-            ${racer.score.toFixed(1)}
-          </span>
-
+          <div class="rank-sub">
+            ${description}
+          </div>
         </div>
-
-      `;
-
-    }
-  );
-
-
-  document.getElementById(
-    "ranking"
-  ).innerHTML = rankingHTML;
-
-
-
-  const scoreDiff =
-    racers[0].score -
-    racers[1].score;
-
-
-  let confidence = "B";
-
-  if (scoreDiff >= 15) {
-
-    confidence = "S";
-
-  } else if (scoreDiff >= 9) {
-
-    confidence = "A";
-
-  } else if (scoreDiff >= 4) {
-
-    confidence = "B";
-
-  } else {
-
-    confidence = "C";
+      </div>
+    `;
 
   }
 
 
-  document.getElementById(
-    "confidence"
-  ).innerText = confidence;
+  function renderBets(
+    elementId,
+    bets,
+    total,
+    className
+  ) {
+
+    const element =
+      document.getElementById(elementId);
+
+    element.innerHTML = "";
 
 
-
-  const mainBets = [
-
-    `${first}-${second}-${third}`,
-
-    `${first}-${third}-${second}`,
-
-    `${first}-${second}-${fourth}`
-
-  ];
+    const each =
+      Math.floor(
+        total /
+        bets.length /
+        100
+      ) * 100;
 
 
-  const coverBets = [
-
-    `${second}-${first}-${third}`,
-
-    `${first}-${third}-${fourth}`,
-
-    `${first}-${fourth}-${second}`
-
-  ];
+    let remaining =
+      total;
 
 
-  const holeBets = [
+    bets.forEach(
+      function(bet, index) {
 
-    `${third}-${first}-${second}`,
-
-    `${second}-${third}-${first}`
-
-  ];
+        let money = each;
 
 
+        if (
+          index ===
+          bets.length - 1
+        ) {
 
-  document.getElementById(
-    "mainBets"
-  ).innerHTML = mainBets
-    .map(
-      bet =>
-        `<span class="bet main">${bet}</span>`
-    )
-    .join("");
+          money =
+            Math.max(
+              100,
+              remaining
+            );
 
-
-  document.getElementById(
-    "coverBets"
-  ).innerHTML = coverBets
-    .map(
-      bet =>
-        `<span class="bet cover">${bet}</span>`
-    )
-    .join("");
+        }
 
 
-  document.getElementById(
-    "holeBets"
-  ).innerHTML = holeBets
-    .map(
-      bet =>
-        `<span class="bet hole">${bet}</span>`
-    )
-    .join("");
+        remaining -= money;
 
 
-  document.getElementById(
-    "result"
-  ).style.display = "block";
+        element.innerHTML += `
+          <div class="bet ${className}">
+            <span class="bet-number">
+              ${bet}
+            </span>
+
+            <span class="bet-money">
+              ${money.toLocaleString()}円
+            </span>
+          </div>
+        `;
+
+      }
+    );
+
+  }
 
 
-  document.getElementById(
-    "result"
-  ).scrollIntoView({
-    behavior: "smooth"
-  });
+  function resetRace() {
 
-}
+    document.getElementById(
+      "raceMemo"
+    ).value = "";
+
+    document.getElementById(
+      "resultCard"
+    ).style.display =
+      "none";
+
+    selectedBoat = 1;
+
+
+    document
+      .querySelectorAll(".boat")
+      .forEach(
+        function(item) {
+          item.classList.remove(
+            "selected"
+          );
+        }
+      );
+
+
+    document
+      .querySelector(
+        '[data-boat="1"]'
+      )
+      .classList.add(
+        "selected"
+      );
+
+  }
 
 </script>
 
