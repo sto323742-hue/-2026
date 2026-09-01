@@ -107,7 +107,6 @@ button:active{
   background:#263b55;
 }
 
-/* 成績を見るボタン */
 .stats-button{
   background:linear-gradient(
     135deg,
@@ -116,7 +115,6 @@ button:active{
   );
 }
 
-/* Sレースへ戻るボタン */
 .back-button{
   background:#263b55;
   margin-bottom:14px;
@@ -172,7 +170,6 @@ button:active{
   font-weight:900;
 }
 
-/* レース時間 */
 .race-time{
   color:#55d8ff;
   font-size:17px;
@@ -239,6 +236,56 @@ button:active{
   font-size:22px;
   font-weight:900;
   margin-top:4px;
+}
+
+/* =========================
+   買い目フィルター
+========================= */
+
+.bet-filter{
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+  gap:7px;
+  margin-top:16px;
+  margin-bottom:4px;
+}
+
+.filter-btn{
+  width:100%;
+  min-height:42px;
+  margin:0;
+  padding:7px 3px;
+  border-radius:10px;
+  border:1px solid #34516c;
+  background:#081725;
+  color:#9fb5ca;
+  font-size:13px;
+  font-weight:900;
+}
+
+.filter-btn.active{
+  color:#06111d;
+  background:#55d8ff;
+  border-color:#55d8ff;
+}
+
+.filter-btn:active{
+  transform:scale(.96);
+}
+
+.filter-note{
+  font-size:11px;
+  color:#718aa4;
+  margin-top:7px;
+  text-align:center;
+}
+
+.bet-group{
+  display:block;
+}
+
+.bet-group.hidden{
+  display:none;
 }
 
 .bet-title{
@@ -417,8 +464,11 @@ button:active{
   .place-row{
     gap:8px;
   }
-}
 
+  .filter-btn{
+    font-size:12px;
+  }
+}
 </style>
 </head>
 
@@ -490,7 +540,6 @@ button:active{
     </button>
 
 
-    <!-- ★ 今回追加 -->
     <button
       class="stats-button"
       onclick="goToStats()"
@@ -531,7 +580,6 @@ button:active{
   <div id="results"></div>
 
 
-  <!-- ★ 統計へ直接移動する場所 -->
   <div
     class="card"
     id="statsSection"
@@ -542,7 +590,6 @@ button:active{
     </div>
 
 
-    <!-- ★ 今回追加 -->
     <button
       class="back-button"
       onclick="goToTop()"
@@ -586,7 +633,6 @@ button:active{
     <div id="stats"></div>
 
 
-    <!-- 下まで見た後も戻れる -->
     <button
       class="back-button"
       onclick="goToTop()"
@@ -713,16 +759,13 @@ function todayJST(){
       new Date()
     );
 
-
   const obj = {};
-
 
   parts.forEach(
     p =>
       obj[p.type] =
         p.value
   );
-
 
   return (
     `${obj.year}-${obj.month}-${obj.day}`
@@ -743,13 +786,11 @@ function apiURL(date){
       ""
     );
 
-
   const year =
     date.substring(
       0,
       4
     );
-
 
   return (
     `${API_BASE}/${year}/${compact}.json`
@@ -767,26 +808,22 @@ function getRaceTime(race){
   const value =
     race?.closed_at;
 
-
   if(!value){
 
     return "--:--";
 
   }
 
-
   const match =
     String(value).match(
       /(\d{2}):(\d{2})/
     );
-
 
   if(!match){
 
     return "--:--";
 
   }
-
 
   return (
     `${match[1]}:${match[2]}`
@@ -811,13 +848,11 @@ function boatScore(
       5
     );
 
-
   const local =
     n(
       racer?.local_win_rate,
       national
     );
-
 
   const motor =
     n(
@@ -825,13 +860,11 @@ function boatScore(
       30
     );
 
-
   const boatRate =
     n(
       racer?.boat_top_2_percent,
       30
     );
-
 
   const avgST =
     n(
@@ -839,13 +872,11 @@ function boatScore(
       .18
     );
 
-
   const exhibition =
     n(
       preview?.exhibition_time,
       99
     );
-
 
   const exhibitionST =
     n(
@@ -853,16 +884,13 @@ function boatScore(
       99
     );
 
-
   const rank =
     n(
       racer?.rank_number,
       2
     );
 
-
   let score = 0;
-
 
   score +=
     national * 5;
@@ -876,13 +904,11 @@ function boatScore(
   score +=
     boatRate * .12;
 
-
   score +=
     Math.max(
       0,
       (.22 - avgST) * 70
     );
-
 
   if(
     exhibition < 10
@@ -896,7 +922,6 @@ function boatScore(
 
   }
 
-
   if(
     exhibitionST < 1
   ){
@@ -909,7 +934,6 @@ function boatScore(
 
   }
 
-
   if(
     rank === 1
   ){
@@ -917,7 +941,6 @@ function boatScore(
     score += 5;
 
   }
-
 
   if(
     rank === 2
@@ -958,10 +981,8 @@ function previewComplete(race){
   const preview =
     race?.preview;
 
-
   const racers =
     preview?.racers;
-
 
   if(
     !preview ||
@@ -972,7 +993,6 @@ function previewComplete(race){
 
   }
 
-
   for(
     let i=1;
     i<=6;
@@ -982,13 +1002,11 @@ function previewComplete(race){
     const racer =
       racers[String(i)];
 
-
     if(!racer){
 
       return false;
 
     }
-
 
     if(
       racer.exhibition_time === null ||
@@ -1002,7 +1020,6 @@ function previewComplete(race){
     }
 
   }
-
 
   return true;
 
@@ -1023,17 +1040,13 @@ function evaluateRace(race){
 
   }
 
-
   const racers =
     race?.racers || {};
-
 
   const previews =
     race?.preview?.racers || {};
 
-
   const boats = [];
-
 
   for(
     let i=1;
@@ -1044,10 +1057,8 @@ function evaluateRace(race){
     const racer =
       racers[String(i)];
 
-
     const preview =
       previews[String(i)];
-
 
     if(
       !racer ||
@@ -1057,7 +1068,6 @@ function evaluateRace(race){
       return null;
 
     }
-
 
     boats.push({
 
@@ -1078,38 +1088,30 @@ function evaluateRace(race){
 
   }
 
-
   boats.sort(
     (a,b) =>
       b.score -
       a.score
   );
 
-
   const top =
     boats[0];
-
 
   const second =
     boats[1];
 
-
   const third =
     boats[2];
-
 
   const gap1 =
     top.score -
     second.score;
 
-
   const gap2 =
     second.score -
     third.score;
 
-
   let confidence = 60;
-
 
   confidence +=
     Math.min(
@@ -1117,13 +1119,11 @@ function evaluateRace(race){
       gap1 * 2.2
     );
 
-
   confidence +=
     Math.min(
       8,
       gap2
     );
-
 
   if(
     top.boat === 1
@@ -1133,20 +1133,17 @@ function evaluateRace(race){
 
   }
 
-
   const wind =
     n(
       race?.preview?.wind_speed,
       0
     );
 
-
   const wave =
     n(
       race?.preview?.wave_height,
       0
     );
-
 
   if(
     wind >= 6
@@ -1156,7 +1153,6 @@ function evaluateRace(race){
 
   }
 
-
   if(
     wave >= 5
   ){
@@ -1164,7 +1160,6 @@ function evaluateRace(race){
     confidence -= 4;
 
   }
-
 
   confidence =
     Math.max(
@@ -1229,14 +1224,11 @@ function makeTickets(boats){
   const a =
     boats[0].boat;
 
-
   const b =
     boats[1].boat;
 
-
   const c =
     boats[2].boat;
-
 
   const d =
     boats[3].boat;
@@ -1341,41 +1333,120 @@ function allTickets(tickets){
 
 
 /* =========================
+   フィルター切替
+========================= */
+
+function setTicketFilter(
+  button,
+  type
+){
+
+  const card =
+    button.closest(
+      ".race-card"
+    );
+
+  if(!card){
+    return;
+  }
+
+  const buttons =
+    card.querySelectorAll(
+      ".filter-btn"
+    );
+
+  buttons.forEach(
+    btn =>
+      btn.classList.remove(
+        "active"
+      )
+  );
+
+  button.classList.add(
+    "active"
+  );
+
+
+  const groups =
+    card.querySelectorAll(
+      ".bet-group"
+    );
+
+  groups.forEach(
+    group => {
+
+      const groupType =
+        group.dataset.betType;
+
+      if(
+        type === "all" ||
+        groupType === type
+      ){
+
+        group.classList.remove(
+          "hidden"
+        );
+
+      }
+
+      else{
+
+        group.classList.add(
+          "hidden"
+        );
+
+      }
+
+    }
+  );
+
+}
+
+
+/* =========================
    買い目表示
 ========================= */
 
 function ticketsHTML(
   title,
   cls,
+  type,
   tickets,
   amount
 ){
 
   return `
 
-    <div class="bet-title ${cls}">
-      ${title}
+    <div
+      class="bet-group"
+      data-bet-type="${type}"
+    >
+
+      <div class="bet-title ${cls}">
+        ${title}
+      </div>
+
+      ${
+        tickets.map(
+          t => `
+
+            <div class="ticket">
+
+              <div class="combo">
+                ${t}
+              </div>
+
+              <div class="money">
+                ${amount.toLocaleString()}円
+              </div>
+
+            </div>
+
+          `
+        ).join("")
+      }
+
     </div>
-
-    ${
-      tickets.map(
-        t => `
-
-          <div class="ticket">
-
-            <div class="combo">
-              ${t}
-            </div>
-
-            <div class="money">
-              ${amount.toLocaleString()}円
-            </div>
-
-          </div>
-
-        `
-      ).join("")
-    }
 
   `;
 
@@ -1393,7 +1464,6 @@ function getPayout(race){
       ?.payouts
       ?.trifecta;
 
-
   if(
     !Array.isArray(arr) ||
     arr.length === 0
@@ -1402,7 +1472,6 @@ function getPayout(race){
     return null;
 
   }
-
 
   return arr[0];
 
@@ -1470,14 +1539,12 @@ function savePrediction(
   const records =
     loadRecords();
 
-
   const key =
     raceKey(
       date,
       stadium,
       raceNo
     );
-
 
   if(
     records[key]
@@ -1487,14 +1554,12 @@ function savePrediction(
 
   }
 
-
   const perTicket =
     Math.floor(
       budget /
       10 /
       100
     ) * 100;
-
 
   const totalBet =
     perTicket * 10;
@@ -1568,7 +1633,6 @@ function updateResult(
   const records =
     loadRecords();
 
-
   const key =
     raceKey(
       date,
@@ -1576,10 +1640,8 @@ function updateResult(
       raceNo
     );
 
-
   const record =
     records[key];
-
 
   if(!record){
 
@@ -1587,17 +1649,14 @@ function updateResult(
 
   }
 
-
   const payout =
     getPayout(race);
-
 
   if(!payout){
 
     return;
 
   }
-
 
   const combination =
     String(
@@ -1607,23 +1666,19 @@ function updateResult(
       ""
     );
 
-
   const amount =
     n(
       payout.amount,
       0
     );
 
-
   const isHit =
     record.tickets.includes(
       combination
     );
 
-
   record.winningCombination =
     combination;
-
 
   record.payout =
     amount;
@@ -1633,7 +1688,6 @@ function updateResult(
 
     record.result =
       "hit";
-
 
     record.returnAmount =
       Math.floor(
@@ -1649,7 +1703,6 @@ function updateResult(
     record.result =
       "miss";
 
-
     record.returnAmount =
       0;
 
@@ -1658,7 +1711,6 @@ function updateResult(
 
   records[key] =
     record;
-
 
   saveRecords(
     records
@@ -1770,17 +1822,14 @@ function raceCardHTML(
   const amount =
     record?.perTicket || 100;
 
-
   const total =
     amount * 10;
-
 
   const top3 =
     evaluation.boats.slice(
       0,
       3
     );
-
 
   const raceTime =
     getRaceTime(race);
@@ -1876,10 +1925,55 @@ function raceCardHTML(
       </div>
 
 
+      <!-- 買い目ワンタップフィルター -->
+
+      <div class="bet-filter">
+
+        <button
+          type="button"
+          class="filter-btn active"
+          onclick="setTicketFilter(this,'all')"
+        >
+          すべて
+        </button>
+
+        <button
+          type="button"
+          class="filter-btn"
+          onclick="setTicketFilter(this,'main')"
+        >
+          本線
+        </button>
+
+        <button
+          type="button"
+          class="filter-btn"
+          onclick="setTicketFilter(this,'cover')"
+        >
+          押さえ
+        </button>
+
+        <button
+          type="button"
+          class="filter-btn"
+          onclick="setTicketFilter(this,'hole')"
+        >
+          穴
+        </button>
+
+      </div>
+
+
+      <div class="filter-note">
+        ワンタップで買い目を切り替え
+      </div>
+
+
       ${
         ticketsHTML(
           "本線 3点",
           "main-title",
+          "main",
           tickets.main,
           amount
         )
@@ -1890,6 +1984,7 @@ function raceCardHTML(
         ticketsHTML(
           "押さえ 4点",
           "cover-title",
+          "cover",
           tickets.cover,
           amount
         )
@@ -1900,6 +1995,7 @@ function raceCardHTML(
         ticketsHTML(
           "穴 3点",
           "hole-title",
+          "hole",
           tickets.hole,
           amount
         )
@@ -1909,7 +2005,7 @@ function raceCardHTML(
       <div class="total">
 
         <span>
-          合計10点
+          購入合計10点
         </span>
 
         <span>
@@ -1953,7 +2049,6 @@ function getRacesFromData(data){
     data?.programs
       ?.stadiums || {};
 
-
   const result = [];
 
 
@@ -1966,7 +2061,6 @@ function getRacesFromData(data){
       const stadiumData =
         stadiums[stadiumKey];
 
-
       const races =
         stadiumData?.races || {};
 
@@ -1975,10 +2069,10 @@ function getRacesFromData(data){
         races
       ).forEach(
 
-        raceKey => {
+        raceKeyValue => {
 
           const race =
-            races[raceKey];
+            races[raceKeyValue];
 
 
           result.push({
@@ -1992,7 +2086,7 @@ function getRacesFromData(data){
             raceNo:
               Number(
                 race?.race_number ||
-                raceKey
+                raceKeyValue
               ),
 
             race:
@@ -2025,12 +2119,10 @@ async function loadToday(){
       "status"
     );
 
-
   const results =
     document.getElementById(
       "results"
     );
-
 
   const budget =
     Number(
@@ -2038,7 +2130,6 @@ async function loadToday(){
         "budget"
       ).value
     );
-
 
   const date =
     todayJST();
@@ -2148,7 +2239,6 @@ async function loadToday(){
           );
 
 
-        /* Sのみ */
         if(
           !evaluation ||
           evaluation.grade !== "S"
@@ -2181,11 +2271,6 @@ async function loadToday(){
           records[key];
 
 
-        /*
-        レース終了後に
-        新規Sとして発見したものは
-        統計へ入れない
-        */
         if(
           !record &&
           raceHasResult(
@@ -2274,14 +2359,12 @@ async function loadToday(){
     );
 
 
-    /* 時間が早い順 */
     sRaces.sort(
 
       (a,b) => {
 
         const timeA =
           a.raceTime || "99:99";
-
 
         const timeB =
           b.raceTime || "99:99";
@@ -2753,10 +2836,6 @@ function renderStats(){
 
   `;
 
-
-  /* =========================
-     会場別統計
-  ========================= */
 
   const byStadium = {};
 
