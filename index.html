@@ -141,14 +141,34 @@ button:active{
   gap:10px;
 }
 
+/* 会場＋時間 */
+.place-row{
+  display:flex;
+  align-items:center;
+  gap:12px;
+  flex-wrap:wrap;
+}
+
 .place{
   font-size:22px;
   font-weight:900;
 }
 
+/* ★ 今回追加：開催時刻 */
+.race-time{
+  color:#55d8ff;
+  font-size:17px;
+  font-weight:900;
+  background:#0c2a42;
+  border:1px solid #24506c;
+  border-radius:9px;
+  padding:4px 9px;
+  white-space:nowrap;
+}
+
 .race-number{
   color:#9db2c8;
-  margin-top:3px;
+  margin-top:4px;
   font-size:14px;
 }
 
@@ -362,6 +382,7 @@ button:active{
 }
 
 @media(max-width:480px){
+
   .container{
     padding-left:12px;
     padding-right:12px;
@@ -370,7 +391,17 @@ button:active{
   .place{
     font-size:20px;
   }
+
+  .race-time{
+    font-size:15px;
+    padding:4px 8px;
+  }
+
+  .place-row{
+    gap:8px;
+  }
 }
+
 </style>
 </head>
 
@@ -379,11 +410,13 @@ button:active{
 <div class="container">
 
   <div class="header">
+
     <h1>🚤 BOAT RACE AI予想</h1>
 
     <div class="sub">
       全国24場から確定した勝負度Sだけ自動抽出
     </div>
+
   </div>
 
 
@@ -398,16 +431,34 @@ button:active{
     </label>
 
     <select id="budget">
-      <option value="1000" selected>1,000円</option>
-      <option value="2000">2,000円</option>
-      <option value="3000">3,000円</option>
-      <option value="5000">5,000円</option>
-      <option value="10000">10,000円</option>
+
+      <option value="1000" selected>
+        1,000円
+      </option>
+
+      <option value="2000">
+        2,000円
+      </option>
+
+      <option value="3000">
+        3,000円
+      </option>
+
+      <option value="5000">
+        5,000円
+      </option>
+
+      <option value="10000">
+        10,000円
+      </option>
+
     </select>
+
 
     <button onclick="loadToday()">
       勝負度Sを自動検索
     </button>
+
 
     <button
       class="refresh"
@@ -416,21 +467,31 @@ button:active{
       ↻ 最新データに更新
     </button>
 
+
     <div style="height:14px"></div>
+
 
     <div
       class="status"
       id="status"
     >
+
       「勝負度Sを自動検索」を押すと、
       全国24場のレースを評価します。
+
     </div>
 
+
     <div class="small">
+
       本線3点・押さえ4点・穴3点＝合計10点。<br>
+
       10点すべて同じ金額で購入します。<br>
+
       展示情報が6艇分揃ったレースだけS判定します。<br>
+
       S候補・A・Bレースは表示しません。
+
     </div>
 
   </div>
@@ -449,10 +510,12 @@ button:active{
       集計期間
     </label>
 
+
     <select
       id="period"
       onchange="renderStats()"
     >
+
       <option value="day">
         本日
       </option>
@@ -468,7 +531,9 @@ button:active{
       <option value="all">
         全期間
       </option>
+
     </select>
+
 
     <div style="height:14px"></div>
 
@@ -478,8 +543,10 @@ button:active{
 
 
   <div class="footer">
+
     AI評価は参考情報です。<br>
     投票は無理のない資金で行ってください。
+
   </div>
 
 </div>
@@ -490,7 +557,9 @@ button:active{
 const API_BASE =
   "https://boatraceopenapi.github.io/api/v1";
 
+
 const STADIUMS = {
+
   1:"桐生",
   2:"戸田",
   3:"江戸川",
@@ -515,13 +584,18 @@ const STADIUMS = {
   22:"福岡",
   23:"唐津",
   24:"大村"
+
 };
+
 
 const STORAGE_KEY =
   "boatrace_ai_s_records_v2";
 
 
-function n(value,fallback=0){
+function n(
+  value,
+  fallback=0
+){
 
   const x =
     Number(value);
@@ -529,9 +603,11 @@ function n(value,fallback=0){
   return Number.isFinite(x)
     ? x
     : fallback;
+
 }
 
 
+/* 日本時間の今日 */
 function todayJST(){
 
   const parts =
@@ -543,34 +619,82 @@ function todayJST(){
         month:"2-digit",
         day:"2-digit"
       }
-    ).formatToParts(new Date());
+    ).formatToParts(
+      new Date()
+    );
 
   const obj = {};
 
   parts.forEach(
-    p => obj[p.type] = p.value
+    p =>
+      obj[p.type] =
+        p.value
   );
 
   return (
     `${obj.year}-${obj.month}-${obj.day}`
   );
+
 }
 
 
+/* API URL */
 function apiURL(date){
 
   const compact =
-    date.replaceAll("-","");
+    date.replaceAll(
+      "-",
+      ""
+    );
 
   const year =
-    date.substring(0,4);
+    date.substring(
+      0,
+      4
+    );
 
   return (
     `${API_BASE}/${year}/${compact}.json`
   );
+
 }
 
 
+/*
+★ 今回追加
+APIの closed_at から時刻だけ取り出す
+
+例
+2026-09-01 12:34:00
+↓
+12:34
+*/
+function getRaceTime(race){
+
+  const value =
+    race?.closed_at;
+
+  if(!value){
+    return "--:--";
+  }
+
+  const match =
+    String(value).match(
+      /(\d{2}):(\d{2})/
+    );
+
+  if(!match){
+    return "--:--";
+  }
+
+  return (
+    `${match[1]}:${match[2]}`
+  );
+
+}
+
+
+/* 選手評価 */
 function boatScore(
   racer,
   preview,
@@ -629,10 +753,18 @@ function boatScore(
   let score = 0;
 
 
-  score += national * 5;
-  score += local * 2.7;
-  score += motor * .30;
-  score += boatRate * .12;
+  score +=
+    national * 5;
+
+  score +=
+    local * 2.7;
+
+  score +=
+    motor * .30;
+
+  score +=
+    boatRate * .12;
+
 
   score +=
     Math.max(
@@ -641,42 +773,55 @@ function boatScore(
     );
 
 
-  if(exhibition < 10){
+  if(
+    exhibition < 10
+  ){
 
     score +=
       Math.max(
         0,
         (6.95 - exhibition) * 35
       );
+
   }
 
 
-  if(exhibitionST < 1){
+  if(
+    exhibitionST < 1
+  ){
 
     score +=
       Math.max(
         0,
         (.20 - exhibitionST) * 45
       );
+
   }
 
 
   if(rank === 1){
+
     score += 5;
+
   }
 
+
   if(rank === 2){
+
     score += 3;
+
   }
 
 
   const courseBonus = {
+
     1:12,
     2:6,
     3:4,
     4:2,
     5:0,
     6:-2
+
   };
 
 
@@ -685,9 +830,11 @@ function boatScore(
 
 
   return score;
+
 }
 
 
+/* 6艇の展示情報確認 */
 function previewComplete(race){
 
   const preview =
@@ -701,7 +848,9 @@ function previewComplete(race){
     !preview ||
     !racers
   ){
+
     return false;
+
   }
 
 
@@ -716,7 +865,9 @@ function previewComplete(race){
 
 
     if(!racer){
+
       return false;
+
     }
 
 
@@ -726,22 +877,28 @@ function previewComplete(race){
       racer.start_timing === null ||
       racer.start_timing === undefined
     ){
+
       return false;
+
     }
 
   }
 
 
   return true;
+
 }
 
 
+/* S判定 */
 function evaluateRace(race){
 
   if(
     !previewComplete(race)
   ){
+
     return null;
+
   }
 
 
@@ -772,27 +929,36 @@ function evaluateRace(race){
       !racer ||
       !preview
     ){
+
       return null;
+
     }
 
 
     boats.push({
+
       boat:i,
+
       racer:racer,
+
       preview:preview,
+
       score:
         boatScore(
           racer,
           preview,
           i
         )
+
     });
+
   }
 
 
   boats.sort(
     (a,b) =>
-      b.score - a.score
+      b.score -
+      a.score
   );
 
 
@@ -832,8 +998,12 @@ function evaluateRace(race){
     );
 
 
-  if(top.boat === 1){
+  if(
+    top.boat === 1
+  ){
+
     confidence += 7;
+
   }
 
 
@@ -850,13 +1020,21 @@ function evaluateRace(race){
     );
 
 
-  if(wind >= 6){
+  if(
+    wind >= 6
+  ){
+
     confidence -= 6;
+
   }
 
 
-  if(wave >= 5){
+  if(
+    wave >= 5
+  ){
+
     confidence -= 4;
+
   }
 
 
@@ -885,15 +1063,19 @@ function evaluateRace(race){
 
 
   return {
+
     grade,
     confidence,
     boats,
     wind,
     wave
+
   };
+
 }
 
 
+/* 重複買い目防止 */
 function uniquePush(
   arr,
   value
@@ -903,11 +1085,15 @@ function uniquePush(
     value &&
     !arr.includes(value)
   ){
+
     arr.push(value);
+
   }
+
 }
 
 
+/* 買い目 */
 function makeTickets(boats){
 
   const a =
@@ -928,45 +1114,102 @@ function makeTickets(boats){
   const hole = [];
 
 
-  uniquePush(main,`${a}-${b}-${c}`);
-  uniquePush(main,`${a}-${c}-${b}`);
-  uniquePush(main,`${a}-${b}-${d}`);
+  uniquePush(
+    main,
+    `${a}-${b}-${c}`
+  );
 
-  uniquePush(cover,`${a}-${c}-${d}`);
-  uniquePush(cover,`${a}-${d}-${b}`);
-  uniquePush(cover,`${b}-${a}-${c}`);
-  uniquePush(cover,`${b}-${c}-${a}`);
+  uniquePush(
+    main,
+    `${a}-${c}-${b}`
+  );
 
-  uniquePush(hole,`${c}-${a}-${b}`);
-  uniquePush(hole,`${b}-${d}-${a}`);
-  uniquePush(hole,`${d}-${a}-${c}`);
+  uniquePush(
+    main,
+    `${a}-${b}-${d}`
+  );
+
+
+  uniquePush(
+    cover,
+    `${a}-${c}-${d}`
+  );
+
+  uniquePush(
+    cover,
+    `${a}-${d}-${b}`
+  );
+
+  uniquePush(
+    cover,
+    `${b}-${a}-${c}`
+  );
+
+  uniquePush(
+    cover,
+    `${b}-${c}-${a}`
+  );
+
+
+  uniquePush(
+    hole,
+    `${c}-${a}-${b}`
+  );
+
+  uniquePush(
+    hole,
+    `${b}-${d}-${a}`
+  );
+
+  uniquePush(
+    hole,
+    `${d}-${a}-${c}`
+  );
 
 
   return {
 
     main:
-      main.slice(0,3),
+      main.slice(
+        0,
+        3
+      ),
 
     cover:
-      cover.slice(0,4),
+      cover.slice(
+        0,
+        4
+      ),
 
     hole:
-      hole.slice(0,3)
+      hole.slice(
+        0,
+        3
+      )
 
   };
+
 }
 
 
-function allTickets(tickets){
+function allTickets(
+  tickets
+){
 
   return [
+
     ...tickets.main,
+
     ...tickets.cover,
+
     ...tickets.hole
+
   ];
+
 }
 
 
+/* 買い目HTML */
 function ticketsHTML(
   title,
   cls,
@@ -991,7 +1234,9 @@ function ticketsHTML(
             </div>
 
             <div class="money">
+
               ${amount.toLocaleString()}円
+
             </div>
 
           </div>
@@ -1001,9 +1246,11 @@ function ticketsHTML(
     }
 
   `;
+
 }
 
 
+/* 払戻取得 */
 function getPayout(race){
 
   const arr =
@@ -1016,14 +1263,18 @@ function getPayout(race){
     !Array.isArray(arr) ||
     arr.length === 0
   ){
+
     return null;
+
   }
 
 
   return arr[0];
+
 }
 
 
+/* レース保存キー */
 function raceKey(
   date,
   stadium,
@@ -1033,9 +1284,11 @@ function raceKey(
   return (
     `${date}_${stadium}_${raceNo}`
   );
+
 }
 
 
+/* 保存データ読込 */
 function loadRecords(){
 
   try{
@@ -1053,19 +1306,24 @@ function loadRecords(){
   catch(e){
 
     return {};
+
   }
+
 }
 
 
+/* 保存 */
 function saveRecords(records){
 
   localStorage.setItem(
     STORAGE_KEY,
     JSON.stringify(records)
   );
+
 }
 
 
+/* S予想保存 */
 function savePrediction(
   date,
   stadium,
@@ -1085,8 +1343,12 @@ function savePrediction(
     );
 
 
-  if(records[key]){
+  if(
+    records[key]
+  ){
+
     return records[key];
+
   }
 
 
@@ -1150,9 +1412,11 @@ function savePrediction(
 
 
   return records[key];
+
 }
 
 
+/* 結果更新 */
 function updateResult(
   date,
   stadium,
@@ -1176,7 +1440,9 @@ function updateResult(
 
 
   if(!record){
+
     return;
+
   }
 
 
@@ -1185,14 +1451,19 @@ function updateResult(
 
 
   if(!payout){
+
     return;
+
   }
 
 
   const combination =
     String(
       payout.combination || ""
-    ).replace(/\s/g,"");
+    ).replace(
+      /\s/g,
+      ""
+    );
 
 
   const amount =
@@ -1244,27 +1515,36 @@ function updateResult(
     record;
 
 
-  saveRecords(records);
+  saveRecords(
+    records
+  );
+
 }
 
 
+/* 結果があるか */
 function raceHasResult(race){
 
   return (
     getPayout(race) !== null
   );
+
 }
 
 
+/* 的中表示 */
 function resultHTML(record){
 
   if(!record){
 
     return `
+
       <div class="result-box wait">
         ⏳ 結果待ち
       </div>
+
     `;
+
   }
 
 
@@ -1291,6 +1571,7 @@ function resultHTML(record){
       </div>
 
     `;
+
   }
 
 
@@ -1310,6 +1591,7 @@ function resultHTML(record){
       </div>
 
     `;
+
   }
 
 
@@ -1320,13 +1602,21 @@ function resultHTML(record){
     </div>
 
   `;
+
 }
 
 
+/*
+レースカード
+
+★ race を追加し、
+会場名の右隣に時刻を表示
+*/
 function raceCardHTML(
   date,
   stadium,
   raceNo,
+  race,
   evaluation,
   tickets,
   record
@@ -1341,7 +1631,14 @@ function raceCardHTML(
 
 
   const top3 =
-    evaluation.boats.slice(0,3);
+    evaluation.boats.slice(
+      0,
+      3
+    );
+
+
+  const raceTime =
+    getRaceTime(race);
 
 
   return `
@@ -1352,15 +1649,25 @@ function raceCardHTML(
 
         <div>
 
-          <div class="place">
-            ${STADIUMS[stadium] || stadium}
+          <div class="place-row">
+
+            <div class="place">
+              ${STADIUMS[stadium] || stadium}
+            </div>
+
+            <div class="race-time">
+              ${raceTime}
+            </div>
+
           </div>
+
 
           <div class="race-number">
             ${raceNo}R
           </div>
 
         </div>
+
 
         <div class="s-badge">
           S
@@ -1383,6 +1690,7 @@ function raceCardHTML(
 
         </div>
 
+
         <div class="rank">
 
           ${
@@ -1392,14 +1700,19 @@ function raceCardHTML(
                 <div class="rank-box">
 
                   <div class="rank-label">
+
                     ${
                       index === 0
-                      ? "◎ 1位"
-                      : index === 1
-                      ? "○ 2位"
-                      : "▲ 3位"
+                        ? "◎ 1位"
+
+                        : index === 1
+                          ? "○ 2位"
+
+                          : "▲ 3位"
                     }
+
                   </div>
+
 
                   <div class="rank-boat">
                     ${x.boat}号艇
@@ -1479,9 +1792,11 @@ function raceCardHTML(
     </div>
 
   `;
+
 }
 
 
+/* 全レース取得 */
 function getRacesFromData(data){
 
   const stadiums =
@@ -1495,6 +1810,7 @@ function getRacesFromData(data){
   Object.keys(
     stadiums
   ).forEach(
+
     stadiumKey => {
 
       const stadiumData =
@@ -1507,6 +1823,7 @@ function getRacesFromData(data){
       Object.keys(
         races
       ).forEach(
+
         raceKey => {
 
           const race =
@@ -1533,16 +1850,20 @@ function getRacesFromData(data){
           });
 
         }
+
       );
 
     }
+
   );
 
 
   return result;
+
 }
 
 
+/* 本日のSレース */
 async function loadToday(){
 
   const status =
@@ -1592,11 +1913,14 @@ async function loadToday(){
       );
 
 
-    if(!response.ok){
+    if(
+      !response.ok
+    ){
 
       throw new Error(
         `HTTP ${response.status}`
       );
+
     }
 
 
@@ -1605,7 +1929,9 @@ async function loadToday(){
 
 
     const raceList =
-      getRacesFromData(data);
+      getRacesFromData(
+        data
+      );
 
 
     if(
@@ -1617,7 +1943,7 @@ async function loadToday(){
         <div class="no-race">
 
           本日のレースデータを
-          取得できませんでした。<br>
+          取得できませんでした。<br><br>
 
           APIの更新を待ってから
           再度お試しください。
@@ -1626,16 +1952,23 @@ async function loadToday(){
 
       `;
 
+
       status.innerHTML =
         "レースデータなし";
+
 
       renderStats();
 
       return;
+
     }
 
 
+    /*
+    まず結果更新
+    */
     raceList.forEach(
+
       item => {
 
         updateResult(
@@ -1646,6 +1979,7 @@ async function loadToday(){
         );
 
       }
+
     );
 
 
@@ -1653,6 +1987,7 @@ async function loadToday(){
 
 
     raceList.forEach(
+
       item => {
 
         const evaluation =
@@ -1661,11 +1996,16 @@ async function loadToday(){
           );
 
 
+        /*
+        S以外は表示しない
+        */
         if(
           !evaluation ||
           evaluation.grade !== "S"
         ){
+
           return;
+
         }
 
 
@@ -1691,11 +2031,19 @@ async function loadToday(){
           records[key];
 
 
+        /*
+        終了後に初めて発見したレースは
+        新規記録しない
+        */
         if(
           !record &&
-          raceHasResult(item.race)
+          raceHasResult(
+            item.race
+          )
         ){
+
           return;
+
         }
 
 
@@ -1709,6 +2057,7 @@ async function loadToday(){
               tickets,
               budget
             );
+
         }
 
 
@@ -1737,23 +2086,32 @@ async function loadToday(){
           raceNo:
             item.raceNo,
 
+          race:
+            item.race,
+
+          raceTime:
+            getRaceTime(
+              item.race
+            ),
+
           evaluation:
             evaluation,
 
-          tickets:
-            {
-              main:
-                record.main ||
-                tickets.main,
+          tickets:{
 
-              cover:
-                record.cover ||
-                tickets.cover,
+            main:
+              record.main ||
+              tickets.main,
 
-              hole:
-                record.hole ||
-                tickets.hole
-            },
+            cover:
+              record.cover ||
+              tickets.cover,
+
+            hole:
+              record.hole ||
+              tickets.hole
+
+          },
 
           record:
             record
@@ -1761,13 +2119,45 @@ async function loadToday(){
         });
 
       }
+
     );
 
 
+    /*
+    ★ 時刻が早い順に表示
+    同時刻ならAI勝負度順
+    */
     sRaces.sort(
-      (a,b) =>
-        b.evaluation.confidence -
-        a.evaluation.confidence
+
+      (a,b) => {
+
+        const timeA =
+          a.raceTime || "99:99";
+
+        const timeB =
+          b.raceTime || "99:99";
+
+
+        if(
+          timeA !== timeB
+        ){
+
+          return (
+            timeA.localeCompare(
+              timeB
+            )
+          );
+
+        }
+
+
+        return (
+          b.evaluation.confidence -
+          a.evaluation.confidence
+        );
+
+      }
+
     );
 
 
@@ -1784,7 +2174,7 @@ async function loadToday(){
 
           展示情報6艇分が揃い、
           S条件を満たしたレースだけ
-          ここに表示されます。<br>
+          ここに表示されます。<br><br>
 
           「最新データに更新」を
           押して再確認してください。
@@ -1805,16 +2195,29 @@ async function loadToday(){
     else{
 
       results.innerHTML =
+
         sRaces.map(
+
           x =>
+
             raceCardHTML(
+
               date,
+
               x.stadium,
+
               x.raceNo,
+
+              x.race,
+
               x.evaluation,
+
               x.tickets,
+
               x.record
+
             )
+
         ).join("");
 
 
@@ -1866,13 +2269,18 @@ async function loadToday(){
 }
 
 
+/* 統計期間 */
 function recordInPeriod(
   record,
   period
 ){
 
-  if(period === "all"){
+  if(
+    period === "all"
+  ){
+
     return true;
+
   }
 
 
@@ -1880,38 +2288,69 @@ function recordInPeriod(
     todayJST();
 
 
-  if(period === "day"){
+  if(
+    period === "day"
+  ){
 
     return (
       record.date === today
     );
+
   }
 
 
-  if(period === "month"){
+  if(
+    period === "month"
+  ){
 
     return (
-      record.date.substring(0,7)
+
+      record.date.substring(
+        0,
+        7
+      )
+
       ===
-      today.substring(0,7)
+
+      today.substring(
+        0,
+        7
+      )
+
     );
+
   }
 
 
-  if(period === "year"){
+  if(
+    period === "year"
+  ){
 
     return (
-      record.date.substring(0,4)
+
+      record.date.substring(
+        0,
+        4
+      )
+
       ===
-      today.substring(0,4)
+
+      today.substring(
+        0,
+        4
+      )
+
     );
+
   }
 
 
   return true;
+
 }
 
 
+/* 統計表示 */
 function renderStats(){
 
   const area =
@@ -1921,7 +2360,9 @@ function renderStats(){
 
 
   if(!area){
+
     return;
+
   }
 
 
@@ -1935,54 +2376,67 @@ function renderStats(){
     Object.values(
       loadRecords()
     ).filter(
+
       r =>
         recordInPeriod(
           r,
           period
         )
+
     );
 
 
   const finished =
     records.filter(
+
       r =>
         r.result === "hit" ||
         r.result === "miss"
+
     );
 
 
   const hits =
     finished.filter(
+
       r =>
         r.result === "hit"
+
     );
 
 
   const totalBet =
     finished.reduce(
+
       (sum,r) =>
         sum +
         n(
           r.totalBet,
           0
         ),
+
       0
+
     );
 
 
   const totalReturn =
     finished.reduce(
+
       (sum,r) =>
         sum +
         n(
           r.returnAmount,
           0
         ),
+
       0
+
     );
 
 
   const hitRate =
+
     finished.length > 0
 
       ? (
@@ -1995,6 +2449,7 @@ function renderStats(){
 
 
   const recovery =
+
     totalBet > 0
 
       ? (
@@ -2014,6 +2469,7 @@ function renderStats(){
   let html = `
 
     <div class="stats-grid">
+
 
       <div class="stat">
 
@@ -2101,14 +2557,14 @@ function renderStats(){
 
         <div class="stat-value ${
           profit >= 0
-          ? "green"
-          : ""
+            ? "green"
+            : ""
         }">
 
           ${
             profit >= 0
-            ? "+"
-            : ""
+              ? "+"
+              : ""
           }
 
           ${profit.toLocaleString()}円
@@ -2125,29 +2581,38 @@ function renderStats(){
         </div>
 
         <div class="stat-value">
+
           ${
             records.filter(
               r =>
                 r.result === "wait"
             ).length
           }
+
         </div>
 
       </div>
+
 
     </div>
 
   `;
 
 
+  /*
+  会場別統計
+  */
   const byStadium = {};
 
 
   finished.forEach(
+
     r => {
 
       const stadium =
-        Number(r.stadium);
+        Number(
+          r.stadium
+        );
 
 
       if(
@@ -2162,6 +2627,7 @@ function renderStats(){
           returns:0
 
         };
+
       }
 
 
@@ -2171,10 +2637,13 @@ function renderStats(){
 
       s.races += 1;
 
+
       if(
         r.result === "hit"
       ){
+
         s.hits += 1;
+
       }
 
 
@@ -2192,6 +2661,7 @@ function renderStats(){
         );
 
     }
+
   );
 
 
@@ -2199,9 +2669,11 @@ function renderStats(){
     Object.keys(
       byStadium
     ).sort(
+
       (a,b) =>
         Number(a) -
         Number(b)
+
     );
 
 
@@ -2216,8 +2688,10 @@ function renderStats(){
       </div>
 
 
-      <div class="stadium-row"
-           style="color:#7890aa">
+      <div
+        class="stadium-row"
+        style="color:#7890aa"
+      >
 
         <div>
           会場
@@ -2237,6 +2711,7 @@ function renderStats(){
 
 
     stadiumKeys.forEach(
+
       key => {
 
         const s =
@@ -2244,6 +2719,7 @@ function renderStats(){
 
 
         const h =
+
           s.races > 0
 
             ? (
@@ -2256,6 +2732,7 @@ function renderStats(){
 
 
         const r =
+
           s.bet > 0
 
             ? (
@@ -2281,9 +2758,11 @@ function renderStats(){
 
             </div>
 
+
             <div>
               ${h.toFixed(1)}%
             </div>
+
 
             <div>
               ${r.toFixed(1)}%
@@ -2294,7 +2773,9 @@ function renderStats(){
         `;
 
       }
+
     );
+
   }
 
 
@@ -2304,8 +2785,10 @@ function renderStats(){
 
     html += `
 
-      <div class="small"
-           style="margin-top:15px">
+      <div
+        class="small"
+        style="margin-top:15px"
+      >
 
         まだこの期間の
         Sレース記録はありません。
@@ -2313,21 +2796,27 @@ function renderStats(){
       </div>
 
     `;
+
   }
 
 
   area.innerHTML =
     html;
+
 }
 
 
+/* 起動時 */
 document.addEventListener(
+
   "DOMContentLoaded",
+
   () => {
 
     renderStats();
 
   }
+
 );
 
 </script>
