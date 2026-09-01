@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="theme-color" content="#08111f">
+
 <title>BOAT RACE AI予想</title>
 
 <style>
@@ -13,29 +14,29 @@ body{
   margin:0;
   background:#08111f;
   color:#fff;
-  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Hiragino Kaku Gothic ProN","Yu Gothic",sans-serif
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Hiragino Kaku Gothic ProN","Yu Gothic",sans-serif;
 }
 
 .container{
   max-width:760px;
   margin:auto;
-  padding:20px 14px 70px
+  padding:20px 14px 70px;
 }
 
 .header{
   text-align:center;
-  padding:16px 0 20px
+  padding:16px 0 20px;
 }
 
 .header h1{
   margin:0;
-  font-size:28px
+  font-size:28px;
 }
 
 .sub{
   color:#91a7bf;
   font-size:13px;
-  margin-top:8px
+  margin-top:8px;
 }
 
 .card,.race-card{
@@ -43,26 +44,26 @@ body{
   border:1px solid #2c405b;
   border-radius:20px;
   padding:18px;
-  margin-bottom:16px
+  margin-bottom:16px;
 }
 
 .race-card{
   border:2px solid #1dd1ff;
-  box-shadow:0 0 18px rgba(29,209,255,.10)
+  box-shadow:0 0 18px rgba(29,209,255,.10);
 }
 
 .title{
   color:#49cfff;
   font-size:21px;
   font-weight:900;
-  margin-bottom:16px
+  margin-bottom:16px;
 }
 
 label{
   display:block;
   color:#b8c5d6;
   margin-bottom:7px;
-  font-size:14px
+  font-size:14px;
 }
 
 select,
@@ -74,7 +75,7 @@ input[type="date"]{
   background:#081524;
   color:#fff;
   font-size:17px;
-  padding:0 12px
+  padding:0 12px;
 }
 
 button{
@@ -87,31 +88,31 @@ button{
   font-size:18px;
   font-weight:900;
   margin-top:12px;
-  padding:12px
+  padding:12px;
 }
 
 button:active{
-  transform:scale(.98)
+  transform:scale(.98);
 }
 
 .refresh{
-  background:#263b55
+  background:#263b55;
 }
 
-.status,.info{
+.status{
   background:#091725;
   border-radius:14px;
   padding:13px;
   color:#b9c9da;
   font-size:14px;
-  line-height:1.6
+  line-height:1.6;
 }
 
 .small{
   font-size:12px;
   color:#7890aa;
   margin-top:10px;
-  line-height:1.5
+  line-height:1.5;
 }
 
 .race-head{
@@ -119,18 +120,18 @@ button:active{
   justify-content:space-between;
   gap:10px;
   align-items:center;
-  margin-bottom:14px
+  margin-bottom:14px;
 }
 
 .place{
   font-size:22px;
-  font-weight:900
+  font-weight:900;
 }
 
 .race-number{
   color:#9db2c8;
   margin-top:3px;
-  font-size:14px
+  font-size:14px;
 }
 
 .s-badge{
@@ -139,56 +140,56 @@ button:active{
   font-size:22px;
   font-weight:900;
   border-radius:13px;
-  padding:8px 13px
+  padding:8px 13px;
 }
 
 .score{
   background:#081725;
   border-radius:14px;
   padding:12px;
-  margin-bottom:14px
+  margin-bottom:14px;
 }
 
 .score-main{
   display:flex;
   justify-content:space-between;
-  font-weight:800
+  font-weight:800;
 }
 
 .score-value{
-  color:#53dcff
+  color:#53dcff;
 }
 
 .rank{
   display:grid;
   grid-template-columns:repeat(3,1fr);
   gap:8px;
-  margin-top:12px
+  margin-top:12px;
 }
 
 .rank-box{
   text-align:center;
   background:#081725;
   border-radius:12px;
-  padding:10px 5px
+  padding:10px 5px;
 }
 
 .rank-label{
   color:#849bb4;
-  font-size:11px
+  font-size:11px;
 }
 
 .rank-boat{
   font-size:22px;
   font-weight:900;
-  margin-top:4px
+  margin-top:4px;
 }
 
 .bet-title{
   margin-top:16px;
   margin-bottom:8px;
   font-size:17px;
-  font-weight:900
+  font-weight:900;
 }
 
 .main-title{color:#55d8ff}
@@ -203,18 +204,18 @@ button:active{
   border:1px solid #294158;
   padding:11px 12px;
   border-radius:12px;
-  margin-bottom:7px
+  margin-bottom:7px;
 }
 
 .combo{
   font-size:20px;
   font-weight:900;
-  letter-spacing:2px
+  letter-spacing:2px;
 }
 
 .money{
   color:#72dcff;
-  font-weight:800
+  font-weight:800;
 }
 
 .total{
@@ -223,7 +224,7 @@ button:active{
   padding-top:13px;
   display:flex;
   justify-content:space-between;
-  font-weight:900
+  font-weight:900;
 }
 
 .no-race{
@@ -232,30 +233,30 @@ button:active{
   background:#101e31;
   border-radius:18px;
   color:#b4c3d3;
-  line-height:1.8
+  line-height:1.8;
 }
 
 .stats-grid{
   display:grid;
   grid-template-columns:repeat(2,1fr);
-  gap:10px
+  gap:10px;
 }
 
 .stat{
   background:#081725;
   border-radius:14px;
-  padding:12px
+  padding:12px;
 }
 
 .stat-label{
   font-size:11px;
-  color:#849bb4
+  color:#849bb4;
 }
 
 .stat-value{
   font-size:20px;
   font-weight:900;
-  margin-top:4px
+  margin-top:4px;
 }
 
 .positive{color:#58e3a5}
@@ -267,29 +268,29 @@ button:active{
   gap:6px;
   padding:9px 0;
   border-bottom:1px solid #263b55;
-  font-size:12px
+  font-size:12px;
 }
 
 .venue-row strong{
-  font-size:13px
+  font-size:13px;
 }
 
 .period-tabs{
   display:grid;
   grid-template-columns:repeat(3,1fr);
   gap:8px;
-  margin-bottom:12px
+  margin-bottom:12px;
 }
 
 .period-tabs button{
   margin:0;
   min-height:46px;
   font-size:14px;
-  background:#263b55
+  background:#263b55;
 }
 
 .period-tabs button.active{
-  background:linear-gradient(135deg,#18cbea,#1478ff)
+  background:linear-gradient(135deg,#18cbea,#1478ff);
 }
 
 .range-box{
@@ -298,35 +299,35 @@ button:active{
   border:1px solid #294158;
   border-radius:16px;
   padding:14px;
-  margin-bottom:14px
+  margin-bottom:14px;
 }
 
 .range-box.show{
-  display:block
+  display:block;
 }
 
 .range-grid{
   display:grid;
   grid-template-columns:1fr 1fr;
-  gap:10px
+  gap:10px;
 }
 
 .range-title{
   font-weight:900;
   margin-bottom:12px;
-  color:#55d8ff
+  color:#55d8ff;
 }
 
 .range-label{
   font-size:12px;
   color:#91a7bf;
-  margin-bottom:6px
+  margin-bottom:6px;
 }
 
 .range-btn{
   min-height:48px;
   font-size:15px;
-  margin-top:12px
+  margin-top:12px;
 }
 
 .period-caption{
@@ -343,22 +344,12 @@ button:active{
   margin-top:10px;
   padding:7px 10px;
   border-radius:10px;
-  font-weight:900
-}
-
-.hit{
-  background:#123d2e;
-  color:#63efb1
-}
-
-.miss{
-  background:#49222a;
-  color:#ff9aa5
+  font-weight:900;
 }
 
 .pending{
   background:#22344a;
-  color:#b8cbea
+  color:#b8cbea;
 }
 
 .result-panel{
@@ -368,59 +359,55 @@ button:active{
   border-radius:16px;
   padding:16px;
   font-size:16px;
-  line-height:1.8
+  line-height:1.8;
 }
 
 .result-panel.hit-panel{
   border-color:#58e3a5;
-  color:#63efb1
+  color:#63efb1;
 }
 
 .result-panel.miss-panel{
   border-color:#ff818c;
-  color:#ff9aa5
+  color:#ff9aa5;
 }
 
 .result-head{
   font-size:20px;
   font-weight:900;
-  margin-bottom:4px
+  margin-bottom:4px;
 }
 
 .result-line{
   font-size:17px;
-  font-weight:800
+  font-weight:800;
 }
 
 .footer{
   text-align:center;
   color:#607891;
   font-size:11px;
-  margin-top:30px
+  margin-top:30px;
 }
 
 @media(max-width:480px){
 
   .container{
     padding-left:12px;
-    padding-right:12px
+    padding-right:12px;
   }
 
   .place{
-    font-size:20px
-  }
-
-  .stats-grid{
-    grid-template-columns:1fr 1fr
+    font-size:20px;
   }
 
   .range-grid{
-    grid-template-columns:1fr
+    grid-template-columns:1fr;
   }
 
   .period-tabs button{
     font-size:13px;
-    padding:8px 4px
+    padding:8px 4px;
   }
 }
 </style>
@@ -468,12 +455,12 @@ button:active{
     <div style="height:14px"></div>
 
     <div class="status" id="status">
-      直前情報（展示タイム・展示ST）が6艇分揃ったレースのみ判定します。
+      最新データを確認しています。
     </div>
 
     <div class="small">
-      本線3点・押さえ4点・穴3点＝合計10点。10点すべて同額です。
-      結果取得後は的中／不的中と回収率を自動記録します。
+      本線3点・押さえ4点・穴3点＝合計10点。
+      10点すべて同額です。
     </div>
 
   </div>
@@ -490,22 +477,34 @@ button:active{
 
     <div class="period-tabs">
 
-      <button id="tab-day" onclick="setPeriod('day')">
+      <button
+        id="tab-day"
+        onclick="setPeriod('day')"
+      >
         今日
       </button>
 
-      <button id="tab-range" onclick="setPeriod('range')">
+      <button
+        id="tab-range"
+        onclick="setPeriod('range')"
+      >
         期間指定
       </button>
 
-      <button id="tab-all" onclick="setPeriod('all')">
+      <button
+        id="tab-all"
+        onclick="setPeriod('all')"
+      >
         全期間
       </button>
 
     </div>
 
 
-    <div id="rangeBox" class="range-box">
+    <div
+      id="rangeBox"
+      class="range-box"
+    >
 
       <div class="range-title">
         📅 集計期間を指定
@@ -514,6 +513,7 @@ button:active{
       <div class="range-grid">
 
         <div>
+
           <div class="range-label">
             開始日
           </div>
@@ -522,10 +522,12 @@ button:active{
             type="date"
             id="startDate"
           >
+
         </div>
 
 
         <div>
+
           <div class="range-label">
             終了日
           </div>
@@ -534,9 +536,11 @@ button:active{
             type="date"
             id="endDate"
           >
+
         </div>
 
       </div>
+
 
       <button
         class="range-btn"
@@ -559,9 +563,11 @@ button:active{
 
     <div style="height:16px"></div>
 
+
     <div style="font-weight:900;margin-bottom:8px">
       会場別成績
     </div>
+
 
     <div id="venueStats"></div>
 
@@ -576,6 +582,10 @@ button:active{
 
 
 <script>
+
+/* =====================================
+   会場
+===================================== */
 
 const STADIUMS={
   1:"桐生",
@@ -605,14 +615,59 @@ const STADIUMS={
 };
 
 
-const STORE_KEY="boat_ai_s_records_v2";
+/* =====================================
+   保存キー
+===================================== */
 
+const STORE_KEY=
+  "boat_ai_s_records_v2";
+
+
+/*
+  今回だけ使用するリセットキー。
+
+  最初の1回だけ
+  過去の成績を削除します。
+
+  2回目以降は削除しません。
+*/
+
+const RESET_KEY=
+  "boat_ai_stats_reset_20260902";
+
+
+if(
+  !localStorage.getItem(
+    RESET_KEY
+  )
+){
+
+  localStorage.removeItem(
+    STORE_KEY
+  );
+
+  localStorage.setItem(
+    RESET_KEY,
+    "done"
+  );
+
+}
+
+
+/* =====================================
+   統計設定
+===================================== */
 
 let currentPeriod="day";
 
 let selectedStartDate="";
+
 let selectedEndDate="";
 
+
+/* =====================================
+   基本関数
+===================================== */
 
 function n(v,f=0){
 
@@ -659,7 +714,9 @@ function loadRecords(){
   try{
 
     return JSON.parse(
-      localStorage.getItem(STORE_KEY)||'[]'
+      localStorage.getItem(
+        STORE_KEY
+      )||'[]'
     );
 
   }catch{
@@ -692,24 +749,36 @@ function allTickets(t){
 }
 
 
+/* =====================================
+   S判定
+===================================== */
+
 function hasCompletePreview(race){
 
-  const p=race?.preview?.racers;
+  const p=
+    race?.preview?.racers;
 
   if(!p){
     return false;
   }
 
-  for(let i=1;i<=6;i++){
+  for(
+    let i=1;
+    i<=6;
+    i++
+  ){
 
-    const x=p[String(i)];
+    const x=
+      p[String(i)];
 
     if(
       !x ||
       x.exhibition_time==null ||
       x.start_timing==null
     ){
+
       return false;
+
     }
 
   }
@@ -719,10 +788,17 @@ function hasCompletePreview(race){
 }
 
 
-function boatScore(racer,preview,boat){
+function boatScore(
+  racer,
+  preview,
+  boat
+){
 
   const national=
-    n(racer?.national_win_rate,5);
+    n(
+      racer?.national_win_rate,
+      5
+    );
 
   const local=
     n(
@@ -766,35 +842,46 @@ function boatScore(racer,preview,boat){
       2
     );
 
+
   let s=0;
 
+
   s+=national*5;
+
   s+=local*2.7;
+
   s+=motor*.30;
+
   s+=boatRate*.12;
+
 
   s+=Math.max(
     0,
     (.22-avgST)*70
   );
 
+
   s+=Math.max(
     0,
     (6.95-ex)*35
   );
+
 
   s+=Math.max(
     0,
     (.20-exST)*45
   );
 
+
   if(rank===1){
     s+=5;
   }
 
+
   if(rank===2){
     s+=3;
   }
+
 
   s+=({
     1:12,
@@ -805,6 +892,7 @@ function boatScore(racer,preview,boat){
     6:-2
   }[boat]||0);
 
+
   return s;
 
 }
@@ -812,58 +900,95 @@ function boatScore(racer,preview,boat){
 
 function evaluateRace(race){
 
-  if(!hasCompletePreview(race)){
+  if(
+    !hasCompletePreview(race)
+  ){
+
     return null;
+
   }
+
 
   const racers=
     race?.racers||{};
 
+
   const previews=
     race.preview.racers;
 
+
   const boats=[];
 
-  for(let i=1;i<=6;i++){
+
+  for(
+    let i=1;
+    i<=6;
+    i++
+  ){
 
     const racer=
       racers[String(i)];
 
+
     if(!racer){
+
       return null;
+
     }
 
+
     boats.push({
+
       boat:i,
-      score:boatScore(
-        racer,
-        previews[String(i)],
-        i
-      )
+
+      score:
+        boatScore(
+          racer,
+          previews[String(i)],
+          i
+        )
+
     });
 
   }
 
+
   boats.sort(
-    (a,b)=>b.score-a.score
+    (a,b)=>
+      b.score-a.score
   );
+
 
   const gap1=
     boats[0].score-
     boats[1].score;
 
+
   const gap2=
     boats[1].score-
     boats[2].score;
 
+
   let confidence=
     60+
-    Math.min(18,gap1*2.2)+
-    Math.min(8,gap2);
+    Math.min(
+      18,
+      gap1*2.2
+    )+
+    Math.min(
+      8,
+      gap2
+    );
 
-  if(boats[0].boat===1){
+
+  if(
+    boats[0].boat===1
+  ){
+
     confidence+=7;
+
   }
+
 
   const wind=
     n(
@@ -871,19 +996,27 @@ function evaluateRace(race){
       0
     );
 
+
   const wave=
     n(
       race?.preview?.wave_height,
       0
     );
 
+
   if(wind>=6){
+
     confidence-=6;
+
   }
 
+
   if(wave>=5){
+
     confidence-=4;
+
   }
+
 
   confidence=
     Math.max(
@@ -894,6 +1027,7 @@ function evaluateRace(race){
       )
     );
 
+
   const grade=
     (
       confidence>=78 &&
@@ -902,16 +1036,23 @@ function evaluateRace(race){
     ?'S'
     :(confidence>=68?'A':'B');
 
+
   return{
+
     grade,
+
     confidence,
-    boats,
-    wind,
-    wave
+
+    boats
+
   };
 
 }
 
+
+/* =====================================
+   買い目
+===================================== */
 
 function uniquePush(a,v){
 
@@ -919,7 +1060,9 @@ function uniquePush(a,v){
     v &&
     !a.includes(v)
   ){
+
     a.push(v);
+
   }
 
 }
@@ -927,14 +1070,25 @@ function uniquePush(a,v){
 
 function makeTickets(boats){
 
-  const [a,b,c,d]=
+  const [
+    a,
+    b,
+    c,
+    d
+  ]=
     boats
     .slice(0,4)
-    .map(x=>x.boat);
+    .map(
+      x=>x.boat
+    );
+
 
   const main=[];
+
   const cover=[];
+
   const hole=[];
+
 
   uniquePush(
     main,
@@ -988,10 +1142,15 @@ function makeTickets(boats){
     `${d}-${a}-${c}`
   );
 
+
   return{
+
     main,
+
     cover,
+
     hole
+
   };
 
 }
@@ -1005,6 +1164,7 @@ function ticketsHTML(
 ){
 
   return `
+
     <div class="bet-title ${cls}">
       ${title}
     </div>
@@ -1012,6 +1172,7 @@ function ticketsHTML(
     ${
       tickets.map(
         t=>`
+
           <div class="ticket">
 
             <div class="combo">
@@ -1023,13 +1184,19 @@ function ticketsHTML(
             </div>
 
           </div>
+
         `
       ).join('')
     }
+
   `;
 
 }
 
+
+/* =====================================
+   予想保存
+===================================== */
 
 function raceKey(
   date,
@@ -1055,11 +1222,14 @@ function upsertPrediction(
   let recs=
     loadRecords();
 
+
   const sNo=
     Number(stadium);
 
+
   const rNo=
     Number(raceNo);
+
 
   const key=
     raceKey(
@@ -1067,6 +1237,7 @@ function upsertPrediction(
       sNo,
       rNo
     );
+
 
   let r=
     recs.find(
@@ -1076,11 +1247,15 @@ function upsertPrediction(
         Number(x.raceNo)===rNo
     );
 
+
   if(!r){
 
     r={
+
       key,
+
       date,
+
       stadium:sNo,
 
       venue:
@@ -1095,14 +1270,17 @@ function upsertPrediction(
         ),
 
       tickets:
-        allTickets(tickets),
+        allTickets(
+          tickets
+        ),
 
       stake,
 
       perTicket:
         stake/10,
 
-      status:'pending',
+      status:
+        'pending',
 
       payout:0,
 
@@ -1111,83 +1289,46 @@ function upsertPrediction(
       hit:false,
 
       createdAt:
-        new Date().toISOString()
+        new Date()
+        .toISOString()
+
     };
+
 
     recs.push(r);
 
-    saveRecords(recs);
 
-  }else{
-
-    let changed=false;
-
-    if(r.key!==key){
-
-      r.key=key;
-      changed=true;
-
-    }
-
-    if(!r.venue){
-
-      r.venue=
-        STADIUMS[sNo]
-        ||`会場${sNo}`;
-
-      changed=true;
-
-    }
-
-    if(
-      !Array.isArray(r.tickets) ||
-      !r.tickets.length
-    ){
-
-      r.tickets=
-        allTickets(tickets);
-
-      changed=true;
-
-    }
-
-    if(!n(r.stake,0)){
-
-      r.stake=stake;
-      changed=true;
-
-    }
-
-    if(!n(r.perTicket,0)){
-
-      r.perTicket=
-        stake/10;
-
-      changed=true;
-
-    }
-
-    if(changed){
-
-      saveRecords(recs);
-
-    }
+    saveRecords(
+      recs
+    );
 
   }
+
 
   return r;
 
 }
 
 
+/* =====================================
+   結果表示
+===================================== */
+
 function formatOdds(payout){
 
   const odds=
-    n(payout,0)/100;
+    n(
+      payout,
+      0
+    )/100;
+
 
   if(!odds){
+
     return '--';
+
   }
+
 
   return odds.toFixed(1);
 
@@ -1202,6 +1343,7 @@ function resultHTML(rec){
   ){
 
     return `
+
       <div class="result-panel">
 
         <span class="result-badge pending">
@@ -1209,6 +1351,7 @@ function resultHTML(rec){
         </span>
 
       </div>
+
     `;
 
   }
@@ -1217,6 +1360,7 @@ function resultHTML(rec){
   if(rec.hit){
 
     return `
+
       <div class="result-panel hit-panel">
 
         <div class="result-head">
@@ -1232,12 +1376,14 @@ function resultHTML(rec){
         </div>
 
       </div>
+
     `;
 
   }
 
 
   return `
+
     <div class="result-panel miss-panel">
 
       <div class="result-head">
@@ -1249,10 +1395,15 @@ function resultHTML(rec){
       </div>
 
     </div>
+
   `;
 
 }
 
+
+/* =====================================
+   レースカード
+===================================== */
 
 function renderRace(
   placeName,
@@ -1266,7 +1417,9 @@ function renderRace(
   const budget=
     Number(
       document
-      .getElementById('budget')
+      .getElementById(
+        'budget'
+      )
       .value
     );
 
@@ -1290,8 +1443,10 @@ function renderRace(
   const first=
     analysis.boats[0];
 
+
   const second=
     analysis.boats[1];
+
 
   const third=
     analysis.boats[2];
@@ -1299,7 +1454,10 @@ function renderRace(
 
   const closed=
     race.closed_at
-    ?race.closed_at.substring(11,16)
+    ?race.closed_at.substring(
+      11,
+      16
+    )
     :'--:--';
 
 
@@ -1316,6 +1474,7 @@ function renderRace(
 
 
   return `
+
     <div
       class="race-card"
       data-race-key="${rec.key}"
@@ -1450,20 +1609,28 @@ function renderRace(
       </div>
 
     </div>
+
   `;
 
 }
 
+
+/* =====================================
+   API結果取得
+===================================== */
 
 function getTrifectas(result){
 
   const arr=
     result?.payouts?.trifecta;
 
+
   return Array.isArray(arr)
+
     ?arr.filter(
       x=>x?.combination
     )
+
     :[];
 
 }
@@ -1476,11 +1643,14 @@ function findRace(
 ){
 
   const stadiums=
-    data?.programs?.stadiums||{};
+    data?.programs?.stadiums
+    ||{};
 
 
   const stadiumKey=
-    Object.keys(stadiums)
+    Object.keys(
+      stadiums
+    )
     .find(
       k=>
         Number(k)===
@@ -1488,18 +1658,25 @@ function findRace(
     );
 
 
-  if(stadiumKey==null){
+  if(
+    stadiumKey==null
+  ){
+
     return null;
+
   }
 
 
   const races=
-    stadiums[stadiumKey]
-    ?.races||{};
+    stadiums[
+      stadiumKey
+    ]?.races||{};
 
 
-  const raceKey=
-    Object.keys(races)
+  const rKey=
+    Object.keys(
+      races
+    )
     .find(
       k=>
         Number(k)===
@@ -1507,12 +1684,18 @@ function findRace(
     );
 
 
-  return raceKey==null
+  return rKey==null
+
     ?null
-    :races[raceKey];
+
+    :races[rKey];
 
 }
 
+
+/* =====================================
+   Sレース保存
+===================================== */
 
 function syncTodayPredictions(
   data,
@@ -1520,14 +1703,16 @@ function syncTodayPredictions(
 ){
 
   const stadiums=
-    data?.programs?.stadiums||{};
+    data?.programs?.stadiums
+    ||{};
 
 
   const budget=
     Number(
       document
-      .getElementById('budget')
-      ?.value
+      .getElementById(
+        'budget'
+      )?.value
       ||1000
     );
 
@@ -1545,12 +1730,11 @@ function syncTodayPredictions(
     perTicket*10;
 
 
-  let saved=0;
-
-
   for(
     const [stadium,sd]
-    of Object.entries(stadiums)
+    of Object.entries(
+      stadiums
+    )
   ){
 
     for(
@@ -1561,53 +1745,51 @@ function syncTodayPredictions(
     ){
 
       const analysis=
-        evaluateRace(race);
+        evaluateRace(
+          race
+        );
 
 
       if(
         !analysis ||
         analysis.grade!=='S'
       ){
+
         continue;
+
       }
-
-
-      const before=
-        loadRecords()
-        .some(
-          x=>
-            x.date===date &&
-            Number(x.stadium)===Number(stadium) &&
-            Number(x.raceNo)===Number(raceNo)
-        );
 
 
       upsertPrediction(
+
         date,
+
         stadium,
+
         raceNo,
+
         race,
+
         analysis,
+
         makeTickets(
           analysis.boats
         ),
+
         stake
+
       );
-
-
-      if(!before){
-        saved++;
-      }
 
     }
 
   }
 
-
-  return saved;
-
 }
 
+
+/* =====================================
+   結果確定
+===================================== */
 
 function settleFromData(
   data,
@@ -1621,13 +1803,18 @@ function settleFromData(
   let changed=false;
 
 
-  for(const r of recs){
+  for(
+    const r
+    of recs
+  ){
 
     if(
       r.date!==date ||
       r.status==='done'
     ){
+
       continue;
+
     }
 
 
@@ -1645,8 +1832,12 @@ function settleFromData(
       );
 
 
-    if(!tfs.length){
+    if(
+      !tfs.length
+    ){
+
       continue;
+
     }
 
 
@@ -1664,37 +1855,60 @@ function settleFromData(
       tfs[0];
 
 
-    r.status='done';
+    r.status=
+      'done';
 
 
     r.result=
       tfs.map(
-        tf=>tf.combination
+        tf=>
+          tf.combination
       ).join(' / ');
 
 
     r.payout=
       hitTf
-      ?n(hitTf.amount,0)
-      :n(displayTf.amount,0);
+
+      ?n(
+        hitTf.amount,
+        0
+      )
+
+      :n(
+        displayTf.amount,
+        0
+      );
 
 
     r.hit=
       !!hitTf;
 
 
+    /*
+      回収金額は画面には表示しません。
+
+      統計の回収率・収支計算のためだけに
+      内部保存します。
+    */
+
     r.returnAmount=
       hitTf
+
       ?Math.round(
         r.perTicket*
-        n(hitTf.amount,0)/
+        n(
+          hitTf.amount,
+          0
+        )/
         100
       )
+
       :0;
 
 
     r.settledAt=
-      new Date().toISOString();
+      new Date()
+      .toISOString();
 
 
     changed=true;
@@ -1704,15 +1918,18 @@ function settleFromData(
 
   if(changed){
 
-    saveRecords(recs);
+    saveRecords(
+      recs
+    );
 
   }
 
-
-  return changed;
-
 }
 
+
+/* =====================================
+   表示中の結果更新
+===================================== */
 
 function updateRenderedResults(){
 
@@ -1724,37 +1941,47 @@ function updateRenderedResults(){
   .querySelectorAll(
     '[data-race-key]'
   )
-  .forEach(card=>{
+  .forEach(
+    card=>{
 
-    const rec=
-      recs.find(
-        r=>
-          r.key===
-          card.dataset.raceKey
-      );
-
-
-    const box=
-      card.querySelector(
-        '.js-result'
-      );
+      const rec=
+        recs.find(
+          r=>
+            r.key===
+            card.dataset.raceKey
+        );
 
 
-    if(
-      !rec ||
-      !box
-    ){
-      return;
+      const box=
+        card.querySelector(
+          '.js-result'
+        );
+
+
+      if(
+        !rec ||
+        !box
+      ){
+
+        return;
+
+      }
+
+
+      box.innerHTML=
+        resultHTML(
+          rec
+        );
+
     }
-
-
-    box.innerHTML=
-      resultHTML(rec);
-
-  });
+  );
 
 }
 
+
+/* =====================================
+   結果・統計自動更新
+===================================== */
 
 async function refreshPendingResults(){
 
@@ -1764,16 +1991,15 @@ async function refreshPendingResults(){
 
   try{
 
-    const url=
-      `${apiUrl(date)}?t=${Date.now()}`;
-
-
     const res=
       await fetch(
-        url,
+
+        `${apiUrl(date)}?t=${Date.now()}`,
+
         {
           cache:'no-store'
         }
+
       );
 
 
@@ -1810,7 +2036,7 @@ async function refreshPendingResults(){
   }catch(e){
 
     console.warn(
-      '結果・戦績の自動更新に失敗:',
+      '結果更新失敗',
       e
     );
 
@@ -1819,26 +2045,44 @@ async function refreshPendingResults(){
 }
 
 
+/* =====================================
+   締切判定
+===================================== */
+
 function isUpcoming(race){
 
-  if(!race?.closed_at){
+  if(
+    !race?.closed_at
+  ){
+
     return true;
+
   }
 
 
   const dt=
     new Date(
       race.closed_at
-      .replace(' ','T')
+      .replace(
+        ' ',
+        'T'
+      )
       +'+09:00'
     );
 
 
-  return dt.getTime()
-    >Date.now();
+  return(
+    dt.getTime()
+    >
+    Date.now()
+  );
 
 }
 
+
+/* =====================================
+   今日のSレース表示
+===================================== */
 
 async function loadToday(){
 
@@ -1867,16 +2111,15 @@ async function loadToday(){
 
   try{
 
-    const url=
-      `${apiUrl(date)}?t=${Date.now()}`;
-
-
     const res=
       await fetch(
-        url,
+
+        `${apiUrl(date)}?t=${Date.now()}`,
+
         {
           cache:'no-store'
         }
+
       );
 
 
@@ -1906,16 +2149,20 @@ async function loadToday(){
 
 
     const stadiums=
-      data?.programs?.stadiums||{};
+      data?.programs?.stadiums
+      ||{};
 
 
     let html='';
+
     let count=0;
 
 
     for(
       const [stadium,sd]
-      of Object.entries(stadiums)
+      of Object.entries(
+        stadiums
+      )
     ){
 
       for(
@@ -1926,21 +2173,29 @@ async function loadToday(){
       ){
 
         if(
-          !isUpcoming(race)
+          !isUpcoming(
+            race
+          )
         ){
+
           continue;
+
         }
 
 
         const analysis=
-          evaluateRace(race);
+          evaluateRace(
+            race
+          );
 
 
         if(
           !analysis ||
           analysis.grade!=='S'
         ){
+
           continue;
+
         }
 
 
@@ -1948,14 +2203,20 @@ async function loadToday(){
           renderRace(
 
             STADIUMS[
-              Number(stadium)
+              Number(
+                stadium
+              )
             ]
             ||
             `会場${stadium}`,
 
-            Number(stadium),
+            Number(
+              stadium
+            ),
 
-            Number(raceNo),
+            Number(
+              raceNo
+            ),
 
             race,
 
@@ -1977,21 +2238,24 @@ async function loadToday(){
       html
       ||
       `
+
         <div class="no-race">
 
-          現在表示できる締切前のSレースはありません。
+          現在表示できる締切前の
+          Sレースはありません。
 
           <br>
 
-          終了済みのSレースは
-          「今日の戦績」に自動反映します。
+          終了済みSレースの結果は
+          成績・統計に反映されます。
 
         </div>
+
       `;
 
 
     status.textContent=
-      `${date}：締切前Sレース ${count}件。終了済みレースの戦績も確認しました。`;
+      `${date}：締切前Sレース ${count}件`;
 
 
     renderStats();
@@ -2002,14 +2266,16 @@ async function loadToday(){
 
 
     status.textContent=
-      'データ取得に失敗しました。少し時間を置いて再度お試しください。';
+      'データ取得に失敗しました。';
 
 
     results.innerHTML=
       `
+
         <div class="no-race">
           APIデータを取得できませんでした。
         </div>
+
       `;
 
 
@@ -2020,30 +2286,32 @@ async function loadToday(){
 }
 
 
-/* ===================================
-   統計期間
-=================================== */
+/* =====================================
+   統計期間切替
+===================================== */
 
 function setPeriod(p){
 
   currentPeriod=p;
 
 
-  const rangeBox=
+  const box=
     document.getElementById(
       'rangeBox'
     );
 
 
-  if(p==='range'){
+  if(
+    p==='range'
+  ){
 
-    rangeBox.classList.add(
+    box.classList.add(
       'show'
     );
 
   }else{
 
-    rangeBox.classList.remove(
+    box.classList.remove(
       'show'
     );
 
@@ -2054,6 +2322,10 @@ function setPeriod(p){
 
 }
 
+
+/* =====================================
+   期間指定
+===================================== */
 
 function applyDateRange(){
 
@@ -2083,24 +2355,33 @@ function applyDateRange(){
     );
 
     return;
+
   }
 
 
-  if(start>end){
+  if(
+    start>end
+  ){
 
     alert(
-      '開始日は終了日より前の日付を選択してください。'
+      '開始日が終了日より後になっています。'
     );
 
     return;
+
   }
 
 
-  selectedStartDate=start;
+  selectedStartDate=
+    start;
 
-  selectedEndDate=end;
 
-  currentPeriod='range';
+  selectedEndDate=
+    end;
+
+
+  currentPeriod=
+    'range';
 
 
   renderStats();
@@ -2108,27 +2389,37 @@ function applyDateRange(){
 }
 
 
+/* =====================================
+   期間一致
+===================================== */
+
 function periodMatch(date){
 
   const today=
     todayJST();
 
 
-  if(currentPeriod==='day'){
+  if(
+    currentPeriod==='day'
+  ){
 
-    return date===today;
+    return(
+      date===today
+    );
 
   }
 
 
-  if(currentPeriod==='range'){
+  if(
+    currentPeriod==='range'
+  ){
 
     if(
       !selectedStartDate ||
       !selectedEndDate
     ){
 
-      return date===today;
+      return false;
 
     }
 
@@ -2141,7 +2432,9 @@ function periodMatch(date){
   }
 
 
-  if(currentPeriod==='all'){
+  if(
+    currentPeriod==='all'
+  ){
 
     return true;
 
@@ -2152,6 +2445,10 @@ function periodMatch(date){
 
 }
 
+
+/* =====================================
+   統計計算
+===================================== */
 
 function calcStats(rows){
 
@@ -2175,7 +2472,9 @@ function calcStats(rows){
   const stake=
     done.reduce(
       (s,r)=>
-        s+n(r.stake),
+        s+n(
+          r.stake
+        ),
       0
     );
 
@@ -2183,7 +2482,9 @@ function calcStats(rows){
   const ret=
     done.reduce(
       (s,r)=>
-        s+n(r.returnAmount),
+        s+n(
+          r.returnAmount
+        ),
       0
     );
 
@@ -2216,36 +2517,56 @@ function calcStats(rows){
 }
 
 
+/* =====================================
+   期間表示
+===================================== */
+
 function getPeriodCaption(){
 
-  if(currentPeriod==='day'){
+  if(
+    currentPeriod==='day'
+  ){
 
-    return `📅 今日：${todayJST()}`;
+    return(
+      `📅 今日：${todayJST()}`
+    );
 
   }
 
 
-  if(currentPeriod==='range'){
+  if(
+    currentPeriod==='range'
+  ){
 
     if(
       selectedStartDate &&
       selectedEndDate
     ){
 
-      return `📅 ${selectedStartDate} ～ ${selectedEndDate}`;
+      return(
+        `📅 ${selectedStartDate} ～ ${selectedEndDate}`
+      );
 
     }
 
 
-    return '📅 開始日と終了日を選択してください';
+    return(
+      '📅 開始日と終了日を選択してください'
+    );
 
   }
 
 
-  return '📊 保存されている全期間の成績';
+  return(
+    '📊 保存されている全期間の成績'
+  );
 
 }
 
+
+/* =====================================
+   統計表示
+===================================== */
 
 function renderStats(){
 
@@ -2290,7 +2611,9 @@ function renderStats(){
 
 
   const s=
-    calcStats(rows);
+    calcStats(
+      rows
+    );
 
 
   const profitCls=
@@ -2307,6 +2630,7 @@ function renderStats(){
   `
 
     <div class="stats-grid">
+
 
       <div class="stat">
 
@@ -2387,14 +2711,19 @@ function renderStats(){
 
       </div>
 
+
     </div>
+
   `;
 
 
   const groups={};
 
 
-  for(const r of rows){
+  for(
+    const r
+    of rows
+  ){
 
     (
       groups[r.venue]??=[]
@@ -2404,12 +2733,16 @@ function renderStats(){
 
 
   const entries=
-    Object.entries(groups)
+    Object.entries(
+      groups
+    )
     .map(
-      ([v,a])=>
+      ([venue,data])=>
         [
-          v,
-          calcStats(a)
+          venue,
+          calcStats(
+            data
+          )
         ]
     )
     .sort(
@@ -2452,13 +2785,13 @@ function renderStats(){
 
       ${
         entries.map(
-          ([v,x])=>
+          ([venue,x])=>
           `
 
             <div class="venue-row">
 
               <strong>
-                ${v}
+                ${venue}
               </strong>
 
               <span>
@@ -2494,9 +2827,9 @@ function renderStats(){
 }
 
 
-/* ===================================
-   日付入力の初期値
-=================================== */
+/* =====================================
+   期間指定初期値
+===================================== */
 
 function setupDateRange(){
 
@@ -2504,57 +2837,41 @@ function setupDateRange(){
     todayJST();
 
 
-  const d=
-    new Date(
-      today+'T00:00:00+09:00'
-    );
-
-
-  d.setDate(
-    d.getDate()-6
-  );
-
-
-  const start=
-    new Intl.DateTimeFormat(
-      'sv-SE',
-      {
-        timeZone:'Asia/Tokyo',
-        year:'numeric',
-        month:'2-digit',
-        day:'2-digit'
-      }
-    ).format(d);
-
-
   document
   .getElementById(
     'startDate'
   )
-  .value=start;
+  .value=
+    today;
 
 
   document
   .getElementById(
     'endDate'
   )
-  .value=today;
+  .value=
+    today;
 
 
-  selectedStartDate=start;
+  selectedStartDate=
+    today;
 
-  selectedEndDate=today;
+
+  selectedEndDate=
+    today;
 
 }
 
 
-/* ===================================
-   初期起動
-=================================== */
+/* =====================================
+   起動
+===================================== */
 
 setupDateRange();
 
+
 renderStats();
+
 
 refreshPendingResults();
 
@@ -2569,7 +2886,9 @@ document.addEventListener(
   'visibilitychange',
   ()=>{
 
-    if(!document.hidden){
+    if(
+      !document.hidden
+    ){
 
       refreshPendingResults();
 
