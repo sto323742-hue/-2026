@@ -97,7 +97,7 @@ button:active{
   background:#263b55
 }
 
-.status,.info{
+.status{
   background:#091725;
   border-radius:14px;
   padding:13px;
@@ -134,7 +134,7 @@ button:active{
 
 .s-badge{
   background:#ff4059;
-  color:white;
+  color:#fff;
   font-size:22px;
   font-weight:900;
   border-radius:13px;
@@ -234,6 +234,48 @@ button:active{
   line-height:1.8
 }
 
+.result-panel{
+  margin-top:16px;
+  background:#081725;
+  border:1px solid #294158;
+  border-radius:16px;
+  padding:16px;
+  line-height:1.8
+}
+
+.result-panel.hit-panel{
+  border-color:#58e3a5;
+  color:#63efb1
+}
+
+.result-panel.miss-panel{
+  border-color:#ff818c;
+  color:#ff9aa5
+}
+
+.result-head{
+  font-size:20px;
+  font-weight:900;
+  margin-bottom:4px
+}
+
+.result-line{
+  font-size:17px;
+  font-weight:800
+}
+
+.result-badge{
+  display:inline-block;
+  padding:7px 10px;
+  border-radius:10px;
+  font-weight:900
+}
+
+.pending{
+  background:#22344a;
+  color:#b8cbea
+}
+
 .stats-grid{
   display:grid;
   grid-template-columns:repeat(2,1fr);
@@ -291,29 +333,6 @@ button:active{
   background:linear-gradient(135deg,#18cbea,#1478ff)
 }
 
-.result-badge{
-  display:inline-block;
-  margin-top:10px;
-  padding:7px 10px;
-  border-radius:10px;
-  font-weight:900
-}
-
-.hit{
-  background:#123d2e;
-  color:#63efb1
-}
-
-.miss{
-  background:#49222a;
-  color:#ff9aa5
-}
-
-.pending{
-  background:#22344a;
-  color:#b8cbea
-}
-
 .footer{
   text-align:center;
   color:#607891;
@@ -342,86 +361,91 @@ button:active{
 
 <div class="container">
 
-  <div class="header">
-    <h1>🚤 BOAT RACE AI予想</h1>
-    <div class="sub">
-      全国24場から「直前情報が揃った勝負度S」だけ自動抽出
-    </div>
+<div class="header">
+  <h1>🚤 BOAT RACE AI予想</h1>
+  <div class="sub">
+    全国24場から「直前情報が揃った勝負度S」だけ自動抽出
+  </div>
+</div>
+
+<div class="card">
+
+  <div class="title">
+    本日の勝負レース
   </div>
 
-  <div class="card">
+  <label>
+    1レース購入資金
+  </label>
 
-    <div class="title">本日の勝負レース</div>
+  <select id="budget">
+    <option value="1000" selected>1,000円</option>
+    <option value="2000">2,000円</option>
+    <option value="3000">3,000円</option>
+    <option value="5000">5,000円</option>
+    <option value="10000">10,000円</option>
+  </select>
 
-    <label>1レース購入資金</label>
+  <button onclick="loadToday()">
+    🔍 勝負度Sを自動検索
+  </button>
 
-    <select id="budget">
-      <option value="1000" selected>1,000円</option>
-      <option value="2000">2,000円</option>
-      <option value="3000">3,000円</option>
-      <option value="5000">5,000円</option>
-      <option value="10000">10,000円</option>
-    </select>
+  <button class="refresh" onclick="loadToday()">
+    ↻ 最新データに更新
+  </button>
 
-    <button onclick="loadToday()">
-      🔍 勝負度Sを自動検索
+  <div style="height:14px"></div>
+
+  <div class="status" id="status">
+    最新のレースデータを取得します。
+  </div>
+
+  <div class="small">
+    本線3点・押さえ4点・穴3点＝合計10点。
+    10点すべて同額です。
+  </div>
+
+</div>
+
+<div id="results"></div>
+
+<div class="card">
+
+  <div class="title">
+    成績・統計
+  </div>
+
+  <div class="period-tabs">
+
+    <button id="tab-day" onclick="setPeriod('day')">
+      今日
     </button>
 
-    <button class="refresh" onclick="loadToday()">
-      ↻ 最新データに更新
+    <button id="tab-month" onclick="setPeriod('month')">
+      今月
     </button>
 
-    <div style="height:14px"></div>
-
-    <div class="status" id="status">
-      直前情報（展示タイム・展示ST）が6艇分揃ったレースのみ判定します。
-    </div>
-
-    <div class="small">
-      本線3点・押さえ4点・穴3点＝合計10点。
-      10点すべて同額です。
-      結果取得後は的中／不的中と回収率を自動記録します。
-    </div>
+    <button id="tab-year" onclick="setPeriod('year')">
+      今年
+    </button>
 
   </div>
 
-  <div id="results"></div>
+  <div id="stats"></div>
 
-  <div class="card">
+  <div style="height:16px"></div>
 
-    <div class="title">成績・統計</div>
-
-    <div class="period-tabs">
-
-      <button id="tab-day" onclick="setPeriod('day')">
-        今日
-      </button>
-
-      <button id="tab-month" onclick="setPeriod('month')">
-        今月
-      </button>
-
-      <button id="tab-year" onclick="setPeriod('year')">
-        今年
-      </button>
-
-    </div>
-
-    <div id="stats"></div>
-
-    <div style="height:16px"></div>
-
-    <div style="font-weight:900;margin-bottom:8px">
-      会場別成績
-    </div>
-
-    <div id="venueStats"></div>
-
+  <div style="font-weight:900;margin-bottom:8px">
+    会場別成績
   </div>
 
-  <div class="footer">
-    AI評価は参考情報です。投票は無理のない資金で行ってください。
-  </div>
+  <div id="venueStats"></div>
+
+</div>
+
+<div class="footer">
+  AI評価は参考情報です。投票は無理のない資金で行ってください。
+</div>
 
 </div>
 
@@ -458,18 +482,12 @@ const STORE_KEY="boat_ai_s_records_v2";
 
 let currentPeriod="day";
 
-
 function n(v,f=0){
-
   const x=Number(v);
-
   return Number.isFinite(x)?x:f;
-
 }
 
-
 function todayJST(){
-
   return new Intl.DateTimeFormat(
     'sv-SE',
     {
@@ -479,61 +497,40 @@ function todayJST(){
       day:'2-digit'
     }
   ).format(new Date());
-
 }
-
 
 function ymdCompact(d){
-
   return d.replaceAll('-','');
-
 }
-
 
 function apiUrl(date){
-
   return `https://boatraceopenapi.github.io/api/v1/${date.slice(0,4)}/${ymdCompact(date)}.json`;
-
 }
 
-
 function loadRecords(){
-
   try{
-
     return JSON.parse(
       localStorage.getItem(STORE_KEY)||'[]'
     );
-
   }catch{
-
     return [];
-
   }
-
 }
 
-
 function saveRecords(a){
-
   localStorage.setItem(
     STORE_KEY,
     JSON.stringify(a)
   );
-
 }
 
-
 function allTickets(t){
-
   return [
     ...t.main,
     ...t.cover,
     ...t.hole
   ];
-
 }
-
 
 function hasCompletePreview(race){
 
@@ -552,68 +549,27 @@ function hasCompletePreview(race){
     ){
       return false;
     }
-
   }
 
   return true;
-
 }
 
+function boatScore(racer,preview,boat){
 
-function boatScore(
-  racer,
-  preview,
-  boat
-){
-
-  const national=n(
-    racer?.national_win_rate,
-    5
-  );
-
-  const local=n(
-    racer?.local_win_rate,
-    national
-  );
-
-  const motor=n(
-    racer?.motor_top_2_percent,
-    30
-  );
-
-  const boatRate=n(
-    racer?.boat_top_2_percent,
-    30
-  );
-
-  const avgST=n(
-    racer?.average_start_timing,
-    .18
-  );
-
-  const ex=n(
-    preview?.exhibition_time,
-    6.85
-  );
-
-  const exST=n(
-    preview?.start_timing,
-    avgST
-  );
-
-  const rank=n(
-    racer?.rank_number,
-    2
-  );
+  const national=n(racer?.national_win_rate,5);
+  const local=n(racer?.local_win_rate,national);
+  const motor=n(racer?.motor_top_2_percent,30);
+  const boatRate=n(racer?.boat_top_2_percent,30);
+  const avgST=n(racer?.average_start_timing,.18);
+  const ex=n(preview?.exhibition_time,6.85);
+  const exST=n(preview?.start_timing,avgST);
+  const rank=n(racer?.rank_number,2);
 
   let s=0;
 
   s+=national*5;
-
   s+=local*2.7;
-
   s+=motor*.30;
-
   s+=boatRate*.12;
 
   s+=Math.max(
@@ -632,7 +588,6 @@ function boatScore(
   );
 
   if(rank===1)s+=5;
-
   if(rank===2)s+=3;
 
   s+=({
@@ -645,9 +600,7 @@ function boatScore(
   }[boat]||0);
 
   return s;
-
 }
-
 
 function evaluateRace(race){
 
@@ -656,16 +609,13 @@ function evaluateRace(race){
   }
 
   const racers=race?.racers||{};
-
-  const previews=
-    race.preview.racers;
+  const previews=race.preview.racers;
 
   const boats=[];
 
   for(let i=1;i<=6;i++){
 
-    const racer=
-      racers[String(i)];
+    const racer=racers[String(i)];
 
     if(!racer){
       return null;
@@ -679,7 +629,6 @@ function evaluateRace(race){
         i
       )
     });
-
   }
 
   boats.sort(
@@ -739,13 +688,9 @@ function evaluateRace(race){
   return{
     grade,
     confidence,
-    boats,
-    wind,
-    wave
+    boats
   };
-
 }
-
 
 function uniquePush(a,v){
 
@@ -755,79 +700,38 @@ function uniquePush(a,v){
   ){
     a.push(v);
   }
-
 }
-
 
 function makeTickets(boats){
 
   const [a,b,c,d]=
     boats
-      .slice(0,4)
-      .map(x=>x.boat);
+    .slice(0,4)
+    .map(x=>x.boat);
 
   const main=[];
   const cover=[];
   const hole=[];
 
-  uniquePush(
-    main,
-    `${a}-${b}-${c}`
-  );
+  uniquePush(main,`${a}-${b}-${c}`);
+  uniquePush(main,`${a}-${c}-${b}`);
+  uniquePush(main,`${a}-${b}-${d}`);
 
-  uniquePush(
-    main,
-    `${a}-${c}-${b}`
-  );
+  uniquePush(cover,`${a}-${c}-${d}`);
+  uniquePush(cover,`${a}-${d}-${b}`);
+  uniquePush(cover,`${b}-${a}-${c}`);
+  uniquePush(cover,`${b}-${c}-${a}`);
 
-  uniquePush(
-    main,
-    `${a}-${b}-${d}`
-  );
-
-  uniquePush(
-    cover,
-    `${a}-${c}-${d}`
-  );
-
-  uniquePush(
-    cover,
-    `${a}-${d}-${b}`
-  );
-
-  uniquePush(
-    cover,
-    `${b}-${a}-${c}`
-  );
-
-  uniquePush(
-    cover,
-    `${b}-${c}-${a}`
-  );
-
-  uniquePush(
-    hole,
-    `${c}-${a}-${b}`
-  );
-
-  uniquePush(
-    hole,
-    `${b}-${d}-${a}`
-  );
-
-  uniquePush(
-    hole,
-    `${d}-${a}-${c}`
-  );
+  uniquePush(hole,`${c}-${a}-${b}`);
+  uniquePush(hole,`${b}-${d}-${a}`);
+  uniquePush(hole,`${d}-${a}-${c}`);
 
   return{
     main,
     cover,
     hole
   };
-
 }
-
 
 function ticketsHTML(
   title,
@@ -845,6 +749,7 @@ function ticketsHTML(
       tickets.map(
         t=>`
           <div class="ticket">
+
             <div class="combo">
               ${t}
             </div>
@@ -852,25 +757,21 @@ function ticketsHTML(
             <div class="money">
               ${amount.toLocaleString()}円
             </div>
+
           </div>
         `
       ).join('')
     }
   `;
-
 }
-
 
 function raceKey(
   date,
   stadium,
   raceNo
 ){
-
   return `${date}-${stadium}-${raceNo}`;
-
 }
-
 
 function upsertPrediction(
   date,
@@ -882,8 +783,7 @@ function upsertPrediction(
   stake
 ){
 
-  let recs=
-    loadRecords();
+  let recs=loadRecords();
 
   const key=
     raceKey(
@@ -903,7 +803,7 @@ function upsertPrediction(
       key,
       date,
       stadium:Number(stadium),
-      venue:STADIUMS[stadium],
+      venue:STADIUMS[Number(stadium)],
       raceNo:Number(raceNo),
       confidence:
         Math.round(
@@ -912,8 +812,7 @@ function upsertPrediction(
       tickets:
         allTickets(tickets),
       stake,
-      perTicket:
-        stake/10,
+      perTicket:stake/10,
       status:'pending',
       payout:0,
       returnAmount:0,
@@ -925,11 +824,83 @@ function upsertPrediction(
     recs.push(r);
 
     saveRecords(recs);
-
   }
 
   return r;
+}
 
+
+/* =========================
+   オッズ表示
+========================= */
+
+function formatOdds(payout){
+
+  const odds=
+    n(payout,0)/100;
+
+  if(!odds){
+    return '--';
+  }
+
+  return odds.toFixed(1);
+}
+
+
+/* =========================
+   結果表示
+========================= */
+
+function resultHTML(rec){
+
+  if(
+    !rec ||
+    rec.status!=='done'
+  ){
+
+    return `
+      <div class="result-panel">
+        <span class="result-badge pending">
+          ⏳ 結果待ち
+        </span>
+      </div>
+    `;
+  }
+
+  if(rec.hit){
+
+    return `
+      <div class="result-panel hit-panel">
+
+        <div class="result-head">
+          🎯 的中
+        </div>
+
+        <div class="result-line">
+          結果：${rec.result||'--'}
+        </div>
+
+        <div class="result-line">
+          オッズ：${formatOdds(rec.payout)}倍
+        </div>
+
+      </div>
+    `;
+  }
+
+  return `
+    <div class="result-panel miss-panel">
+
+      <div class="result-head">
+        ✕ 不的中
+      </div>
+
+      <div class="result-line">
+        結果：${rec.result||'--'}
+      </div>
+
+    </div>
+  `;
 }
 
 
@@ -973,8 +944,8 @@ function renderRace(
 
   const closed=
     race.closed_at
-      ?race.closed_at.substring(11,16)
-      :'--:--';
+    ?race.closed_at.substring(11,16)
+    :'--:--';
 
   const rec=
     upsertPrediction(
@@ -986,28 +957,6 @@ function renderRace(
       tickets,
       actualTotal
     );
-
-  let result=
-    `<span class="result-badge pending">
-      結果待ち
-    </span>`;
-
-  if(rec.status==='done'){
-
-    result=
-      rec.hit
-      ?`
-        <span class="result-badge hit">
-          的中 +${rec.returnAmount.toLocaleString()}円払戻
-        </span>
-      `
-      :`
-        <span class="result-badge miss">
-          不的中
-        </span>
-      `;
-
-  }
 
   return `
     <div
@@ -1040,11 +989,11 @@ function renderRace(
         <div class="score-main">
 
           <span>
-            AI信頼度
+            AI勝負度
           </span>
 
           <span class="score-value">
-            ${analysis.confidence.toFixed(0)}%
+            ${analysis.confidence.toFixed(1)}%
           </span>
 
         </div>
@@ -1054,7 +1003,7 @@ function renderRace(
           <div class="rank-box">
 
             <div class="rank-label">
-              1着候補
+              ◎ 1位
             </div>
 
             <div class="rank-boat">
@@ -1066,7 +1015,7 @@ function renderRace(
           <div class="rank-box">
 
             <div class="rank-label">
-              2着候補
+              ○ 2位
             </div>
 
             <div class="rank-boat">
@@ -1078,7 +1027,7 @@ function renderRace(
           <div class="rank-box">
 
             <div class="rank-label">
-              3着候補
+              ▲ 3位
             </div>
 
             <div class="rank-boat">
@@ -1121,7 +1070,7 @@ function renderRace(
       <div class="total">
 
         <span>
-          合計
+          購入合計10点
         </span>
 
         <span>
@@ -1130,33 +1079,18 @@ function renderRace(
 
       </div>
 
-      <div class="info">
-
-        風速 ${analysis.wind}m /
-        波高 ${analysis.wave}cm
-
-        <br>
-
-        直前情報6艇分取得済みのため
-        S判定対象です。
-
-        <br>
-
-        <span class="js-result">
-          ${result}
-        </span>
-
+      <div class="js-result">
+        ${resultHTML(rec)}
       </div>
 
     </div>
   `;
-
 }
 
 
-/* ===================================
-   結果取得修正版
-=================================== */
+/* =========================
+   3連単結果取得
+========================= */
 
 function getTrifectas(result){
 
@@ -1168,11 +1102,14 @@ function getTrifectas(result){
       x=>x?.combination
     )
     :[];
-
 }
 
 
-/* 会場番号05・5の違いにも対応 */
+/* =========================
+   会場・レース照合
+   05 / 5 の両方に対応
+========================= */
+
 function findRace(
   data,
   stadium,
@@ -1184,11 +1121,11 @@ function findRace(
 
   const stadiumKey=
     Object.keys(stadiums)
-      .find(
-        k=>
-          Number(k)===
-          Number(stadium)
-      );
+    .find(
+      k=>
+        Number(k)===
+        Number(stadium)
+    );
 
   if(stadiumKey==null){
     return null;
@@ -1196,24 +1133,28 @@ function findRace(
 
   const races=
     stadiums[stadiumKey]
-      ?.races||{};
+    ?.races||{};
 
   const raceKey=
     Object.keys(races)
-      .find(
-        k=>
-          Number(k)===
-          Number(raceNo)
-      );
+    .find(
+      k=>
+        Number(k)===
+        Number(raceNo)
+    );
 
-  return raceKey==null
-    ?null
-    :races[raceKey];
+  if(raceKey==null){
+    return null;
+  }
 
+  return races[raceKey];
 }
 
 
-/* 結果確定 */
+/* =========================
+   結果確定
+========================= */
+
 function settleFromData(
   data,
   date
@@ -1270,8 +1211,8 @@ function settleFromData(
 
     r.payout=
       hitTf
-        ?n(hitTf.amount,0)
-        :n(displayTf.amount,0);
+      ?n(hitTf.amount,0)
+      :n(displayTf.amount,0);
 
     r.hit=
       !!hitTf;
@@ -1279,8 +1220,8 @@ function settleFromData(
     r.returnAmount=
       hitTf
       ?Math.round(
-        r.perTicket *
-        n(hitTf.amount,0) /
+        r.perTicket*
+        n(hitTf.amount,0)/
         100
       )
       :0;
@@ -1289,85 +1230,60 @@ function settleFromData(
       new Date().toISOString();
 
     changed=true;
-
   }
 
   if(changed){
-
     saveRecords(recs);
-
   }
 
   return changed;
-
 }
 
 
-/* 画面の結果だけ更新 */
+/* =========================
+   表示中の結果を更新
+========================= */
+
 function updateRenderedResults(){
 
   const recs=
     loadRecords();
 
   document
-    .querySelectorAll(
-      '[data-race-key]'
-    )
-    .forEach(
-      card=>{
+  .querySelectorAll(
+    '[data-race-key]'
+  )
+  .forEach(card=>{
 
-        const rec=
-          recs.find(
-            r=>
-              r.key===
-              card.dataset.raceKey
-          );
+    const rec=
+      recs.find(
+        r=>
+          r.key===
+          card.dataset.raceKey
+      );
 
-        const box=
-          card.querySelector(
-            '.js-result'
-          );
+    const box=
+      card.querySelector(
+        '.js-result'
+      );
 
-        if(
-          !rec ||
-          !box
-        ){
-          return;
-        }
+    if(
+      !rec ||
+      !box
+    ){
+      return;
+    }
 
-        if(rec.status==='done'){
-
-          box.innerHTML=
-            rec.hit
-            ?`
-              <span class="result-badge hit">
-                的中 +${rec.returnAmount.toLocaleString()}円払戻
-              </span>
-            `
-            :`
-              <span class="result-badge miss">
-                不的中
-              </span>
-            `;
-
-        }else{
-
-          box.innerHTML=
-            `
-              <span class="result-badge pending">
-                結果待ち
-              </span>
-            `;
-
-        }
-
-      }
-    );
-
+    box.innerHTML=
+      resultHTML(rec);
+  });
 }
 
 
-/* 結果待ちレースを自動再取得 */
+/* =========================
+   結果待ちを自動再取得
+========================= */
+
 async function refreshPendingResults(){
 
   const date=
@@ -1375,11 +1291,11 @@ async function refreshPendingResults(){
 
   const pending=
     loadRecords()
-      .some(
-        r=>
-          r.date===date &&
-          r.status!=='done'
-      );
+    .some(
+      r=>
+        r.date===date &&
+        r.status!=='done'
+    );
 
   if(!pending){
     return;
@@ -1387,10 +1303,6 @@ async function refreshPendingResults(){
 
   try{
 
-    /*
-      URL末尾に時刻を付けて
-      古いキャッシュを避ける
-    */
     const url=
       `${apiUrl(date)}?t=${Date.now()}`;
 
@@ -1407,7 +1319,6 @@ async function refreshPendingResults(){
       throw new Error(
         `HTTP ${res.status}`
       );
-
     }
 
     const data=
@@ -1425,12 +1336,10 @@ async function refreshPendingResults(){
   }catch(e){
 
     console.warn(
-      '結果の自動再取得に失敗:',
+      '結果の自動取得に失敗:',
       e
     );
-
   }
-
 }
 
 
@@ -1443,18 +1352,18 @@ function isUpcoming(race){
   const dt=
     new Date(
       race.closed_at
-        .replace(
-          ' ',
-          'T'
-        )
+      .replace(' ','T')
       +'+09:00'
     );
 
   return dt.getTime()
     >Date.now();
-
 }
 
+
+/* =========================
+   本日のSレース取得
+========================= */
 
 async function loadToday(){
 
@@ -1478,9 +1387,6 @@ async function loadToday(){
 
   try{
 
-    /*
-      最新データ取得
-    */
     const url=
       `${apiUrl(date)}?t=${Date.now()}`;
 
@@ -1497,15 +1403,11 @@ async function loadToday(){
       throw new Error(
         `HTTP ${res.status}`
       );
-
     }
 
     const data=
       await res.json();
 
-    /*
-      先に結果を反映
-    */
     settleFromData(
       data,
       date
@@ -1515,7 +1417,6 @@ async function loadToday(){
       data?.programs?.stadiums||{};
 
     let html='';
-
     let count=0;
 
     for(
@@ -1530,9 +1431,6 @@ async function loadToday(){
         )
       ){
 
-        /*
-          これから締切のレースだけ
-        */
         if(
           !isUpcoming(race)
         ){
@@ -1569,9 +1467,7 @@ async function loadToday(){
           );
 
         count++;
-
       }
-
     }
 
     results.innerHTML=
@@ -1580,8 +1476,7 @@ async function loadToday(){
       `
         <div class="no-race">
 
-          現在、直前情報まで揃って
-          「S判定」が確定したレースはありません。
+          現在、S判定が確定したレースはありません。
 
           <br>
 
@@ -1592,7 +1487,7 @@ async function loadToday(){
       `;
 
     status.textContent=
-      `${date}：S確定 ${count}レース。結果データも同時に確認しました。`;
+      `${date}：S確定 ${count}レース`;
 
     renderStats();
 
@@ -1611,11 +1506,13 @@ async function loadToday(){
       `;
 
     renderStats();
-
   }
-
 }
 
+
+/* =========================
+   統計
+========================= */
 
 function periodMatch(
   date,
@@ -1626,21 +1523,16 @@ function periodMatch(
     todayJST();
 
   if(p==='day'){
-
     return date===t;
-
   }
 
   if(p==='month'){
-
     return date.slice(0,7)
       ===t.slice(0,7);
-
   }
 
   return date.slice(0,4)
     ===t.slice(0,4);
-
 }
 
 
@@ -1674,13 +1566,9 @@ function calcStats(rows){
     );
 
   return{
-
     races,
-
     hits,
-
     stake,
-
     ret,
 
     hitRate:
@@ -1695,9 +1583,7 @@ function calcStats(rows){
 
     profit:
       ret-stake
-
   };
-
 }
 
 
@@ -1706,7 +1592,6 @@ function setPeriod(p){
   currentPeriod=p;
 
   renderStats();
-
 }
 
 
@@ -1722,118 +1607,99 @@ function renderStats(){
   ){
 
     document
-      .getElementById(
-        `tab-${p}`
-      )
-      ?.classList
-      .toggle(
-        'active',
-        p===currentPeriod
-      );
-
+    .getElementById(
+      `tab-${p}`
+    )
+    ?.classList
+    .toggle(
+      'active',
+      p===currentPeriod
+    );
   }
 
   const rows=
     loadRecords()
-      .filter(
-        r=>
-          periodMatch(
-            r.date,
-            currentPeriod
-          )
-      );
+    .filter(
+      r=>
+        periodMatch(
+          r.date,
+          currentPeriod
+        )
+    );
 
   const s=
     calcStats(rows);
 
   const profitCls=
     s.profit>=0
-      ?'positive'
-      :'negative';
+    ?'positive'
+    :'negative';
 
   document
-    .getElementById(
-      'stats'
-    )
-    .innerHTML=
-    `
+  .getElementById(
+    'stats'
+  )
+  .innerHTML=
+  `
 
-      <div class="stats-grid">
+    <div class="stats-grid">
 
-        <div class="stat">
-
-          <div class="stat-label">
-            確定レース
-          </div>
-
-          <div class="stat-value">
-            ${s.races}
-          </div>
-
+      <div class="stat">
+        <div class="stat-label">
+          確定レース
         </div>
-
-        <div class="stat">
-
-          <div class="stat-label">
-            的中
-          </div>
-
-          <div class="stat-value">
-            ${s.hits}
-          </div>
-
+        <div class="stat-value">
+          ${s.races}
         </div>
-
-        <div class="stat">
-
-          <div class="stat-label">
-            的中率
-          </div>
-
-          <div class="stat-value">
-            ${s.hitRate.toFixed(1)}%
-          </div>
-
-        </div>
-
-        <div class="stat">
-
-          <div class="stat-label">
-            回収率
-          </div>
-
-          <div class="stat-value">
-            ${s.roi.toFixed(1)}%
-          </div>
-
-        </div>
-
-        <div class="stat">
-
-          <div class="stat-label">
-            投資額
-          </div>
-
-          <div class="stat-value">
-            ${s.stake.toLocaleString()}円
-          </div>
-
-        </div>
-
-        <div class="stat">
-
-          <div class="stat-label">
-            収支
-          </div>
-
-          <div class="stat-value ${profitCls}">
-            ${s.profit>=0?'+':''}${s.profit.toLocaleString()}円
-          </div>
-
-        </div>
-
       </div>
-    `;
+
+      <div class="stat">
+        <div class="stat-label">
+          的中
+        </div>
+        <div class="stat-value">
+          ${s.hits}
+        </div>
+      </div>
+
+      <div class="stat">
+        <div class="stat-label">
+          的中率
+        </div>
+        <div class="stat-value">
+          ${s.hitRate.toFixed(1)}%
+        </div>
+      </div>
+
+      <div class="stat">
+        <div class="stat-label">
+          回収率
+        </div>
+        <div class="stat-value">
+          ${s.roi.toFixed(1)}%
+        </div>
+      </div>
+
+      <div class="stat">
+        <div class="stat-label">
+          投資額
+        </div>
+        <div class="stat-value">
+          ${s.stake.toLocaleString()}円
+        </div>
+      </div>
+
+      <div class="stat">
+        <div class="stat-label">
+          収支
+        </div>
+        <div class="stat-value ${profitCls}">
+          ${s.profit>=0?'+':''}${s.profit.toLocaleString()}円
+        </div>
+      </div>
+
+    </div>
+  `;
 
   const groups={};
 
@@ -1842,123 +1708,98 @@ function renderStats(){
     (
       groups[r.venue]??=[]
     ).push(r);
-
   }
 
   const entries=
-    Object
-      .entries(groups)
-      .map(
-        ([v,a])=>
-          [
-            v,
-            calcStats(a)
-          ]
-      )
-      .sort(
-        (a,b)=>
-          b[1].roi-a[1].roi
-      );
+    Object.entries(groups)
+    .map(
+      ([v,a])=>
+        [
+          v,
+          calcStats(a)
+        ]
+    )
+    .sort(
+      (a,b)=>
+        b[1].roi-a[1].roi
+    );
 
   document
-    .getElementById(
-      'venueStats'
-    )
-    .innerHTML=
-      entries.length
-      ?`
-        <div class="venue-row">
+  .getElementById(
+    'venueStats'
+  )
+  .innerHTML=
+    entries.length
+    ?`
+      <div class="venue-row">
 
-          <strong>
-            会場
-          </strong>
+        <strong>会場</strong>
+        <strong>的中率</strong>
+        <strong>回収率</strong>
+        <strong>収支</strong>
 
-          <strong>
-            的中率
-          </strong>
+      </div>
 
-          <strong>
-            回収率
-          </strong>
+      ${
+        entries.map(
+          ([v,x])=>
+          `
+            <div class="venue-row">
 
-          <strong>
-            収支
-          </strong>
+              <strong>
+                ${v}
+              </strong>
 
-        </div>
+              <span>
+                ${x.hitRate.toFixed(1)}%
+              </span>
 
-        ${
-          entries.map(
-            ([v,x])=>
-            `
-              <div class="venue-row">
+              <span>
+                ${x.roi.toFixed(1)}%
+              </span>
 
-                <strong>
-                  ${v}
-                </strong>
+              <span class="${x.profit>=0?'positive':'negative'}">
+                ${x.profit>=0?'+':''}${x.profit.toLocaleString()}円
+              </span>
 
-                <span>
-                  ${x.hitRate.toFixed(1)}%
-                </span>
-
-                <span>
-                  ${x.roi.toFixed(1)}%
-                </span>
-
-                <span class="${x.profit>=0?'positive':'negative'}">
-                  ${x.profit>=0?'+':''}${x.profit.toLocaleString()}円
-                </span>
-
-              </div>
-            `
-          ).join('')
-        }
-      `
-      :`
-        <div class="small">
-          まだ確定済みの成績がありません。
-        </div>
-      `;
-
+            </div>
+          `
+        ).join('')
+      }
+    `
+    :`
+      <div class="small">
+        まだ確定済みの成績がありません。
+      </div>
+    `;
 }
 
 
-/* 最初に統計表示 */
+/* 初期表示 */
 renderStats();
 
 
-/*
-  60秒ごとに
-  結果待ちレースを自動確認
-*/
+/* 60秒ごとに結果確認 */
 setInterval(
   refreshPendingResults,
   60000
 );
 
 
-/*
-  スマホで別画面から戻った時も
-  結果を確認
-*/
+/* スマホで画面に戻った時 */
 document.addEventListener(
   'visibilitychange',
   ()=>{
 
     if(!document.hidden){
-
       refreshPendingResults();
-
     }
 
   }
 );
 
 
-/*
-  ブラウザに戻った時にも
-  結果を確認
-*/
+/* ブラウザに戻った時 */
 window.addEventListener(
   'focus',
   refreshPendingResults
