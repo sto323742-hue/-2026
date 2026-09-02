@@ -32,7 +32,7 @@ body{
 .container{
   max-width:760px;
   margin:auto;
-  padding:20px 14px 110px;
+  padding:20px 14px 120px;
 }
 
 .header{
@@ -93,16 +93,20 @@ select{
 
 button{
   width:100%;
-  min-height:56px;
+  min-height:54px;
   border:0;
   border-radius:16px;
   background:linear-gradient(135deg,#18cbea,#1478ff);
   color:#fff;
-  font-size:18px;
+  font-size:17px;
   font-weight:900;
   margin-top:12px;
-  padding:12px;
+  padding:11px;
   cursor:pointer;
+}
+
+button:active{
+  transform:scale(.98);
 }
 
 .refresh{
@@ -131,7 +135,6 @@ button{
   justify-content:space-between;
   gap:10px;
   align-items:center;
-  margin-bottom:14px;
 }
 
 .place{
@@ -146,10 +149,10 @@ button{
 }
 
 .badge{
-  font-size:16px;
+  font-size:20px;
   font-weight:900;
   border-radius:13px;
-  padding:8px 12px;
+  padding:9px 14px;
   white-space:nowrap;
 }
 
@@ -157,11 +160,59 @@ button{
   background:#ff4059;
 }
 
+/* コンパクト表示 */
+.compact-summary{
+  margin-top:14px;
+  background:#081725;
+  border-radius:14px;
+  padding:12px;
+}
+
+.compact-top{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:10px;
+}
+
+.compact-label{
+  color:#aabbd0;
+  font-size:13px;
+}
+
+.compact-confidence{
+  color:#53dcff;
+  font-size:21px;
+  font-weight:900;
+}
+
+.compact-rank{
+  margin-top:8px;
+  font-size:14px;
+  font-weight:800;
+  color:#d7e4f1;
+  line-height:1.7;
+}
+
+/* レース開閉ボタン */
+.race-toggle{
+  margin-top:12px;
+  min-height:48px;
+  background:#183a55;
+  border:1px solid #2e6a91;
+  font-size:15px;
+}
+
+.race-detail{
+  display:none;
+  margin-top:14px;
+}
+
 .score{
   background:#081725;
   border-radius:14px;
   padding:12px;
-  margin-bottom:14px;
+  margin-bottom:12px;
 }
 
 .score-main{
@@ -183,7 +234,7 @@ button{
 
 .rank-box{
   text-align:center;
-  background:#081725;
+  background:#0b1c2e;
   border-radius:12px;
   padding:10px 5px;
 }
@@ -194,28 +245,51 @@ button{
 }
 
 .rank-boat{
-  font-size:22px;
+  font-size:21px;
   font-weight:900;
   margin-top:4px;
 }
 
-.bet-title{
-  margin-top:16px;
-  margin-bottom:8px;
-  font-size:17px;
-  font-weight:900;
+/* 本線・押さえ・穴 */
+.bet-section{
+  margin-top:10px;
 }
 
-.main-title{
+.bet-toggle{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  width:100%;
+  min-height:48px;
+  margin-top:8px;
+  padding:10px 13px;
+  border-radius:13px;
+  background:#172a40;
+  border:1px solid #304a66;
+  font-size:16px;
+  text-align:left;
+}
+
+.bet-toggle.main{
   color:#55d8ff;
 }
 
-.cover-title{
+.bet-toggle.cover{
   color:#ffd457;
 }
 
-.hole-title{
+.bet-toggle.hole{
   color:#ff818c;
+}
+
+.bet-arrow{
+  color:#aebfd0;
+  font-size:14px;
+}
+
+.bet-content{
+  display:none;
+  padding-top:8px;
 }
 
 .ticket{
@@ -259,6 +333,7 @@ button{
   margin-bottom:16px;
 }
 
+/* 成績 */
 .stats-grid{
   display:grid;
   grid-template-columns:repeat(2,1fr);
@@ -384,6 +459,7 @@ button{
   font-size:15px;
 }
 
+/* 右下固定ボタン */
 .quick-nav{
   position:fixed;
   right:12px;
@@ -432,6 +508,10 @@ button{
     font-size:20px;
   }
 
+  .compact-confidence{
+    font-size:19px;
+  }
+
   .period-tabs button{
     font-size:13px;
     padding:8px 4px;
@@ -445,6 +525,10 @@ button{
   .quick-nav button{
     min-width:82px;
     font-size:13px;
+  }
+
+  .venue-row{
+    font-size:11px;
   }
 }
 </style>
@@ -502,9 +586,8 @@ button{
     </div>
 
     <div class="small">
-      展示情報が6艇分揃ったレースだけ判定します。<br>
       S判定のレースだけ表示します。<br>
-      A・B・展示情報待ちのレースは表示しません。
+      A・Bのレースは表示しません。
     </div>
 
   </div>
@@ -559,17 +642,14 @@ button{
       🎯 レース別結果を表示
     </button>
 
-
     <div
       id="raceHistoryWrap"
       style="display:none;"
     >
-
       <div
         id="raceHistory"
         class="history-list"
       ></div>
-
     </div>
 
 
@@ -581,14 +661,11 @@ button{
       📍 会場別成績を表示
     </button>
 
-
     <div
       id="venueStatsWrap"
       style="display:none;margin-top:10px;"
     >
-
       <div id="venueStats"></div>
-
     </div>
 
   </div>
@@ -681,6 +758,104 @@ function goStats(){
 }
 
 
+/* =========================
+   レース全体の開閉
+========================= */
+
+function toggleRace(id){
+
+  const detail =
+    document.getElementById(
+      "detail-" + id
+    );
+
+  const btn =
+    document.getElementById(
+      "raceBtn-" + id
+    );
+
+  if(!detail || !btn){
+    return;
+  }
+
+  const hidden =
+    getComputedStyle(detail).display ===
+    "none";
+
+  if(hidden){
+
+    detail.style.display =
+      "block";
+
+    btn.textContent =
+      "▲ 買い目を隠す";
+
+  }else{
+
+    detail.style.display =
+      "none";
+
+    btn.textContent =
+      "▼ 買い目を表示";
+
+  }
+
+}
+
+
+/* =========================
+   本線・押さえ・穴の開閉
+========================= */
+
+function toggleBet(id){
+
+  const content =
+    document.getElementById(
+      "bet-" + id
+    );
+
+  const arrow =
+    document.getElementById(
+      "arrow-" + id
+    );
+
+  if(!content){
+    return;
+  }
+
+  const hidden =
+    getComputedStyle(content).display ===
+    "none";
+
+  if(hidden){
+
+    content.style.display =
+      "block";
+
+    if(arrow){
+      arrow.textContent =
+        "▲";
+    }
+
+  }else{
+
+    content.style.display =
+      "none";
+
+    if(arrow){
+      arrow.textContent =
+        "▼";
+    }
+
+  }
+
+}
+
+
+/* =========================
+   成績開閉
+========================= */
+
 function toggleHistory(){
 
   const wrap =
@@ -754,6 +929,10 @@ function toggleVenueStats(){
 
 }
 
+
+/* =========================
+   基本処理
+========================= */
 
 function n(
   value,
@@ -840,6 +1019,10 @@ async function fetchJSON(url){
 }
 
 
+/* =========================
+   成績保存
+========================= */
+
 function loadRecords(){
 
   try{
@@ -908,6 +1091,10 @@ function indexByRace(array){
 }
 
 
+/* =========================
+   展示情報
+========================= */
+
 function previewReady(
   preview
 ){
@@ -933,6 +1120,10 @@ function previewReady(
 
 }
 
+
+/* =========================
+   AI評価
+========================= */
 
 function boatScore(
   programBoat,
@@ -1222,6 +1413,10 @@ function evaluateRace(
 }
 
 
+/* =========================
+   買い目
+========================= */
+
 function uniquePush(
   array,
   value
@@ -1331,6 +1526,77 @@ function allTickets(tickets){
 
 }
 
+
+function ticketRows(
+  tickets,
+  amount
+){
+
+  return tickets.map(
+    ticket => `
+      <div class="ticket">
+
+        <div class="combo">
+          ${ticket}
+        </div>
+
+        <div class="money">
+          ${amount.toLocaleString()}円
+        </div>
+
+      </div>
+    `
+  ).join("");
+
+}
+
+
+function betSectionHTML(
+  id,
+  label,
+  colorClass,
+  tickets,
+  amount
+){
+
+  return `
+    <div class="bet-section">
+
+      <button
+        class="bet-toggle ${colorClass}"
+        onclick="toggleBet('${id}')"
+      >
+        <span>
+          ${label}
+        </span>
+
+        <span
+          class="bet-arrow"
+          id="arrow-${id}"
+        >
+          ▼
+        </span>
+      </button>
+
+      <div
+        class="bet-content"
+        id="bet-${id}"
+      >
+        ${ticketRows(
+          tickets,
+          amount
+        )}
+      </div>
+
+    </div>
+  `;
+
+}
+
+
+/* =========================
+   レコード作成
+========================= */
 
 function recordKey(
   date,
@@ -1450,37 +1716,9 @@ function upsertPrediction(
 }
 
 
-function ticketsHTML(
-  title,
-  className,
-  tickets,
-  amount
-){
-
-  return `
-    <div class="bet-title ${className}">
-      ${title}
-    </div>
-
-    ${tickets.map(
-      ticket => `
-        <div class="ticket">
-
-          <div class="combo">
-            ${ticket}
-          </div>
-
-          <div class="money">
-            ${amount.toLocaleString()}円
-          </div>
-
-        </div>
-      `
-    ).join("")}
-  `;
-
-}
-
+/* =========================
+   結果表示
+========================= */
 
 function resultHTML(record){
 
@@ -1545,6 +1783,10 @@ function isUpcoming(program){
 
 }
 
+
+/* =========================
+   Sレース表示
+========================= */
 
 function renderS(
   program,
@@ -1619,6 +1861,26 @@ function renderS(
     analysis.boats;
 
 
+  const raceId =
+    String(
+      program.stadium_number
+    ) +
+    "-" +
+    String(
+      program.number
+    );
+
+
+  const mainId =
+    raceId + "-main";
+
+  const coverId =
+    raceId + "-cover";
+
+  const holeId =
+    raceId + "-hole";
+
+
   return `
     <div class="race-card s">
 
@@ -1644,103 +1906,153 @@ function renderS(
       </div>
 
 
-      <div class="score">
+      <div class="compact-summary">
 
-        <div class="score-main">
+        <div class="compact-top">
 
-          <span>
+          <span class="compact-label">
             AI信頼度
           </span>
 
-          <span class="score-value">
+          <span class="compact-confidence">
             ${analysis.confidence.toFixed(0)}%
           </span>
 
         </div>
 
-
-        <div class="rank">
-
-          <div class="rank-box">
-            <div class="rank-label">
-              1着候補
-            </div>
-            <div class="rank-boat">
-              ${first.boat}号艇
-            </div>
-          </div>
-
-          <div class="rank-box">
-            <div class="rank-label">
-              2着候補
-            </div>
-            <div class="rank-boat">
-              ${second.boat}号艇
-            </div>
-          </div>
-
-          <div class="rank-box">
-            <div class="rank-label">
-              3着候補
-            </div>
-            <div class="rank-boat">
-              ${third.boat}号艇
-            </div>
-          </div>
-
+        <div class="compact-rank">
+          1着候補 ${first.boat}号艇　
+          2着候補 ${second.boat}号艇　
+          3着候補 ${third.boat}号艇
         </div>
 
       </div>
 
 
-      ${ticketsHTML(
-        "🔵 本線 3点",
-        "main-title",
-        tickets.main,
-        perTicket
-      )}
+      <button
+        class="race-toggle"
+        id="raceBtn-${raceId}"
+        onclick="toggleRace('${raceId}')"
+      >
+        ▼ 買い目を表示
+      </button>
 
 
-      ${ticketsHTML(
-        "🟡 押さえ 4点",
-        "cover-title",
-        tickets.cover,
-        perTicket
-      )}
+      <div
+        class="race-detail"
+        id="detail-${raceId}"
+      >
+
+        <div class="score">
+
+          <div class="score-main">
+
+            <span>
+              AI信頼度
+            </span>
+
+            <span class="score-value">
+              ${analysis.confidence.toFixed(0)}%
+            </span>
+
+          </div>
 
 
-      ${ticketsHTML(
-        "🔴 穴 3点",
-        "hole-title",
-        tickets.hole,
-        perTicket
-      )}
+          <div class="rank">
+
+            <div class="rank-box">
+              <div class="rank-label">
+                1着候補
+              </div>
+
+              <div class="rank-boat">
+                ${first.boat}号艇
+              </div>
+            </div>
 
 
-      <div class="total">
+            <div class="rank-box">
+              <div class="rank-label">
+                2着候補
+              </div>
 
-        <span>
-          合計
-        </span>
-
-        <span>
-          ${stake.toLocaleString()}円
-        </span>
-
-      </div>
+              <div class="rank-boat">
+                ${second.boat}号艇
+              </div>
+            </div>
 
 
-      <div class="info">
+            <div class="rank-box">
+              <div class="rank-label">
+                3着候補
+              </div>
 
-        風速
-        ${analysis.wind}m
-        /
-        波高
-        ${analysis.wave}cm
+              <div class="rank-boat">
+                ${third.boat}号艇
+              </div>
+            </div>
 
-        <br>
+          </div>
 
-        ${resultHTML(record)}
+        </div>
+
+
+        ${betSectionHTML(
+          mainId,
+          "🔵 本線 3点",
+          "main",
+          tickets.main,
+          perTicket
+        )}
+
+
+        ${betSectionHTML(
+          coverId,
+          "🟡 押さえ 4点",
+          "cover",
+          tickets.cover,
+          perTicket
+        )}
+
+
+        ${betSectionHTML(
+          holeId,
+          "🔴 穴 3点",
+          "hole",
+          tickets.hole,
+          perTicket
+        )}
+
+
+        <div class="total">
+
+          <span>
+            合計
+          </span>
+
+          <span>
+            ${stake.toLocaleString()}円
+          </span>
+
+        </div>
+
+
+        <div
+          class="info"
+          style="margin-top:14px;"
+        >
+
+          風速
+          ${analysis.wind}m
+          /
+          波高
+          ${analysis.wave}cm
+
+          <br>
+
+          ${resultHTML(record)}
+
+        </div>
 
       </div>
 
@@ -1749,6 +2061,10 @@ function renderS(
 
 }
 
+
+/* =========================
+   3連単結果
+========================= */
 
 function getTrifectas(
   resultRace
@@ -1771,6 +2087,10 @@ function getTrifectas(
 
 }
 
+
+/* =========================
+   成績確定
+========================= */
 
 function settleRecordsForDate(
   date,
@@ -1902,6 +2222,10 @@ function settleRecordsForDate(
 }
 
 
+/* =========================
+   本日のSレース取得
+========================= */
+
 async function loadToday(){
 
   const status =
@@ -1937,6 +2261,7 @@ async function loadToday(){
       resultResponse
     ] =
       await Promise.allSettled([
+
         fetchJSON(
           apiUrl(
             "programs",
@@ -1957,6 +2282,7 @@ async function loadToday(){
             date
           )
         )
+
       ]);
 
 
@@ -2100,8 +2426,8 @@ async function loadToday(){
         `
           <div class="no-race">
             現在、勝負度Sのレースはありません。<br><br>
-            展示情報が更新された後に
-            「最新データに更新」を押してください。
+            最新データに更新すると、
+            新しくS判定されたレースが表示されます。
           </div>
         `;
 
@@ -2110,17 +2436,6 @@ async function loadToday(){
 
     status.textContent =
       `${date}：Sレース ${sCount}件 / 判定済み ${readyCount}件`;
-
-
-    if(
-      previewResponse.status !==
-      "fulfilled"
-    ){
-
-      status.textContent +=
-        "（直前情報APIを取得できません）";
-
-    }
 
 
     renderStats();
@@ -2152,6 +2467,10 @@ async function loadToday(){
 
 }
 
+
+/* =========================
+   集計期間
+========================= */
 
 function periodMatch(
   date,
@@ -2186,6 +2505,10 @@ function periodMatch(
 
 }
 
+
+/* =========================
+   成績計算
+========================= */
 
 function calcStats(rows){
 
@@ -2267,6 +2590,10 @@ function setPeriod(period){
 
 }
 
+
+/* =========================
+   成績表示
+========================= */
 
 function renderStats(){
 
@@ -2397,6 +2724,8 @@ function renderStats(){
     `;
 
 
+/* レース別結果 */
+
   document
     .getElementById(
       "raceHistory"
@@ -2499,6 +2828,8 @@ function renderStats(){
       </div>
     `;
 
+
+/* 会場別成績 */
 
   const groups = {};
 
@@ -2606,6 +2937,10 @@ function renderStats(){
 }
 
 
+/* =========================
+   未確定結果を自動更新
+========================= */
+
 async function refreshAllPending(){
 
   const dates =
@@ -2665,9 +3000,14 @@ async function refreshAllPending(){
 }
 
 
+/* =========================
+   初期処理
+========================= */
+
 renderStats();
 
 refreshAllPending();
+
 
 setInterval(
   refreshAllPending,
