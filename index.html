@@ -2,3380 +2,2752 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
 <meta name="theme-color" content="#08111f">
 
 <title>BOAT RACE AI予想</title>
 
 <style>
-
 *{
-box-sizing:border-box;
+  box-sizing:border-box;
+}
+
+html{
+  scroll-behavior:smooth;
 }
 
 body{
-margin:0;
-background:#08111f;
-color:#fff;
-font-family:
--apple-system,
-BlinkMacSystemFont,
-"Segoe UI",
-"Hiragino Kaku Gothic ProN",
-"Yu Gothic",
-sans-serif;
+  margin:0;
+  background:#08111f;
+  color:#fff;
+  font-family:
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    "Hiragino Kaku Gothic ProN",
+    "Yu Gothic",
+    sans-serif;
 }
 
 .container{
-max-width:760px;
-margin:auto;
-padding:20px 14px 70px;
+  max-width:760px;
+  margin:auto;
+  padding:20px 14px 110px;
 }
 
 .header{
-text-align:center;
-padding:16px 0 20px;
+  text-align:center;
+  padding:16px 0 20px;
 }
 
 .header h1{
-margin:0;
-font-size:28px;
+  margin:0;
+  font-size:28px;
 }
 
 .sub{
-color:#91a7bf;
-font-size:13px;
-margin-top:8px;
+  color:#91a7bf;
+  font-size:13px;
+  margin-top:8px;
+  line-height:1.6;
 }
 
 .card,
 .race-card{
-background:#101e31;
-border:1px solid #2c405b;
-border-radius:20px;
-padding:18px;
-margin-bottom:16px;
+  background:#101e31;
+  border:1px solid #2c405b;
+  border-radius:20px;
+  padding:18px;
+  margin-bottom:16px;
 }
 
 .race-card.s{
-border:2px solid #1dd1ff;
-box-shadow:
-0 0 18px
-rgba(29,209,255,.10);
+  border:2px solid #1dd1ff;
+  box-shadow:0 0 18px rgba(29,209,255,.10);
 }
 
 .race-card.wait{
-border:1px solid #344b66;
+  border:1px solid #344b66;
 }
 
 .title{
-color:#49cfff;
-font-size:21px;
-font-weight:900;
-margin-bottom:16px;
+  color:#49cfff;
+  font-size:21px;
+  font-weight:900;
+  margin-bottom:16px;
 }
 
 label{
-display:block;
-color:#b8c5d6;
-margin-bottom:7px;
-font-size:14px;
+  display:block;
+  color:#b8c5d6;
+  margin-bottom:7px;
+  font-size:14px;
 }
 
 select{
-width:100%;
-height:54px;
-border:2px solid #304864;
-border-radius:14px;
-background:#081524;
-color:#fff;
-font-size:17px;
-padding:0 12px;
+  width:100%;
+  height:54px;
+  border:2px solid #304864;
+  border-radius:14px;
+  background:#081524;
+  color:#fff;
+  font-size:17px;
+  padding:0 12px;
 }
 
 button{
-width:100%;
-min-height:56px;
-border:0;
-border-radius:16px;
-background:
-linear-gradient(
-135deg,
-#18cbea,
-#1478ff
-);
-color:#fff;
-font-size:18px;
-font-weight:900;
-margin-top:12px;
-padding:12px;
+  width:100%;
+  min-height:56px;
+  border:0;
+  border-radius:16px;
+  background:linear-gradient(135deg,#18cbea,#1478ff);
+  color:#fff;
+  font-size:18px;
+  font-weight:900;
+  margin-top:12px;
+  padding:12px;
+  cursor:pointer;
 }
 
 .refresh{
-background:#263b55;
+  background:#263b55;
 }
 
 .status,
 .info{
-background:#091725;
-border-radius:14px;
-padding:13px;
-color:#b9c9da;
-font-size:14px;
-line-height:1.6;
+  background:#091725;
+  border-radius:14px;
+  padding:13px;
+  color:#b9c9da;
+  font-size:14px;
+  line-height:1.6;
 }
 
 .small{
-font-size:12px;
-color:#7890aa;
-margin-top:10px;
-line-height:1.6;
+  font-size:12px;
+  color:#7890aa;
+  margin-top:10px;
+  line-height:1.6;
 }
 
 .race-head{
-display:flex;
-justify-content:space-between;
-gap:10px;
-align-items:center;
-margin-bottom:14px;
+  display:flex;
+  justify-content:space-between;
+  gap:10px;
+  align-items:center;
+  margin-bottom:14px;
 }
 
 .place{
-font-size:22px;
-font-weight:900;
+  font-size:22px;
+  font-weight:900;
 }
 
 .race-number{
-color:#9db2c8;
-margin-top:3px;
-font-size:14px;
+  color:#9db2c8;
+  margin-top:3px;
+  font-size:14px;
 }
 
 .badge{
-font-size:16px;
-font-weight:900;
-border-radius:13px;
-padding:8px 12px;
-white-space:nowrap;
+  font-size:16px;
+  font-weight:900;
+  border-radius:13px;
+  padding:8px 12px;
+  white-space:nowrap;
 }
 
 .s-badge{
-background:#ff4059;
+  background:#ff4059;
 }
 
 .wait-badge{
-background:#354a64;
-color:#d4e1ed;
+  background:#354a64;
+  color:#d4e1ed;
 }
 
 .score{
-background:#081725;
-border-radius:14px;
-padding:12px;
-margin-bottom:14px;
+  background:#081725;
+  border-radius:14px;
+  padding:12px;
+  margin-bottom:14px;
 }
 
 .score-main{
-display:flex;
-justify-content:space-between;
-font-weight:800;
+  display:flex;
+  justify-content:space-between;
+  font-weight:800;
 }
 
 .score-value{
-color:#53dcff;
+  color:#53dcff;
 }
 
 .rank{
-display:grid;
-grid-template-columns:
-repeat(3,1fr);
-gap:8px;
-margin-top:12px;
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:8px;
+  margin-top:12px;
 }
 
 .rank-box{
-text-align:center;
-background:#081725;
-border-radius:12px;
-padding:10px 5px;
+  text-align:center;
+  background:#081725;
+  border-radius:12px;
+  padding:10px 5px;
 }
 
 .rank-label{
-color:#849bb4;
-font-size:11px;
+  color:#849bb4;
+  font-size:11px;
 }
 
 .rank-boat{
-font-size:22px;
-font-weight:900;
-margin-top:4px;
+  font-size:22px;
+  font-weight:900;
+  margin-top:4px;
 }
 
 .bet-title{
-margin-top:16px;
-margin-bottom:8px;
-font-size:17px;
-font-weight:900;
+  margin-top:16px;
+  margin-bottom:8px;
+  font-size:17px;
+  font-weight:900;
 }
 
 .main-title{
-color:#55d8ff;
+  color:#55d8ff;
 }
 
 .cover-title{
-color:#ffd457;
+  color:#ffd457;
 }
 
 .hole-title{
-color:#ff818c;
+  color:#ff818c;
 }
 
 .ticket{
-display:flex;
-justify-content:space-between;
-align-items:center;
-background:#081725;
-border:1px solid #294158;
-padding:11px 12px;
-border-radius:12px;
-margin-bottom:7px;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  background:#081725;
+  border:1px solid #294158;
+  padding:11px 12px;
+  border-radius:12px;
+  margin-bottom:7px;
 }
 
 .combo{
-font-size:20px;
-font-weight:900;
-letter-spacing:2px;
+  font-size:20px;
+  font-weight:900;
+  letter-spacing:2px;
 }
 
 .money{
-color:#72dcff;
-font-weight:800;
+  color:#72dcff;
+  font-weight:800;
 }
 
 .total{
-border-top:1px solid #334b65;
-margin-top:15px;
-padding-top:13px;
-display:flex;
-justify-content:space-between;
-font-weight:900;
+  border-top:1px solid #334b65;
+  margin-top:15px;
+  padding-top:13px;
+  display:flex;
+  justify-content:space-between;
+  font-weight:900;
 }
 
 .no-race{
-text-align:center;
-padding:30px 15px;
-background:#101e31;
-border-radius:18px;
-color:#b4c3d3;
-line-height:1.8;
+  text-align:center;
+  padding:30px 15px;
+  background:#101e31;
+  border-radius:18px;
+  color:#b4c3d3;
+  line-height:1.8;
+  margin-bottom:16px;
 }
 
 .stats-grid{
-display:grid;
-grid-template-columns:
-repeat(2,1fr);
-gap:10px;
+  display:grid;
+  grid-template-columns:repeat(2,1fr);
+  gap:10px;
 }
 
 .stat{
-background:#081725;
-border-radius:14px;
-padding:12px;
+  background:#081725;
+  border-radius:14px;
+  padding:12px;
 }
 
 .stat-label{
-font-size:11px;
-color:#849bb4;
+  font-size:11px;
+  color:#849bb4;
 }
 
 .stat-value{
-font-size:20px;
-font-weight:900;
-margin-top:4px;
+  font-size:20px;
+  font-weight:900;
+  margin-top:4px;
 }
 
 .positive{
-color:#58e3a5;
+  color:#58e3a5;
 }
 
 .negative{
-color:#ff818c;
+  color:#ff818c;
 }
 
 .period-tabs{
-display:grid;
-grid-template-columns:
-repeat(3,1fr);
-gap:8px;
-margin-bottom:12px;
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:8px;
+  margin-bottom:12px;
 }
 
 .period-tabs button{
-margin:0;
-min-height:44px;
-font-size:14px;
-background:#263b55;
+  margin:0;
+  min-height:44px;
+  font-size:14px;
+  background:#263b55;
 }
 
 .period-tabs button.active{
-background:
-linear-gradient(
-135deg,
-#18cbea,
-#1478ff
-);
+  background:linear-gradient(135deg,#18cbea,#1478ff);
 }
 
 .result-badge{
-display:inline-block;
-margin-top:10px;
-padding:7px 10px;
-border-radius:10px;
-font-weight:900;
+  display:inline-block;
+  margin-top:8px;
+  padding:7px 10px;
+  border-radius:10px;
+  font-weight:900;
 }
 
 .hit{
-background:#123d2e;
-color:#63efb1;
+  background:#123d2e;
+  color:#63efb1;
 }
 
 .miss{
-background:#49222a;
-color:#ff9aa5;
+  background:#49222a;
+  color:#ff9aa5;
 }
 
 .pending{
-background:#22344a;
-color:#b8cbea;
-}
-
-.history-title{
-font-size:17px;
-font-weight:900;
-margin:20px 0 10px;
-color:#49cfff;
+  background:#22344a;
+  color:#b8cbea;
 }
 
 .history-list{
-display:grid;
-gap:10px;
+  display:grid;
+  gap:10px;
+  margin-top:10px;
 }
 
 .history-item{
-background:#081725;
-border:1px solid #294158;
-border-radius:14px;
-padding:12px;
+  background:#081725;
+  border:1px solid #294158;
+  border-radius:14px;
+  padding:12px;
 }
 
 .history-top{
-display:flex;
-justify-content:space-between;
-align-items:center;
-gap:10px;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:10px;
 }
 
 .history-race{
-font-weight:900;
-font-size:16px;
+  font-weight:900;
+  font-size:16px;
 }
 
 .history-date{
-color:#8ea4bc;
-font-size:12px;
-margin-top:4px;
+  color:#8ea4bc;
+  font-size:12px;
+  margin-top:4px;
 }
 
 .history-result{
-margin-top:8px;
-font-size:14px;
-font-weight:800;
+  margin-top:8px;
+  font-size:14px;
+  font-weight:800;
 }
 
 .venue-row{
-display:grid;
-grid-template-columns:
-1.2fr .8fr .8fr .9fr;
-gap:6px;
-padding:9px 0;
-border-bottom:1px solid #263b55;
-font-size:12px;
+  display:grid;
+  grid-template-columns:1.2fr .8fr .8fr .9fr;
+  gap:6px;
+  padding:9px 0;
+  border-bottom:1px solid #263b55;
+  font-size:12px;
+}
+
+.toggle-btn{
+  margin-top:16px;
+  min-height:50px;
+  background:#263b55;
+  font-size:15px;
+}
+
+.quick-nav{
+  position:fixed;
+  right:12px;
+  bottom:18px;
+  z-index:9999;
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+}
+
+.quick-nav button{
+  width:auto;
+  min-width:92px;
+  min-height:44px;
+  margin:0;
+  padding:10px 14px;
+  border-radius:999px;
+  font-size:14px;
+  box-shadow:0 4px 14px rgba(0,0,0,.35);
+}
+
+.quick-stats{
+  background:linear-gradient(135deg,#18cbea,#1478ff);
+}
+
+.quick-top{
+  background:#263b55;
 }
 
 .footer{
-text-align:center;
-color:#607891;
-font-size:11px;
-margin-top:30px;
+  text-align:center;
+  color:#607891;
+  font-size:11px;
+  margin-top:30px;
+  line-height:1.7;
 }
 
 @media(max-width:480px){
 
-.container{
-padding-left:12px;
-padding-right:12px;
-}
+  .container{
+    padding-left:12px;
+    padding-right:12px;
+  }
 
-.place{
-font-size:20px;
-}
+  .place{
+    font-size:20px;
+  }
 
-.period-tabs button{
-font-size:13px;
-padding:8px 4px;
-}
+  .period-tabs button{
+    font-size:13px;
+    padding:8px 4px;
+  }
 
-}
+  .quick-nav{
+    right:8px;
+    bottom:12px;
+  }
 
+  .quick-nav button{
+    min-width:82px;
+    font-size:13px;
+  }
+}
 </style>
 </head>
 
 <body>
 
-<div class="container">
+<div class="container" id="pageTop">
 
-<div class="header">
+  <div class="header">
+    <h1>🚤 BOAT RACE AI予想</h1>
 
-<h1>
-🚤 BOAT RACE AI予想
-</h1>
+    <div class="sub">
+      全国24場の出走表を取得し、<br>
+      直前情報が揃ったレースをAI判定
+    </div>
+  </div>
 
-<div class="sub">
 
-全国24場の出走表を取得し、
-直前情報が揃ったレースをAI判定
+  <div class="card">
 
-</div>
+    <div class="title">
+      本日のレース
+    </div>
 
-</div>
+    <label>
+      1レース購入資金
+    </label>
 
+    <select id="budget">
+      <option value="1000" selected>1,000円</option>
+      <option value="2000">2,000円</option>
+      <option value="3000">3,000円</option>
+      <option value="5000">5,000円</option>
+      <option value="10000">10,000円</option>
+    </select>
 
-<div class="card">
+    <button onclick="loadToday()">
+      🔍 今日のレースを取得
+    </button>
 
-<div class="title">
-本日のレース
-</div>
+    <button
+      class="refresh"
+      onclick="loadToday()"
+    >
+      ↻ 最新データに更新
+    </button>
 
-<label>
-1レース購入資金
-</label>
+    <div style="height:14px"></div>
 
-<select id="budget">
+    <div
+      class="status"
+      id="status"
+    >
+      「今日のレースを取得」を押してください。
+    </div>
 
-<option
-value="1000"
-selected
->
-1,000円
-</option>
+    <div class="small">
+      出走表は表示します。<br>
+      展示情報が未反映のレースは
+      「展示情報待ち」と表示します。<br>
+      展示情報が6艇分揃ったレースだけS判定します。
+    </div>
 
-<option value="2000">
-2,000円
-</option>
+  </div>
 
-<option value="3000">
-3,000円
-</option>
 
-<option value="5000">
-5,000円
-</option>
+  <div id="results"></div>
 
-<option value="10000">
-10,000円
-</option>
 
-</select>
+  <div
+    class="card"
+    id="statsSection"
+  >
 
+    <div class="title">
+      📊 成績・統計
+    </div>
 
-<button onclick="loadToday()">
+    <div class="period-tabs">
 
-🔍 今日のレースを取得
+      <button
+        id="tab-day"
+        onclick="setPeriod('day')"
+      >
+        今日
+      </button>
 
-</button>
+      <button
+        id="tab-month"
+        onclick="setPeriod('month')"
+      >
+        今月
+      </button>
 
+      <button
+        id="tab-year"
+        onclick="setPeriod('year')"
+      >
+        今年
+      </button>
 
-<button
-class="refresh"
-onclick="loadToday()"
->
+    </div>
 
-↻ 最新データに更新
 
-</button>
+    <div id="stats"></div>
 
 
-<div style="height:14px">
-</div>
+    <button
+      id="historyToggleBtn"
+      class="toggle-btn"
+      onclick="toggleHistory()"
+    >
+      🎯 レース別結果を表示
+    </button>
 
 
-<div
-class="status"
-id="status"
->
+    <div
+      id="raceHistoryWrap"
+      style="display:none;"
+    >
 
-「今日のレースを取得」
-を押してください。
+      <div
+        id="raceHistory"
+        class="history-list"
+      ></div>
 
-</div>
+    </div>
 
 
-<div class="small">
+    <button
+      id="venueToggleBtn"
+      class="toggle-btn"
+      onclick="toggleVenueStats()"
+    >
+      📍 会場別成績を表示
+    </button>
 
-出走表は必ず表示します。<br>
 
-展示情報が未反映のレースは
-「展示情報待ち」と表示します。<br>
+    <div
+      id="venueStatsWrap"
+      style="display:none;margin-top:10px;"
+    >
 
-情報が揃ったレースだけ
-S判定します。
+      <div id="venueStats"></div>
 
-</div>
+    </div>
 
-</div>
+  </div>
 
 
-<div id="results">
-</div>
-
-
-<div class="card">
-
-<div class="title">
-
-📊 成績・統計
-
-</div>
-
-
-<div class="period-tabs">
-
-<button
-id="tab-day"
-onclick="setPeriod('day')"
->
-
-今日
-
-</button>
-
-
-<button
-id="tab-month"
-onclick="setPeriod('month')"
->
-
-今月
-
-</button>
-
-
-<button
-id="tab-year"
-onclick="setPeriod('year')"
->
-
-今年
-
-</button>
-
-</div>
-
-
-<div id="stats">
-</div>
-
-
-<div class="history-title">
-
-🎯 レース別結果
+  <div class="footer">
+    AI評価は参考情報です。<br>
+    投票は無理のない資金で行ってください。
+  </div>
 
 </div>
 
 
-<div
-id="raceHistory"
-class="history-list"
->
-</div>
+<div class="quick-nav">
 
+  <button
+    class="quick-stats"
+    onclick="goStats()"
+  >
+    📊 成績
+  </button>
 
-<div style="height:20px">
-</div>
-
-
-<div
-style="
-font-weight:900;
-margin-bottom:8px
-"
->
-
-会場別成績
-
-</div>
-
-
-<div id="venueStats">
-</div>
-
-</div>
-
-
-<div class="footer">
-
-AI評価は参考情報です。<br>
-
-投票は無理のない資金で
-行ってください。
-
-</div>
+  <button
+    class="quick-top"
+    onclick="goTop()"
+  >
+    ↑ 上へ
+  </button>
 
 </div>
 
 
 <script>
 
-const STADIUMS={
-
-1:"桐生",
-2:"戸田",
-3:"江戸川",
-4:"平和島",
-5:"多摩川",
-6:"浜名湖",
-7:"蒲郡",
-8:"常滑",
-9:"津",
-10:"三国",
-11:"びわこ",
-12:"住之江",
-13:"尼崎",
-14:"鳴門",
-15:"丸亀",
-16:"児島",
-17:"宮島",
-18:"徳山",
-19:"下関",
-20:"若松",
-21:"芦屋",
-22:"福岡",
-23:"唐津",
-24:"大村"
-
+const STADIUMS = {
+  1:"桐生",
+  2:"戸田",
+  3:"江戸川",
+  4:"平和島",
+  5:"多摩川",
+  6:"浜名湖",
+  7:"蒲郡",
+  8:"常滑",
+  9:"津",
+  10:"三国",
+  11:"びわこ",
+  12:"住之江",
+  13:"尼崎",
+  14:"鳴門",
+  15:"丸亀",
+  16:"児島",
+  17:"宮島",
+  18:"徳山",
+  19:"下関",
+  20:"若松",
+  21:"芦屋",
+  22:"福岡",
+  23:"唐津",
+  24:"大村"
 };
 
 
-const STORE_KEY=
-"boat_ai_s_records_v3";
+const STORE_KEY =
+  "boat_ai_s_records_v3";
 
 
-let currentPeriod=
-"month";
+let currentPeriod =
+  "month";
+
+
+function goTop(){
+
+  document
+    .getElementById("pageTop")
+    .scrollIntoView({
+      behavior:"smooth",
+      block:"start"
+    });
+
+}
+
+
+function goStats(){
+
+  document
+    .getElementById("statsSection")
+    .scrollIntoView({
+      behavior:"smooth",
+      block:"start"
+    });
+
+}
+
+
+function toggleHistory(){
+
+  const wrap =
+    document.getElementById(
+      "raceHistoryWrap"
+    );
+
+  const btn =
+    document.getElementById(
+      "historyToggleBtn"
+    );
+
+  const hidden =
+    getComputedStyle(wrap).display ===
+    "none";
+
+  if(hidden){
+
+    wrap.style.display =
+      "block";
+
+    btn.textContent =
+      "🎯 レース別結果を隠す";
+
+  }else{
+
+    wrap.style.display =
+      "none";
+
+    btn.textContent =
+      "🎯 レース別結果を表示";
+
+  }
+
+}
+
+
+function toggleVenueStats(){
+
+  const wrap =
+    document.getElementById(
+      "venueStatsWrap"
+    );
+
+  const btn =
+    document.getElementById(
+      "venueToggleBtn"
+    );
+
+  const hidden =
+    getComputedStyle(wrap).display ===
+    "none";
+
+  if(hidden){
+
+    wrap.style.display =
+      "block";
+
+    btn.textContent =
+      "📍 会場別成績を隠す";
+
+  }else{
+
+    wrap.style.display =
+      "none";
+
+    btn.textContent =
+      "📍 会場別成績を表示";
+
+  }
+
+}
 
 
 function n(
-value,
-fallback=0
+  value,
+  fallback = 0
 ){
 
-const number=
-Number(
-value
-);
+  const number =
+    Number(value);
 
-return(
-Number.isFinite(
-number
-)
-?number
-:fallback
-);
+  return Number.isFinite(number)
+    ? number
+    : fallback;
 
 }
 
 
 function todayJST(){
 
-return new Intl.DateTimeFormat(
-
-'sv-SE',
-
-{
-
-timeZone:
-'Asia/Tokyo',
-
-year:
-'numeric',
-
-month:
-'2-digit',
-
-day:
-'2-digit'
-
-}
-
-).format(
-new Date()
-);
+  return new Intl.DateTimeFormat(
+    "sv-SE",
+    {
+      timeZone:"Asia/Tokyo",
+      year:"numeric",
+      month:"2-digit",
+      day:"2-digit"
+    }
+  ).format(
+    new Date()
+  );
 
 }
 
 
-function compactDate(
-date
-){
+function compactDate(date){
 
-return date.replaceAll(
-'-',
-''
-);
+  return date.replaceAll(
+    "-",
+    ""
+  );
 
 }
 
 
 function apiUrl(
-type,
-date
+  type,
+  date
 ){
 
-return(
-
-`https://boatraceopenapi.github.io/${type}/v3/${date.slice(0,4)}/${compactDate(date)}.json`
-
-);
+  return (
+    "https://boatraceopenapi.github.io/" +
+    type +
+    "/v3/" +
+    date.slice(0,4) +
+    "/" +
+    compactDate(date) +
+    ".json"
+  );
 
 }
 
 
-async function fetchJSON(
-url
-){
+async function fetchJSON(url){
 
-const response=
-await fetch(
+  const response =
+    await fetch(
+      url + "?t=" + Date.now(),
+      {
+        cache:"no-store"
+      }
+    );
 
-`${url}?t=${Date.now()}`,
+  if(!response.ok){
 
-{
-cache:'no-store'
-}
+    throw new Error(
+      response.status +
+      " " +
+      url
+    );
 
-);
+  }
 
-if(
-!response.ok
-){
-
-throw new Error(
-
-`${response.status} ${url}`
-
-);
-
-}
-
-return await response.json();
+  return await response.json();
 
 }
 
 
 function loadRecords(){
 
-try{
+  try{
 
-return JSON.parse(
+    return JSON.parse(
+      localStorage.getItem(
+        STORE_KEY
+      ) || "[]"
+    );
 
-localStorage.getItem(
-STORE_KEY
-)
-||
-'[]'
+  }catch{
 
-);
+    return [];
 
-}catch{
-
-return [];
-
-}
+  }
 
 }
 
 
-function saveRecords(
-records
-){
+function saveRecords(records){
 
-localStorage.setItem(
-
-STORE_KEY,
-
-JSON.stringify(
-records
-)
-
-);
+  localStorage.setItem(
+    STORE_KEY,
+    JSON.stringify(records)
+  );
 
 }
 
 
 function keyOf(
-stadium,
-number
+  stadium,
+  raceNo
 ){
 
-return(
-
-`${Number(stadium)}-${Number(number)}`
-
-);
+  return (
+    Number(stadium) +
+    "-" +
+    Number(raceNo)
+  );
 
 }
 
 
-function indexByRace(
-array
-){
+function indexByRace(array){
 
-const map=
-new Map();
+  const map =
+    new Map();
 
-for(
-const race
-of (
-array||[]
-)
-){
+  for(
+    const race
+    of (array || [])
+  ){
 
-map.set(
+    map.set(
+      keyOf(
+        race.stadium_number,
+        race.number
+      ),
+      race
+    );
 
-keyOf(
-race.stadium_number,
-race.number
-),
+  }
 
-race
-
-);
-
-}
-
-return map;
+  return map;
 
 }
 
 
 function previewReady(
-preview
+  preview
 ){
 
-if(
-!preview ||
-!Array.isArray(
-preview.boats
-) ||
-preview.boats.length<6
-){
+  if(
+    !preview ||
+    !Array.isArray(
+      preview.boats
+    ) ||
+    preview.boats.length < 6
+  ){
 
-return false;
+    return false;
 
-}
+  }
 
-return preview.boats.every(
-
-boat=>
-
-Number(
-boat.racer_exhibition_time
-)>0
-
-&&
-
-boat.racer_start_timing!==null
-
-&&
-
-boat.racer_start_timing!==undefined
-
-);
+  return preview.boats.every(
+    boat =>
+      Number(
+        boat.racer_exhibition_time
+      ) > 0
+  );
 
 }
 
 
 function boatScore(
-programBoat,
-previewBoat
+  programBoat,
+  previewBoat
 ){
 
-const national=
-n(
-programBoat
-?.racer_national_top_1_percent,
-5
-);
+  const national =
+    n(
+      programBoat
+        ?.racer_national_top_1_percent,
+      5
+    );
 
-const local=
-n(
-programBoat
-?.racer_local_top_1_percent,
-national
-);
+  const local =
+    n(
+      programBoat
+        ?.racer_local_top_1_percent,
+      national
+    );
 
-const motor=
-n(
-programBoat
-?.racer_assigned_motor_top_2_percent,
-30
-);
+  const motor =
+    n(
+      programBoat
+        ?.racer_assigned_motor_top_2_percent,
+      30
+    );
 
-const boatRate=
-n(
-programBoat
-?.racer_assigned_boat_top_2_percent,
-30
-);
+  const boatRate =
+    n(
+      programBoat
+        ?.racer_assigned_boat_top_2_percent,
+      30
+    );
 
-const avgST=
-n(
-programBoat
-?.racer_average_start_timing,
-.18
-);
+  const avgST =
+    n(
+      programBoat
+        ?.racer_average_start_timing,
+      .18
+    );
 
-const exhibition=
-n(
-previewBoat
-?.racer_exhibition_time,
-6.85
-);
+  const exhibition =
+    n(
+      previewBoat
+        ?.racer_exhibition_time,
+      6.85
+    );
 
-const exhibitionST=
-n(
-previewBoat
-?.racer_start_timing,
-avgST
-);
+  const exhibitionST =
+    n(
+      previewBoat
+        ?.racer_start_timing,
+      avgST
+    );
 
-const racerClass=
-n(
-programBoat
-?.racer_class_number,
-3
-);
+  const racerClass =
+    n(
+      programBoat
+        ?.racer_class_number,
+      3
+    );
 
-const boat=
-n(
-programBoat
-?.racer_boat_number,
-6
-);
-
-
-let score=0;
+  const boat =
+    n(
+      programBoat
+        ?.racer_boat_number,
+      6
+    );
 
 
-score+=
-national*5;
+  let score = 0;
 
-score+=
-local*2.7;
+  score +=
+    national * 5;
 
-score+=
-motor*.30;
+  score +=
+    local * 2.7;
 
-score+=
-boatRate*.12;
+  score +=
+    motor * .30;
 
+  score +=
+    boatRate * .12;
 
-score+=
-Math.max(
+  score +=
+    Math.max(
+      0,
+      (.22 - avgST) * 70
+    );
 
-0,
+  score +=
+    Math.max(
+      0,
+      (6.95 - exhibition) * 35
+    );
 
-(.22-avgST)*70
-
-);
-
-
-score+=
-Math.max(
-
-0,
-
-(6.95-exhibition)*35
-
-);
-
-
-score+=
-Math.max(
-
-0,
-
-(.20-exhibitionST)*45
-
-);
+  score +=
+    Math.max(
+      0,
+      (.20 - exhibitionST) * 45
+    );
 
 
-if(
-racerClass===1
-){
+  if(racerClass === 1){
 
-score+=6;
+    score += 6;
 
-}else if(
-racerClass===2
-){
+  }else if(
+    racerClass === 2
+  ){
 
-score+=4;
+    score += 4;
 
-}
+  }
 
 
-score+=({
+  const courseBonus = {
+    1:12,
+    2:6,
+    3:4,
+    4:2,
+    5:0,
+    6:-2
+  };
 
-1:12,
-2:6,
-3:4,
-4:2,
-5:0,
-6:-2
-
-}[boat]||0);
+  score +=
+    courseBonus[boat] || 0;
 
 
-return score;
+  return score;
 
 }
 
 
 function evaluateRace(
-program,
-preview
+  program,
+  preview
 ){
 
-if(
-!previewReady(
-preview
-)
-){
+  if(
+    !previewReady(preview)
+  ){
 
-return null;
+    return null;
 
-}
+  }
 
 
-const programBoats=
-program?.boats||[];
+  const programBoats =
+    program?.boats || [];
 
 
-const previewMap=
-new Map(
+  if(
+    programBoats.length < 6
+  ){
 
-(
-preview.boats||[]
-)
-.map(
+    return null;
 
-boat=>
+  }
 
-[
-Number(
-boat.racer_boat_number
-),
-boat
-]
 
-)
+  const previewMap =
+    new Map(
+      preview.boats.map(
+        boat => [
+          Number(
+            boat.racer_boat_number
+          ),
+          boat
+        ]
+      )
+    );
 
-);
 
+  const boats =
+    programBoats
+      .map(
+        programBoat => ({
 
-if(
-programBoats.length<6
-){
+          boat:
+            Number(
+              programBoat
+                .racer_boat_number
+            ),
 
-return null;
+          score:
+            boatScore(
+              programBoat,
+              previewMap.get(
+                Number(
+                  programBoat
+                    .racer_boat_number
+                )
+              )
+            )
 
-}
+        })
+      )
+      .sort(
+        (a,b) =>
+          b.score - a.score
+      );
 
 
-const boats=
+  const gap1 =
+    boats[0].score -
+    boats[1].score;
 
-programBoats
 
-.map(
+  const gap2 =
+    boats[1].score -
+    boats[2].score;
 
-programBoat=>({
 
-boat:
-Number(
-programBoat.racer_boat_number
-),
+  let confidence =
+    60 +
+    Math.min(
+      18,
+      gap1 * 2.2
+    ) +
+    Math.min(
+      8,
+      gap2
+    );
 
-score:
-boatScore(
 
-programBoat,
+  if(
+    boats[0].boat === 1
+  ){
 
-previewMap.get(
+    confidence += 7;
 
-Number(
-programBoat.racer_boat_number
-)
+  }
 
-)
 
-)
+  const wind =
+    n(
+      preview.wind_speed,
+      0
+    );
 
-})
+  const wave =
+    n(
+      preview.wave_height,
+      0
+    );
 
-)
 
-.sort(
+  if(wind >= 6){
 
-(a,b)=>
-b.score-a.score
+    confidence -= 6;
 
-);
+  }
 
+  if(wave >= 5){
 
-const gap1=
-boats[0].score-
-boats[1].score;
+    confidence -= 4;
 
+  }
 
-const gap2=
-boats[1].score-
-boats[2].score;
 
+  confidence =
+    Math.max(
+      0,
+      Math.min(
+        99,
+        confidence
+      )
+    );
 
-let confidence=
 
-60+
+  const grade =
+    (
+      confidence >= 78 &&
+      gap1 >= 5
+    )
+    ? "S"
+    :
+    (
+      confidence >= 68
+      ? "A"
+      : "B"
+    );
 
-Math.min(
-18,
-gap1*2.2
-)
 
-+
-
-Math.min(
-8,
-gap2
-);
-
-
-if(
-boats[0].boat===1
-){
-
-confidence+=7;
-
-}
-
-
-const wind=
-n(
-preview?.wind_speed,
-0
-);
-
-
-const wave=
-n(
-preview?.wave_height,
-0
-);
-
-
-if(
-wind>=6
-){
-
-confidence-=6;
-
-}
-
-
-if(
-wave>=5
-){
-
-confidence-=4;
-
-}
-
-
-confidence=
-Math.max(
-
-0,
-
-Math.min(
-99,
-confidence
-)
-
-);
-
-
-const grade=
-
-(
-confidence>=78
-&&
-gap1>=5
-)
-
-?'S'
-
-:
-(
-confidence>=68
-?'A'
-:'B'
-);
-
-
-return{
-
-grade,
-confidence,
-boats,
-wind,
-wave
-
-};
+  return {
+    grade,
+    confidence,
+    boats,
+    wind,
+    wave
+  };
 
 }
 
 
 function uniquePush(
-array,
-value
+  array,
+  value
 ){
 
-if(
-value &&
-!array.includes(
-value
-)
-){
+  if(
+    value &&
+    !array.includes(value)
+  ){
 
-array.push(
-value
-);
+    array.push(value);
 
-}
+  }
 
 }
 
 
-function makeTickets(
-boats
-){
+function makeTickets(boats){
 
-const[
-a,
-b,
-c,
-d
-]=
-boats
-.slice(
-0,
-4
-)
-.map(
-item=>item.boat
-);
+  const [
+    a,
+    b,
+    c,
+    d
+  ] =
+    boats
+      .slice(0,4)
+      .map(
+        item => item.boat
+      );
 
 
-const main=[];
-const cover=[];
-const hole=[];
+  const main = [];
+  const cover = [];
+  const hole = [];
 
 
-uniquePush(
-main,
-`${a}-${b}-${c}`
-);
+  uniquePush(
+    main,
+    `${a}-${b}-${c}`
+  );
 
-uniquePush(
-main,
-`${a}-${c}-${b}`
-);
+  uniquePush(
+    main,
+    `${a}-${c}-${b}`
+  );
 
-uniquePush(
-main,
-`${a}-${b}-${d}`
-);
-
-
-uniquePush(
-cover,
-`${a}-${c}-${d}`
-);
-
-uniquePush(
-cover,
-`${a}-${d}-${b}`
-);
-
-uniquePush(
-cover,
-`${b}-${a}-${c}`
-);
-
-uniquePush(
-cover,
-`${b}-${c}-${a}`
-);
+  uniquePush(
+    main,
+    `${a}-${b}-${d}`
+  );
 
 
-uniquePush(
-hole,
-`${c}-${a}-${b}`
-);
+  uniquePush(
+    cover,
+    `${a}-${c}-${d}`
+  );
 
-uniquePush(
-hole,
-`${b}-${d}-${a}`
-);
+  uniquePush(
+    cover,
+    `${a}-${d}-${b}`
+  );
 
-uniquePush(
-hole,
-`${d}-${a}-${c}`
-);
+  uniquePush(
+    cover,
+    `${b}-${a}-${c}`
+  );
+
+  uniquePush(
+    cover,
+    `${b}-${c}-${a}`
+  );
 
 
-return{
+  uniquePush(
+    hole,
+    `${c}-${a}-${b}`
+  );
 
-main,
-cover,
-hole
+  uniquePush(
+    hole,
+    `${b}-${d}-${a}`
+  );
 
-};
+  uniquePush(
+    hole,
+    `${d}-${a}-${c}`
+  );
+
+
+  return {
+    main,
+    cover,
+    hole
+  };
 
 }
 
 
-function allTickets(
-tickets
-){
+function allTickets(tickets){
 
-return[
-
-...tickets.main,
-
-...tickets.cover,
-
-...tickets.hole
-
-];
+  return [
+    ...tickets.main,
+    ...tickets.cover,
+    ...tickets.hole
+  ];
 
 }
 
 
 function recordKey(
-date,
-stadium,
-raceNo
+  date,
+  stadium,
+  raceNo
 ){
 
-return(
-
-`${date}-${Number(stadium)}-${Number(raceNo)}`
-
-);
+  return (
+    date +
+    "-" +
+    Number(stadium) +
+    "-" +
+    Number(raceNo)
+  );
 
 }
 
 
 function upsertPrediction(
-date,
-program,
-analysis,
-tickets,
-stake
+  date,
+  program,
+  analysis,
+  tickets,
+  stake
 ){
 
-let records=
-loadRecords();
+  let records =
+    loadRecords();
 
 
-const key=
-recordKey(
-
-date,
-
-program.stadium_number,
-
-program.number
-
-);
+  const key =
+    recordKey(
+      date,
+      program.stadium_number,
+      program.number
+    );
 
 
-let record=
-records.find(
-
-item=>
-item.key===key
-
-);
+  let record =
+    records.find(
+      item =>
+        item.key === key
+    );
 
 
-if(
-!record
-){
+  if(!record){
 
-record={
+    record = {
 
-key:key,
+      key,
 
-date:date,
+      date,
 
-stadium:
-Number(
-program.stadium_number
-),
+      stadium:
+        Number(
+          program.stadium_number
+        ),
 
-venue:
-STADIUMS[
-program.stadium_number
-]
-||
-`会場${program.stadium_number}`,
+      venue:
+        STADIUMS[
+          program.stadium_number
+        ] ||
+        "会場" +
+        program.stadium_number,
 
-raceNo:
-Number(
-program.number
-),
+      raceNo:
+        Number(
+          program.number
+        ),
 
-confidence:
-Math.round(
-analysis.confidence
-),
+      confidence:
+        Math.round(
+          analysis.confidence
+        ),
 
-tickets:
-allTickets(
-tickets
-),
+      tickets:
+        allTickets(
+          tickets
+        ),
 
-stake:
-stake,
+      stake,
 
-perTicket:
-stake/10,
+      perTicket:
+        stake / 10,
 
-status:
-'pending',
+      status:
+        "pending",
 
-result:
-'',
+      result:
+        "",
 
-payout:
-0,
+      payout:
+        0,
 
-returnAmount:
-0,
+      returnAmount:
+        0,
 
-hit:
-false,
+      hit:
+        false,
 
-createdAt:
-new Date()
-.toISOString()
+      createdAt:
+        new Date()
+          .toISOString()
 
-};
+    };
 
 
-records.push(
-record
-);
+    records.push(record);
+
+    saveRecords(records);
+
+  }
 
 
-saveRecords(
-records
-);
-
-}
-
-
-return record;
+  return record;
 
 }
 
 
 function ticketsHTML(
-title,
-className,
-tickets,
-amount
+  title,
+  className,
+  tickets,
+  amount
 ){
 
-return(
+  return `
+    <div class="bet-title ${className}">
+      ${title}
+    </div>
 
-`
+    ${tickets.map(
+      ticket => `
+        <div class="ticket">
 
-<div class="bet-title ${className}">
+          <div class="combo">
+            ${ticket}
+          </div>
 
-${title}
+          <div class="money">
+            ${amount.toLocaleString()}円
+          </div>
 
-</div>
-
-${
-
-tickets.map(
-
-ticket=>
-
-`
-
-<div class="ticket">
-
-<div class="combo">
-
-${ticket}
-
-</div>
-
-<div class="money">
-
-${amount.toLocaleString()}円
-
-</div>
-
-</div>
-
-`
-
-).join('')
-
-}
-
-`
-
-);
+        </div>
+      `
+    ).join("")}
+  `;
 
 }
 
 
-function resultHTML(
-record
-){
+function resultHTML(record){
 
-if(
-!record ||
-record.status!=='done'
-){
+  if(
+    !record ||
+    record.status !== "done"
+  ){
 
-return(
+    return `
+      <span class="result-badge pending">
+        ⏳ 結果待ち
+      </span>
+    `;
 
-'<span class="result-badge pending">⏳ 結果待ち</span>'
-
-);
-
-}
+  }
 
 
-return(
+  if(record.hit){
 
-record.hit
+    return `
+      <span class="result-badge hit">
+        🎯 的中　${record.result}
+      </span>
+    `;
 
-?
+  }
 
-`
 
-<span class="result-badge hit">
-
-🎯 的中　
-${record.result}
-
-</span>
-
-`
-
-:
-
-`
-
-<span class="result-badge miss">
-
-✕ 不的中　
-${record.result}
-
-</span>
-
-`
-
-);
+  return `
+    <span class="result-badge miss">
+      ✕ 不的中　${record.result}
+    </span>
+  `;
 
 }
 
 
-function isUpcoming(
-program
-){
+function isUpcoming(program){
 
-if(
-!program?.closed_at
-){
+  if(!program?.closed_at){
 
-return true;
+    return true;
 
-}
+  }
 
 
-const date=
-
-new Date(
-
-program.closed_at
-.replace(
-' ',
-'T'
-)
-
-+
-'+09:00'
-
-);
+  const date =
+    new Date(
+      program.closed_at
+        .replace(
+          " ",
+          "T"
+        ) +
+      "+09:00"
+    );
 
 
-return(
-
-date.getTime()
->
-Date.now()
-
-);
+  return (
+    date.getTime() >
+    Date.now()
+  );
 
 }
 
 
 function renderWaiting(
-program
+  program
 ){
 
-const venue=
-
-STADIUMS[
-program.stadium_number
-]
-
-||
-
-`会場${program.stadium_number}`;
+  const venue =
+    STADIUMS[
+      program.stadium_number
+    ] ||
+    "会場" +
+    program.stadium_number;
 
 
-const closed=
-
-program.closed_at
-
-?
-
-program.closed_at
-.substring(
-11,
-16
-)
-
-:
-
-'--:--';
+  const closed =
+    program.closed_at
+    ?
+    program.closed_at
+      .substring(
+        11,
+        16
+      )
+    :
+    "--:--";
 
 
-return(
+  return `
+    <div class="race-card wait">
 
-`
+      <div class="race-head">
 
-<div class="race-card wait">
+        <div>
 
-<div class="race-head">
+          <div class="place">
+            ${venue}
+          </div>
 
-<div>
+          <div class="race-number">
+            ${program.number}R　
+            締切 ${closed}
+          </div>
 
-<div class="place">
+        </div>
 
-${venue}
+        <div class="badge wait-badge">
+          展示情報待ち
+        </div>
 
-</div>
+      </div>
 
-<div class="race-number">
+      <div class="info">
+        出走表は取得できています。<br>
+        直前情報がAPIに反映されたら
+        S判定します。
+      </div>
 
-${program.number}R　
-締切 ${closed}
-
-</div>
-
-</div>
-
-
-<div class="badge wait-badge">
-
-展示情報待ち
-
-</div>
-
-</div>
-
-
-<div class="info">
-
-出走表は取得できています。<br>
-
-直前情報がAPIに反映されたら
-自動でS判定します。
-
-</div>
-
-</div>
-
-`
-
-);
+    </div>
+  `;
 
 }
 
 
 function renderS(
-program,
-analysis,
-date
+  program,
+  analysis,
+  date
 ){
 
-const budget=
+  const budget =
+    Number(
+      document
+        .getElementById(
+          "budget"
+        )
+        .value
+    );
 
-Number(
 
-document
-.getElementById(
-'budget'
-)
-.value
+  const perTicket =
+    Math.max(
+      100,
+      Math.floor(
+        budget / 10 / 100
+      ) * 100
+    );
 
-);
 
+  const stake =
+    perTicket * 10;
 
-const perTicket=
 
-Math.max(
+  const tickets =
+    makeTickets(
+      analysis.boats
+    );
 
-100,
 
-Math.floor(
+  const record =
+    upsertPrediction(
+      date,
+      program,
+      analysis,
+      tickets,
+      stake
+    );
 
-budget/10/100
 
-)*100
+  const venue =
+    STADIUMS[
+      program.stadium_number
+    ] ||
+    "会場" +
+    program.stadium_number;
 
-);
 
+  const closed =
+    program.closed_at
+    ?
+    program.closed_at
+      .substring(
+        11,
+        16
+      )
+    :
+    "--:--";
 
-const stake=
-perTicket*10;
 
+  const [
+    first,
+    second,
+    third
+  ] =
+    analysis.boats;
 
-const tickets=
-makeTickets(
-analysis.boats
-);
 
+  return `
+    <div class="race-card s">
 
-const record=
-upsertPrediction(
+      <div class="race-head">
 
-date,
+        <div>
 
-program,
+          <div class="place">
+            ${venue}
+          </div>
 
-analysis,
+          <div class="race-number">
+            ${program.number}R　
+            締切 ${closed}
+          </div>
 
-tickets,
+        </div>
 
-stake
+        <div class="badge s-badge">
+          S
+        </div>
 
-);
+      </div>
 
 
-const venue=
+      <div class="score">
 
-STADIUMS[
-program.stadium_number
-]
+        <div class="score-main">
 
-||
+          <span>
+            AI信頼度
+          </span>
 
-`会場${program.stadium_number}`;
+          <span class="score-value">
+            ${analysis.confidence.toFixed(0)}%
+          </span>
 
+        </div>
 
-const closed=
 
-program.closed_at
+        <div class="rank">
 
-?
+          <div class="rank-box">
+            <div class="rank-label">
+              1着候補
+            </div>
+            <div class="rank-boat">
+              ${first.boat}号艇
+            </div>
+          </div>
 
-program.closed_at
-.substring(
-11,
-16
-)
+          <div class="rank-box">
+            <div class="rank-label">
+              2着候補
+            </div>
+            <div class="rank-boat">
+              ${second.boat}号艇
+            </div>
+          </div>
 
-:
+          <div class="rank-box">
+            <div class="rank-label">
+              3着候補
+            </div>
+            <div class="rank-boat">
+              ${third.boat}号艇
+            </div>
+          </div>
 
-'--:--';
+        </div>
 
+      </div>
 
-const[
-first,
-second,
-third
-]=
-analysis.boats;
 
+      ${ticketsHTML(
+        "🔵 本線 3点",
+        "main-title",
+        tickets.main,
+        perTicket
+      )}
 
-return(
 
-`
+      ${ticketsHTML(
+        "🟡 押さえ 4点",
+        "cover-title",
+        tickets.cover,
+        perTicket
+      )}
 
-<div
-class="race-card s"
-data-race-key="${record.key}"
->
 
-<div class="race-head">
+      ${ticketsHTML(
+        "🔴 穴 3点",
+        "hole-title",
+        tickets.hole,
+        perTicket
+      )}
 
-<div>
 
-<div class="place">
+      <div class="total">
 
-${venue}
+        <span>
+          合計
+        </span>
 
-</div>
+        <span>
+          ${stake.toLocaleString()}円
+        </span>
 
-<div class="race-number">
+      </div>
 
-${program.number}R　
-締切 ${closed}
 
-</div>
+      <div class="info">
 
-</div>
+        風速
+        ${analysis.wind}m
+        /
+        波高
+        ${analysis.wave}cm
 
+        <br>
 
-<div class="badge s-badge">
+        ${resultHTML(record)}
 
-S
+      </div>
 
-</div>
-
-</div>
-
-
-<div class="score">
-
-<div class="score-main">
-
-<span>
-
-AI信頼度
-
-</span>
-
-<span class="score-value">
-
-${analysis.confidence.toFixed(0)}%
-
-</span>
-
-</div>
-
-
-<div class="rank">
-
-
-<div class="rank-box">
-
-<div class="rank-label">
-
-1着候補
-
-</div>
-
-<div class="rank-boat">
-
-${first.boat}号艇
-
-</div>
-
-</div>
-
-
-<div class="rank-box">
-
-<div class="rank-label">
-
-2着候補
-
-</div>
-
-<div class="rank-boat">
-
-${second.boat}号艇
-
-</div>
-
-</div>
-
-
-<div class="rank-box">
-
-<div class="rank-label">
-
-3着候補
-
-</div>
-
-<div class="rank-boat">
-
-${third.boat}号艇
-
-</div>
-
-</div>
-
-
-</div>
-
-</div>
-
-
-${
-
-ticketsHTML(
-
-'🔵 本線 3点',
-
-'main-title',
-
-tickets.main,
-
-perTicket
-
-)
-
-}
-
-
-${
-
-ticketsHTML(
-
-'🟡 押さえ 4点',
-
-'cover-title',
-
-tickets.cover,
-
-perTicket
-
-)
-
-}
-
-
-${
-
-ticketsHTML(
-
-'🔴 穴 3点',
-
-'hole-title',
-
-tickets.hole,
-
-perTicket
-
-)
-
-}
-
-
-<div class="total">
-
-<span>
-
-合計
-
-</span>
-
-<span>
-
-${stake.toLocaleString()}円
-
-</span>
-
-</div>
-
-
-<div class="info">
-
-風速
-${analysis.wind}m
-
-/
-
-波高
-${analysis.wave}cm
-
-<br>
-
-<span class="js-result">
-
-${resultHTML(record)}
-
-</span>
-
-</div>
-
-</div>
-
-`
-
-);
+    </div>
+  `;
 
 }
 
 
 function getTrifectas(
-resultRace
+  resultRace
 ){
 
-const array=
+  const array =
+    resultRace
+      ?.payouts
+      ?.trifecta;
 
-resultRace
-?.payouts
-?.trifecta;
 
-
-return(
-
-Array.isArray(
-array
-)
-
-?
-
-array.filter(
-
-item=>
-item?.combination
-
-)
-
-:
-
-[]
-
-);
+  return Array.isArray(array)
+    ?
+    array.filter(
+      item =>
+        item?.combination
+    )
+    :
+    [];
 
 }
 
 
 function settleRecordsForDate(
-date,
-resultsArray
+  date,
+  resultsArray
 ){
 
-let records=
-loadRecords();
+  let records =
+    loadRecords();
 
 
-let changed=
-false;
+  let changed =
+    false;
 
 
-const resultMap=
-indexByRace(
-resultsArray
-);
+  const resultMap =
+    indexByRace(
+      resultsArray
+    );
 
 
-for(
-const record
-of records
-){
+  for(
+    const record
+    of records
+  ){
 
-if(
-record.date!==date
-||
-record.status==='done'
-){
+    if(
+      record.date !== date ||
+      record.status === "done"
+    ){
 
-continue;
+      continue;
 
-}
-
-
-const resultRace=
-
-resultMap.get(
-
-keyOf(
-
-record.stadium,
-
-record.raceNo
-
-)
-
-);
+    }
 
 
-const trifectas=
-getTrifectas(
-resultRace
-);
+    const resultRace =
+      resultMap.get(
+        keyOf(
+          record.stadium,
+          record.raceNo
+        )
+      );
 
 
-if(
-!trifectas.length
-){
-
-continue;
-
-}
+    const trifectas =
+      getTrifectas(
+        resultRace
+      );
 
 
-const hit=
+    if(
+      !trifectas.length
+    ){
 
-trifectas.find(
+      continue;
 
-item=>
-
-record.tickets
-.includes(
-item.combination
-)
-
-);
+    }
 
 
-const official=
-trifectas[0];
+    const hit =
+      trifectas.find(
+        item =>
+          record.tickets.includes(
+            item.combination
+          )
+      );
 
 
-record.status=
-'done';
+    const official =
+      trifectas[0];
 
 
-record.result=
-
-official?.combination
-||
-'';
+    record.status =
+      "done";
 
 
-record.payout=
-
-n(
-official?.amount,
-0
-);
+    record.result =
+      official
+        ?.combination || "";
 
 
-record.hit=
-!!hit;
+    record.payout =
+      n(
+        official
+          ?.amount,
+        0
+      );
 
 
-record.returnAmount=
-
-hit
-
-?
-
-Math.round(
-
-record.perTicket
-*
-n(
-hit.amount,
-0
-)
-/
-100
-
-)
-
-:
-
-0;
+    record.hit =
+      !!hit;
 
 
-record.settledAt=
-
-new Date()
-.toISOString();
-
-
-changed=
-true;
-
-}
-
-
-if(
-changed
-){
-
-saveRecords(
-records
-);
-
-}
+    record.returnAmount =
+      hit
+      ?
+      Math.round(
+        record.perTicket *
+        n(
+          hit.amount,
+          0
+        ) /
+        100
+      )
+      :
+      0;
 
 
-return changed;
+    record.settledAt =
+      new Date()
+        .toISOString();
+
+
+    changed =
+      true;
+
+  }
+
+
+  if(changed){
+
+    saveRecords(records);
+
+  }
+
+
+  return changed;
 
 }
 
 
 async function loadToday(){
 
-const status=
+  const status =
+    document.getElementById(
+      "status"
+    );
 
-document
-.getElementById(
-'status'
-);
 
+  const resultsBox =
+    document.getElementById(
+      "results"
+    );
 
-const resultsBox=
 
-document
-.getElementById(
-'results'
-);
+  const date =
+    todayJST();
 
 
-const date=
-todayJST();
+  status.textContent =
+    "出走表・直前情報・結果を取得しています…";
 
 
-status.textContent=
+  resultsBox.innerHTML =
+    "";
+
+
+  try{
+
+
+    const [
+      programResponse,
+      previewResponse,
+      resultResponse
+    ] =
+      await Promise.allSettled([
+        fetchJSON(
+          apiUrl(
+            "programs",
+            date
+          )
+        ),
 
-'出走表・直前情報・結果を取得しています…';
+        fetchJSON(
+          apiUrl(
+            "previews",
+            date
+          )
+        ),
 
+        fetchJSON(
+          apiUrl(
+            "results",
+            date
+          )
+        )
+      ]);
 
-resultsBox.innerHTML=
-'';
 
+    if(
+      programResponse.status !==
+      "fulfilled"
+    ){
 
-try{
+      throw programResponse.reason;
 
+    }
 
-const[
-programResponse,
-previewResponse,
-resultResponse
-]=
 
-await Promise.allSettled(
+    const programs =
+      programResponse
+        .value
+        ?.programs || [];
 
-[
 
-fetchJSON(
-apiUrl(
-'programs',
-date
-)
-),
+    const previews =
+      previewResponse.status ===
+      "fulfilled"
+      ?
+      previewResponse
+        .value
+        ?.previews || []
+      :
+      [];
 
-fetchJSON(
-apiUrl(
-'previews',
-date
-)
-),
 
-fetchJSON(
-apiUrl(
-'results',
-date
-)
-)
+    const results =
+      resultResponse.status ===
+      "fulfilled"
+      ?
+      resultResponse
+        .value
+        ?.results || []
+      :
+      [];
 
-]
 
-);
+    const previewMap =
+      indexByRace(
+        previews
+      );
 
 
-if(
-programResponse.status!==
-'fulfilled'
-){
+    settleRecordsForDate(
+      date,
+      results
+    );
 
-throw(
-programResponse.reason
-);
 
-}
+    const upcoming =
+      programs
+        .filter(
+          isUpcoming
+        )
+        .sort(
+          (a,b) =>
+            Number(
+              a.stadium_number
+            ) -
+            Number(
+              b.stadium_number
+            )
+            ||
+            Number(
+              a.number
+            ) -
+            Number(
+              b.number
+            )
+        );
 
 
-const programs=
+    let html = "";
 
-programResponse
-.value
-?.programs
-||
-[];
+    let sCount = 0;
 
+    let waitCount = 0;
 
-const previews=
+    let checkedCount = 0;
 
-previewResponse.status===
-'fulfilled'
 
-?
+    for(
+      const program
+      of upcoming
+    ){
 
-previewResponse
-.value
-?.previews
-||
-[]
+      const preview =
+        previewMap.get(
+          keyOf(
+            program.stadium_number,
+            program.number
+          )
+        );
 
-:
 
-[];
+      const analysis =
+        evaluateRace(
+          program,
+          preview
+        );
 
 
-const results=
+      if(!analysis){
 
-resultResponse.status===
-'fulfilled'
+        html +=
+          renderWaiting(
+            program
+          );
 
-?
+        waitCount++;
 
-resultResponse
-.value
-?.results
-||
-[]
+        continue;
 
-:
+      }
 
-[];
 
+      checkedCount++;
 
-const previewMap=
-indexByRace(
-previews
-);
 
+      if(
+        analysis.grade === "S"
+      ){
 
-settleRecordsForDate(
-date,
-results
-);
+        html +=
+          renderS(
+            program,
+            analysis,
+            date
+          );
 
+        sCount++;
 
-const upcoming=
+      }
 
-programs
+    }
 
-.filter(
-isUpcoming
-)
 
-.sort(
+    resultsBox.innerHTML =
+      html ||
+      `
+        <div class="no-race">
+          本日の今後のレースはありません。
+        </div>
+      `;
 
-(a,b)=>
 
-Number(
-a.stadium_number
-)
+    status.textContent =
+      `${date}：今後 ${upcoming.length}レース / ` +
+      `S確定 ${sCount} / ` +
+      `展示待ち ${waitCount} / ` +
+      `判定済み ${checkedCount}`;
 
--
 
-Number(
-b.stadium_number
-)
+    if(
+      previewResponse.status !==
+      "fulfilled"
+    ){
 
-||
+      status.textContent +=
+        "（直前情報APIを取得できません）";
 
-Number(
-a.number
-)
+    }
 
--
 
-Number(
-b.number
-)
+    renderStats();
 
-);
 
+  }catch(error){
 
-let html='';
 
-let sCount=0;
+    console.error(error);
 
-let waitCount=0;
 
-let checkedCount=0;
+    status.textContent =
+      "出走表の取得に失敗しました。";
 
 
-for(
-const program
-of upcoming
-){
+    resultsBox.innerHTML =
+      `
+        <div class="no-race">
 
-const preview=
+          出走表APIを取得できませんでした。
 
-previewMap.get(
+          <br><br>
 
-keyOf(
+          少し時間を置いて
+          更新してください。
 
-program.stadium_number,
+        </div>
+      `;
 
-program.number
 
-)
+    renderStats();
 
-);
-
-
-const analysis=
-
-evaluateRace(
-
-program,
-
-preview
-
-);
-
-
-if(
-!analysis
-){
-
-html+=
-renderWaiting(
-program
-);
-
-waitCount++;
-
-continue;
-
-}
-
-
-checkedCount++;
-
-
-if(
-analysis.grade==='S'
-){
-
-html+=
-renderS(
-
-program,
-
-analysis,
-
-date
-
-);
-
-sCount++;
-
-}
-
-}
-
-
-resultsBox.innerHTML=
-
-html
-
-||
-
-`
-
-<div class="no-race">
-
-本日の今後のレースはありません。
-
-</div>
-
-`;
-
-
-status.textContent=
-
-`${date}：
-今後 ${upcoming.length}レース /
-S確定 ${sCount} /
-展示待ち ${waitCount} /
-判定済み ${checkedCount}`;
-
-
-if(
-previewResponse.status!==
-'fulfilled'
-){
-
-status.textContent+=
-
-'（直前情報APIは現在取得できません）';
-
-}
-
-
-renderStats();
-
-
-}catch(
-error
-){
-
-console.error(
-error
-);
-
-
-status.textContent=
-
-'出走表の取得に失敗しました。';
-
-
-resultsBox.innerHTML=
-
-`
-
-<div class="no-race">
-
-出走表APIを取得できませんでした。
-
-<br><br>
-
-少し時間を置いて
-更新してください。
-
-</div>
-
-`;
-
-
-renderStats();
-
-}
+  }
 
 }
 
 
 function periodMatch(
-date,
-period
+  date,
+  period
 ){
 
-const today=
-todayJST();
+  const today =
+    todayJST();
 
 
-if(
-period==='day'
-){
+  if(period === "day"){
 
-return(
-date===today
-);
+    return date === today;
+
+  }
+
+
+  if(period === "month"){
+
+    return (
+      date.slice(0,7) ===
+      today.slice(0,7)
+    );
+
+  }
+
+
+  return (
+    date.slice(0,4) ===
+    today.slice(0,4)
+  );
 
 }
 
 
-if(
-period==='month'
-){
+function calcStats(rows){
 
-return(
-
-date.slice(
-0,
-7
-)
-
-===
-
-today.slice(
-0,
-7
-)
-
-);
-
-}
+  const done =
+    rows.filter(
+      record =>
+        record.status ===
+        "done"
+    );
 
 
-return(
-
-date.slice(
-0,
-4
-)
-
-===
-
-today.slice(
-0,
-4
-)
-
-);
-
-}
+  const races =
+    done.length;
 
 
-function calcStats(
-rows
-){
-
-const done=
-
-rows.filter(
-
-record=>
-record.status==='done'
-
-);
+  const hits =
+    done.filter(
+      record =>
+        record.hit
+    ).length;
 
 
-const races=
-done.length;
+  const stake =
+    done.reduce(
+      (sum,record) =>
+        sum +
+        n(record.stake),
+      0
+    );
 
 
-const hits=
-
-done.filter(
-
-record=>
-record.hit
-
-).length;
-
-
-const stake=
-
-done.reduce(
-
-(sum,record)=>
-
-sum+
-n(
-record.stake
-),
-
-0
-
-);
+  const returns =
+    done.reduce(
+      (sum,record) =>
+        sum +
+        n(record.returnAmount),
+      0
+    );
 
 
-const returns=
+  return {
 
-done.reduce(
+    races,
 
-(sum,record)=>
+    hits,
 
-sum+
-n(
-record.returnAmount
-),
+    stake,
 
-0
+    returns,
 
-);
+    hitRate:
+      races
+      ?
+      hits / races * 100
+      :
+      0,
 
+    roi:
+      stake
+      ?
+      returns / stake * 100
+      :
+      0,
 
-return{
+    profit:
+      returns - stake
 
-races,
-
-hits,
-
-stake,
-
-returns,
-
-hitRate:
-
-races
-
-?
-
-hits/races*100
-
-:
-
-0,
-
-roi:
-
-stake
-
-?
-
-returns/stake*100
-
-:
-
-0,
-
-profit:
-
-returns-stake
-
-};
+  };
 
 }
 
 
-function setPeriod(
-period
-){
+function setPeriod(period){
 
-currentPeriod=
-period;
+  currentPeriod =
+    period;
 
-renderStats();
+  renderStats();
 
 }
 
 
 function renderStats(){
 
-for(
-const period
-of[
-'day',
-'month',
-'year'
-]
-){
-
-document
-.getElementById(
-
-`tab-${period}`
-
-)
-
-?.classList
-
-.toggle(
-
-'active',
-
-period===
-currentPeriod
-
-);
-
-}
-
-
-const rows=
-
-loadRecords()
-
-.filter(
-
-record=>
-
-periodMatch(
-
-record.date,
-
-currentPeriod
-
-)
-
-)
-
-.sort(
-
-(a,b)=>
-
-b.date.localeCompare(
-a.date
-)
-
-||
-
-Number(
-a.stadium
-)
-
--
-
-Number(
-b.stadium
-)
-
-||
-
-Number(
-a.raceNo
-)
-
--
-
-Number(
-b.raceNo
-)
-
-);
-
-
-const stats=
-calcStats(
-rows
-);
-
-
-const profitClass=
-
-stats.profit>=0
-
-?
-
-'positive'
-
-:
-
-'negative';
-
-
-document
-.getElementById(
-'stats'
-)
-.innerHTML=
-
-`
-
-<div class="stats-grid">
-
-
-<div class="stat">
-
-<div class="stat-label">
-確定レース
-</div>
-
-<div class="stat-value">
-${stats.races}
-</div>
-
-</div>
-
-
-<div class="stat">
-
-<div class="stat-label">
-的中
-</div>
-
-<div class="stat-value">
-${stats.hits}
-</div>
-
-</div>
-
-
-<div class="stat">
-
-<div class="stat-label">
-的中率
-</div>
-
-<div class="stat-value">
-
-${stats.hitRate.toFixed(1)}%
-
-</div>
-
-</div>
-
-
-<div class="stat">
-
-<div class="stat-label">
-回収率
-</div>
-
-<div class="stat-value">
-
-${stats.roi.toFixed(1)}%
-
-</div>
-
-</div>
-
-
-<div class="stat">
-
-<div class="stat-label">
-投資額
-</div>
-
-<div class="stat-value">
-
-${stats.stake.toLocaleString()}円
-
-</div>
-
-</div>
-
-
-<div class="stat">
-
-<div class="stat-label">
-収支
-</div>
-
-<div
-class="
-stat-value
-${profitClass}
-"
->
-
-${
-
-stats.profit>=0
-?'+'
-:''
-
-}
-
-${stats.profit.toLocaleString()}円
-
-</div>
-
-</div>
-
-
-</div>
-
-`;
-
-
-document
-.getElementById(
-'raceHistory'
-)
-.innerHTML=
-
-rows.length
-
-?
-
-rows.map(
-
-record=>
-
-`
-
-<div class="history-item">
-
-<div class="history-top">
-
-<div>
-
-<div class="history-race">
-
-${record.venue}
-${record.raceNo}R
-
-</div>
-
-<div class="history-date">
-
-${record.date}
-・
-AI信頼度
-${record.confidence}%
-
-</div>
-
-</div>
-
-
-<div>
-
-${
-
-record.status!=='done'
-
-?
-
-`
-
-<span class="result-badge pending">
-
-⏳ 結果待ち
-
-</span>
-
-`
-
-:
-
-record.hit
-
-?
-
-`
-
-<span class="result-badge hit">
-
-🎯 的中
-
-</span>
-
-`
-
-:
-
-`
-
-<span class="result-badge miss">
-
-✕ 不的中
-
-</span>
-
-`
-
-}
-
-</div>
-
-</div>
-
-
-${
-
-record.status==='done'
-
-?
-
-`
-
-<div class="history-result">
-
-3連単結果：
-${record.result||'--'}
-
-${
-
-record.hit
-
-?
-
-`
-
-<br>
-
-回収：
-${record.returnAmount.toLocaleString()}円
-
-`
-
-:
-
-''
-
-}
-
-</div>
-
-`
-
-:
-
-''
-
-}
-
-</div>
-
-`
-
-).join('')
-
-:
-
-`
-
-<div class="small">
-
-この期間に保存された
-Sレースはありません。
-
-</div>
-
-`;
-
-
-const groups={};
-
-
-for(
-const record
-of rows
-){
-
-(
-groups[
-record.venue
-]
-??=[]
-).push(
-record
-);
-
-}
-
-
-const entries=
-
-Object.entries(
-groups
-)
-
-.map(
-
-([venue,data])=>
-
-[
-venue,
-calcStats(
-data
-)
-]
-
-)
-
-.sort(
-
-(a,b)=>
-
-b[1].roi-
-a[1].roi
-
-);
-
-
-document
-.getElementById(
-'venueStats'
-)
-.innerHTML=
-
-entries.length
-
-?
-
-`
-
-<div class="venue-row">
-
-<strong>
-会場
-</strong>
-
-<strong>
-的中率
-</strong>
-
-<strong>
-回収率
-</strong>
-
-<strong>
-収支
-</strong>
-
-</div>
-
-
-${
-
-entries.map(
-
-([venue,stats])=>
-
-`
-
-<div class="venue-row">
-
-<strong>
-
-${venue}
-
-</strong>
-
-
-<span>
-
-${stats.hitRate.toFixed(1)}%
-
-</span>
-
-
-<span>
-
-${stats.roi.toFixed(1)}%
-
-</span>
-
-
-<span
-class="
-${
-
-stats.profit>=0
-?'positive'
-:'negative'
-
-}
-"
->
-
-${
-
-stats.profit>=0
-?'+'
-:''
-
-}
-
-${stats.profit.toLocaleString()}円
-
-</span>
-
-</div>
-
-`
-
-).join('')
-
-}
-
-`
-
-:
-
-`
-
-<div class="small">
-
-この期間には
-確定済みの成績がありません。
-
-</div>
-
-`;
+  for(
+    const period
+    of [
+      "day",
+      "month",
+      "year"
+    ]
+  ){
+
+    document
+      .getElementById(
+        `tab-${period}`
+      )
+      ?.classList
+      .toggle(
+        "active",
+        period ===
+        currentPeriod
+      );
+
+  }
+
+
+  const rows =
+    loadRecords()
+      .filter(
+        record =>
+          periodMatch(
+            record.date,
+            currentPeriod
+          )
+      )
+      .sort(
+        (a,b) =>
+          b.date.localeCompare(
+            a.date
+          )
+          ||
+          Number(a.stadium) -
+          Number(b.stadium)
+          ||
+          Number(a.raceNo) -
+          Number(b.raceNo)
+      );
+
+
+  const stats =
+    calcStats(rows);
+
+
+  const profitClass =
+    stats.profit >= 0
+    ?
+    "positive"
+    :
+    "negative";
+
+
+  document
+    .getElementById(
+      "stats"
+    )
+    .innerHTML =
+    `
+      <div class="stats-grid">
+
+        <div class="stat">
+          <div class="stat-label">
+            確定レース
+          </div>
+          <div class="stat-value">
+            ${stats.races}
+          </div>
+        </div>
+
+        <div class="stat">
+          <div class="stat-label">
+            的中
+          </div>
+          <div class="stat-value">
+            ${stats.hits}
+          </div>
+        </div>
+
+        <div class="stat">
+          <div class="stat-label">
+            的中率
+          </div>
+          <div class="stat-value">
+            ${stats.hitRate.toFixed(1)}%
+          </div>
+        </div>
+
+        <div class="stat">
+          <div class="stat-label">
+            回収率
+          </div>
+          <div class="stat-value">
+            ${stats.roi.toFixed(1)}%
+          </div>
+        </div>
+
+        <div class="stat">
+          <div class="stat-label">
+            投資額
+          </div>
+          <div class="stat-value">
+            ${stats.stake.toLocaleString()}円
+          </div>
+        </div>
+
+        <div class="stat">
+          <div class="stat-label">
+            収支
+          </div>
+
+          <div class="stat-value ${profitClass}">
+            ${stats.profit >= 0 ? "+" : ""}
+            ${stats.profit.toLocaleString()}円
+          </div>
+
+        </div>
+
+      </div>
+    `;
+
+
+  document
+    .getElementById(
+      "raceHistory"
+    )
+    .innerHTML =
+    rows.length
+    ?
+    rows.map(
+      record =>
+      `
+        <div class="history-item">
+
+          <div class="history-top">
+
+            <div>
+
+              <div class="history-race">
+                ${record.venue}
+                ${record.raceNo}R
+              </div>
+
+              <div class="history-date">
+                ${record.date}
+                ・
+                AI信頼度
+                ${record.confidence}%
+              </div>
+
+            </div>
+
+
+            <div>
+
+              ${
+                record.status !==
+                "done"
+                ?
+                `
+                  <span class="result-badge pending">
+                    ⏳ 結果待ち
+                  </span>
+                `
+                :
+                record.hit
+                ?
+                `
+                  <span class="result-badge hit">
+                    🎯 的中
+                  </span>
+                `
+                :
+                `
+                  <span class="result-badge miss">
+                    ✕ 不的中
+                  </span>
+                `
+              }
+
+            </div>
+
+          </div>
+
+
+          ${
+            record.status ===
+            "done"
+            ?
+            `
+              <div class="history-result">
+
+                3連単結果：
+                ${record.result || "--"}
+
+                ${
+                  record.hit
+                  ?
+                  `
+                    <br>
+                    回収：
+                    ${record.returnAmount.toLocaleString()}円
+                  `
+                  :
+                  ""
+                }
+
+              </div>
+            `
+            :
+            ""
+          }
+
+        </div>
+      `
+    ).join("")
+    :
+    `
+      <div class="small">
+        この期間に保存された
+        Sレースはありません。
+      </div>
+    `;
+
+
+  const groups = {};
+
+
+  for(
+    const record
+    of rows
+  ){
+
+    (
+      groups[
+        record.venue
+      ] ??= []
+    ).push(record);
+
+  }
+
+
+  const entries =
+    Object.entries(
+      groups
+    )
+    .map(
+      ([venue,data]) => [
+        venue,
+        calcStats(data)
+      ]
+    )
+    .sort(
+      (a,b) =>
+        b[1].roi -
+        a[1].roi
+    );
+
+
+  document
+    .getElementById(
+      "venueStats"
+    )
+    .innerHTML =
+    entries.length
+    ?
+    `
+      <div class="venue-row">
+
+        <strong>会場</strong>
+        <strong>的中率</strong>
+        <strong>回収率</strong>
+        <strong>収支</strong>
+
+      </div>
+
+
+      ${
+        entries.map(
+          ([venue,stats]) =>
+          `
+            <div class="venue-row">
+
+              <strong>
+                ${venue}
+              </strong>
+
+              <span>
+                ${stats.hitRate.toFixed(1)}%
+              </span>
+
+              <span>
+                ${stats.roi.toFixed(1)}%
+              </span>
+
+              <span
+                class="${
+                  stats.profit >= 0
+                  ?
+                  "positive"
+                  :
+                  "negative"
+                }"
+              >
+                ${
+                  stats.profit >= 0
+                  ?
+                  "+"
+                  :
+                  ""
+                }
+
+                ${stats.profit.toLocaleString()}円
+              </span>
+
+            </div>
+          `
+        ).join("")
+      }
+    `
+    :
+    `
+      <div class="small">
+        この期間には
+        確定済みの成績がありません。
+      </div>
+    `;
 
 }
 
 
 async function refreshAllPending(){
 
-const dates=
-
-[
-...new Set(
-
-loadRecords()
-
-.filter(
-
-record=>
-record.status!=='done'
-
-)
-
-.map(
-
-record=>
-record.date
-
-)
-
-)
-
-];
+  const dates =
+    [
+      ...new Set(
+        loadRecords()
+          .filter(
+            record =>
+              record.status !==
+              "done"
+          )
+          .map(
+            record =>
+              record.date
+          )
+      )
+    ];
 
 
-for(
-const date
-of dates
-){
+  for(
+    const date
+    of dates
+  ){
 
-try{
+    try{
 
-const data=
-
-await fetchJSON(
-
-apiUrl(
-'results',
-date
-)
-
-);
+      const data =
+        await fetchJSON(
+          apiUrl(
+            "results",
+            date
+          )
+        );
 
 
-settleRecordsForDate(
-
-date,
-
-data?.results||[]
-
-);
+      settleRecordsForDate(
+        date,
+        data?.results || []
+      );
 
 
-}catch(
-error
-){
+    }catch(error){
 
-console.warn(
+      console.warn(
+        "結果更新失敗",
+        date,
+        error
+      );
 
-'結果更新失敗',
+    }
 
-date,
-
-error
-
-);
-
-}
-
-}
+  }
 
 
-renderStats();
+  renderStats();
 
 }
 
@@ -3387,39 +2759,30 @@ refreshAllPending();
 
 
 setInterval(
-
-refreshAllPending,
-
-60000
-
+  refreshAllPending,
+  60000
 );
 
 
 document.addEventListener(
+  "visibilitychange",
+  () => {
 
-'visibilitychange',
+    if(
+      !document.hidden
+    ){
 
-()=>{
+      refreshAllPending();
 
-if(
-!document.hidden
-){
+    }
 
-refreshAllPending();
-
-}
-
-}
-
+  }
 );
 
 
 window.addEventListener(
-
-'focus',
-
-refreshAllPending
-
+  "focus",
+  refreshAllPending
 );
 
 </script>
