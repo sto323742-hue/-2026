@@ -66,10 +66,6 @@ body{
   box-shadow:0 0 18px rgba(29,209,255,.10);
 }
 
-.race-card.wait{
-  border:1px solid #344b66;
-}
-
 .title{
   color:#49cfff;
   font-size:21px;
@@ -159,11 +155,6 @@ button{
 
 .s-badge{
   background:#ff4059;
-}
-
-.wait-badge{
-  background:#354a64;
-  color:#d4e1ed;
 }
 
 .score{
@@ -467,8 +458,7 @@ button{
     <h1>🚤 BOAT RACE AI予想</h1>
 
     <div class="sub">
-      全国24場の出走表を取得し、<br>
-      直前情報が揃ったレースをAI判定
+      全国24場からSレースだけを表示
     </div>
   </div>
 
@@ -476,7 +466,7 @@ button{
   <div class="card">
 
     <div class="title">
-      本日のレース
+      本日のSレース
     </div>
 
     <label>
@@ -492,7 +482,7 @@ button{
     </select>
 
     <button onclick="loadToday()">
-      🔍 今日のレースを取得
+      🔍 勝負度Sを自動検索
     </button>
 
     <button
@@ -508,14 +498,13 @@ button{
       class="status"
       id="status"
     >
-      「今日のレースを取得」を押してください。
+      「勝負度Sを自動検索」を押してください。
     </div>
 
     <div class="small">
-      出走表は表示します。<br>
-      展示情報が未反映のレースは
-      「展示情報待ち」と表示します。<br>
-      展示情報が6艇分揃ったレースだけS判定します。
+      展示情報が6艇分揃ったレースだけ判定します。<br>
+      S判定のレースだけ表示します。<br>
+      A・B・展示情報待ちのレースは表示しません。
     </div>
 
   </div>
@@ -661,10 +650,8 @@ const STADIUMS = {
   24:"大村"
 };
 
-
 const STORE_KEY =
   "boat_ai_s_records_v3";
-
 
 let currentPeriod =
   "month";
@@ -1018,17 +1005,10 @@ function boatScore(
 
   let score = 0;
 
-  score +=
-    national * 5;
-
-  score +=
-    local * 2.7;
-
-  score +=
-    motor * .30;
-
-  score +=
-    boatRate * .12;
+  score += national * 5;
+  score += local * 2.7;
+  score += motor * .30;
+  score += boatRate * .12;
 
   score +=
     Math.max(
@@ -1566,66 +1546,6 @@ function isUpcoming(program){
 }
 
 
-function renderWaiting(
-  program
-){
-
-  const venue =
-    STADIUMS[
-      program.stadium_number
-    ] ||
-    "会場" +
-    program.stadium_number;
-
-
-  const closed =
-    program.closed_at
-    ?
-    program.closed_at
-      .substring(
-        11,
-        16
-      )
-    :
-    "--:--";
-
-
-  return `
-    <div class="race-card wait">
-
-      <div class="race-head">
-
-        <div>
-
-          <div class="place">
-            ${venue}
-          </div>
-
-          <div class="race-number">
-            ${program.number}R　
-            締切 ${closed}
-          </div>
-
-        </div>
-
-        <div class="badge wait-badge">
-          展示情報待ち
-        </div>
-
-      </div>
-
-      <div class="info">
-        出走表は取得できています。<br>
-        直前情報がAPIに反映されたら
-        S判定します。
-      </div>
-
-    </div>
-  `;
-
-}
-
-
 function renderS(
   program,
   analysis,
@@ -2001,7 +1921,7 @@ async function loadToday(){
 
 
   status.textContent =
-    "出走表・直前情報・結果を取得しています…";
+    "全国24場からSレースを検索しています…";
 
 
   resultsBox.innerHTML =
@@ -2117,9 +2037,7 @@ async function loadToday(){
 
     let sCount = 0;
 
-    let waitCount = 0;
-
-    let checkedCount = 0;
+    let readyCount = 0;
 
 
     for(
@@ -2145,19 +2063,12 @@ async function loadToday(){
 
       if(!analysis){
 
-        html +=
-          renderWaiting(
-            program
-          );
-
-        waitCount++;
-
         continue;
 
       }
 
 
-      checkedCount++;
+      readyCount++;
 
 
       if(
@@ -2178,20 +2089,27 @@ async function loadToday(){
     }
 
 
-    resultsBox.innerHTML =
-      html ||
-      `
-        <div class="no-race">
-          本日の今後のレースはありません。
-        </div>
-      `;
+    if(sCount > 0){
+
+      resultsBox.innerHTML =
+        html;
+
+    }else{
+
+      resultsBox.innerHTML =
+        `
+          <div class="no-race">
+            現在、勝負度Sのレースはありません。<br><br>
+            展示情報が更新された後に
+            「最新データに更新」を押してください。
+          </div>
+        `;
+
+    }
 
 
     status.textContent =
-      `${date}：今後 ${upcoming.length}レース / ` +
-      `S確定 ${sCount} / ` +
-      `展示待ち ${waitCount} / ` +
-      `判定済み ${checkedCount}`;
+      `${date}：Sレース ${sCount}件 / 判定済み ${readyCount}件`;
 
 
     if(
@@ -2215,20 +2133,15 @@ async function loadToday(){
 
 
     status.textContent =
-      "出走表の取得に失敗しました。";
+      "データの取得に失敗しました。";
 
 
     resultsBox.innerHTML =
       `
         <div class="no-race">
-
-          出走表APIを取得できませんでした。
-
-          <br><br>
-
+          データを取得できませんでした。<br><br>
           少し時間を置いて
-          更新してください。
-
+          「最新データに更新」を押してください。
         </div>
       `;
 
@@ -2754,9 +2667,7 @@ async function refreshAllPending(){
 
 renderStats();
 
-
 refreshAllPending();
-
 
 setInterval(
   refreshAllPending,
