@@ -4,37 +4,21 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#050505">
-<title>BOAT RACE AI予想</title>
+<title>BOAT RACE AI予想 Ver.2</title>
 
 <style>
-*{
-  box-sizing:border-box
-}
-
-html{
-  scroll-behavior:smooth
-}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
 
 body{
   margin:0;
   background:#050505;
   color:#fff;
-  font-family:
-  -apple-system,
-  BlinkMacSystemFont,
-  "Segoe UI",
-  "Hiragino Kaku Gothic ProN",
-  "Yu Gothic",
-  sans-serif
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Hiragino Kaku Gothic ProN","Yu Gothic",sans-serif
 }
 
-button,input,select{
-  font:inherit
-}
-
-button{
-  cursor:pointer
-}
+button,input,select{font:inherit}
+button{cursor:pointer}
 
 .wrap{
   max-width:820px;
@@ -53,9 +37,7 @@ button{
   letter-spacing:.4px
 }
 
-.brand .gold{
-  color:#efc559
-}
+.brand .gold{color:#efc559}
 
 .ver{
   font-size:12px;
@@ -184,6 +166,32 @@ input[type=date]{
   font-weight:950
 }
 
+.weather-grid{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:6px;
+  margin-top:10px
+}
+
+.weather-item{
+  background:#111;
+  border-radius:9px;
+  padding:8px 4px;
+  text-align:center
+}
+
+.weather-item small{
+  display:block;
+  color:#898989;
+  font-size:9px
+}
+
+.weather-item b{
+  display:block;
+  margin-top:2px;
+  font-size:13px
+}
+
 .candidate-grid{
   display:grid;
   grid-template-columns:repeat(3,1fr);
@@ -233,21 +241,13 @@ input[type=date]{
   font-weight:900
 }
 
-.bet-head.main{
-  color:#71baff
-}
-
-.bet-head.cover{
-  color:#e8d7a4
-}
-
-.bet-head.hole{
-  color:#ff9b52
-}
+.bet-head.main{color:#71baff}
+.bet-head.cover{color:#e8d7a4}
+.bet-head.hole{color:#ff9b52}
 
 .ticket{
-  display:flex;
-  justify-content:space-between;
+  display:grid;
+  grid-template-columns:1fr auto;
   gap:8px;
   padding:8px 10px;
   border-bottom:1px solid #24200f;
@@ -262,6 +262,13 @@ input[type=date]{
 .money{
   color:#efd16e;
   font-weight:900
+}
+
+.ticket-sub{
+  grid-column:1/-1;
+  color:#8f8f8f;
+  font-size:9px;
+  line-height:1.5
 }
 
 .total{
@@ -283,6 +290,17 @@ input[type=date]{
   line-height:1.65
 }
 
+.reason{
+  margin-top:9px;
+  padding:11px;
+  border:1px solid #463814;
+  border-radius:11px;
+  background:#0b0905;
+  color:#c8bb96;
+  font-size:10px;
+  line-height:1.75
+}
+
 .menu{
   display:grid;
   grid-template-columns:repeat(3,1fr);
@@ -298,9 +316,7 @@ input[type=date]{
   font-weight:900
 }
 
-.stats{
-  display:none
-}
+.stats{display:none}
 
 .tabs{
   display:grid;
@@ -359,13 +375,8 @@ input[type=date]{
   font-size:19px
 }
 
-.green{
-  color:#58dc8d
-}
-
-.red{
-  color:#ff6a6a
-}
+.green{color:#58dc8d}
+.red{color:#ff6a6a}
 
 .profit{
   margin-top:9px;
@@ -545,15 +556,14 @@ input[type=date]{
   <div class="brand">
     <span class="gold">🚤 BOAT RACE</span>
     AI予想
-    <span class="ver">Ver.1</span>
+    <span class="ver">Ver.2</span>
   </div>
 
   <div class="sub">
-    全国24場をAIスコアで自動評価
+    天候・水面・展示・期待値を自動評価
   </div>
 
 </header>
-
 
 <section class="panel">
 
@@ -579,37 +589,23 @@ input[type=date]{
 
   <div class="notice">
     ページを開くだけで自動更新します。
-    データに変化があった時だけAI予想を再計算します。
-    AI評価は独自スコアです。
-    AI評価90＝的中率90%という意味ではありません。
+    展示・風・波・天候などに変化があった時だけAI予想を再計算します。
+    AI評価は独自スコアで、的中率そのものではありません。
   </div>
 
 </section>
 
-
 <div id="results"></div>
-
 
 <section class="panel">
 
   <div class="menu">
-
-    <button id="statsOpen">
-      📊 AI成績を見る
-    </button>
-
-    <button id="historyOpen">
-      🎯 的中・不的中
-    </button>
-
-    <button id="venueOpen">
-      📍 会場別成績
-    </button>
-
+    <button id="statsOpen">📊 AI成績を見る</button>
+    <button id="historyOpen">🎯 的中・不的中</button>
+    <button id="venueOpen">📍 会場別成績</button>
   </div>
 
 </section>
-
 
 <section class="panel stats" id="statsSection">
 
@@ -618,88 +614,43 @@ input[type=date]{
   </div>
 
   <div class="tabs">
-
-    <button
-      class="tab active"
-      data-period="day"
-    >
-      今日
-    </button>
-
-    <button
-      class="tab"
-      data-period="custom"
-    >
-      期間指定
-    </button>
-
-    <button
-      class="tab"
-      data-period="all"
-    >
-      全期間
-    </button>
-
+    <button class="tab active" data-period="day">今日</button>
+    <button class="tab" data-period="custom">期間指定</button>
+    <button class="tab" data-period="all">全期間</button>
   </div>
-
 
   <div class="range" id="rangeBox">
-
-    <input
-      type="date"
-      id="fromDate"
-    >
-
-    <input
-      type="date"
-      id="toDate"
-    >
-
+    <input type="date" id="fromDate">
+    <input type="date" id="toDate">
   </div>
 
-
   <div id="stats"></div>
-
 
   <div class="section-title">
     的中・不的中レース
   </div>
 
-  <button
-    class="toggle"
-    id="historyToggle"
-  >
+  <button class="toggle" id="historyToggle">
     一覧を表示
   </button>
 
-  <div
-    class="history-wrap"
-    id="historyWrap"
-  >
+  <div class="history-wrap" id="historyWrap">
     <div id="history"></div>
   </div>
-
 
   <div class="section-title">
     会場別成績
   </div>
 
-  <button
-    class="toggle"
-    id="venueToggle"
-  >
+  <button class="toggle" id="venueToggle">
     会場別成績を表示
   </button>
 
-  <div
-    class="venue-wrap"
-    id="venueWrap"
-  >
+  <div class="venue-wrap" id="venueWrap">
     <div id="venueStats"></div>
   </div>
 
 </section>
-
 
 <footer class="footer">
   AI評価は参考情報です。<br>
@@ -708,31 +659,20 @@ input[type=date]{
 
 </div>
 
-
 <div class="quick">
-
-  <button id="qStats">
-    📊 成績
-  </button>
-
-  <button id="qTop">
-    ↑ 上へ
-  </button>
-
+  <button id="qStats">📊 成績</button>
+  <button id="qTop">↑ 上へ</button>
 </div>
-
 
 <script>
 
-const API_BASE =
+const API_BASE=
 'https://boatraceopenapi.github.io/api/v1';
 
-
-const STORAGE_KEY =
+const STORAGE_KEY=
 'boat_ai_gold_v1_records';
 
-
-const STADIUMS = {
+const STADIUMS={
 
   1:'桐生',
   2:'戸田',
@@ -761,23 +701,24 @@ const STADIUMS = {
 
 };
 
+const WEATHER_NAMES={
+  1:'晴',
+  2:'曇',
+  3:'雨',
+  4:'雪',
+  5:'霧'
+};
 
-let analyses = [];
+let analyses=[];
+let period='day';
+let lastDataSignature='';
+let autoUpdateBusy=false;
 
-let period = 'day';
+const $=
+id=>document.getElementById(id);
 
-let lastDataSignature = '';
-
-let autoUpdateBusy = false;
-
-
-const $ =
-id =>
-document.getElementById(id);
-
-
-const num =
-(v,d=0) =>
+const num=
+(v,d=0)=>
 Number.isFinite(Number(v))
 ?
 Number(v)
@@ -799,9 +740,7 @@ function todayJST(){
       month:'2-digit',
       day:'2-digit'
     }
-  ).format(
-    new Date()
-  );
+  ).format(new Date());
 
 }
 
@@ -823,23 +762,21 @@ function apiURL(d){
 
 async function fetchToday(){
 
-  const d =
+  const d=
   todayJST();
 
-  const r =
+  const r=
   await fetch(
-    apiURL(d) + '?t=' + Date.now(),
+    apiURL(d)+'?t='+Date.now(),
     {
       cache:'no-store'
     }
   );
 
-  if(
-    !r.ok
-  ){
+  if(!r.ok){
 
     throw Error(
-      'data ' + r.status
+      'data '+r.status
     );
 
   }
@@ -855,13 +792,12 @@ async function fetchToday(){
 
 function flatten(data){
 
-  const out = [];
+  const out=[];
 
-  const ss =
+  const ss=
   data?.programs?.stadiums
   ||
   {};
-
 
   for(
     const [sk,sd]
@@ -879,33 +815,31 @@ function flatten(data){
       )
     ){
 
-      if(
-        r
-      ){
-
-        out.push({
-          ...r,
-
-          stadium_number:
-          num(
-            r.stadium_number,
-            sk
-          ),
-
-          race_number:
-          num(
-            r.race_number,
-            rk
-          )
-
-        });
-
+      if(!r){
+        continue;
       }
+
+      out.push({
+
+        ...r,
+
+        stadium_number:
+        num(
+          r.stadium_number,
+          sk
+        ),
+
+        race_number:
+        num(
+          r.race_number,
+          rk
+        )
+
+      });
 
     }
 
   }
-
 
   return out;
 
@@ -929,7 +863,7 @@ function raceKey(r){
 
 function closeTime(r){
 
-  const m =
+  const m=
   String(
     r?.closed_at
     ||
@@ -953,16 +887,11 @@ function closeTime(r){
 
 function upcoming(r){
 
-  if(
-    !r?.closed_at
-  ){
-
+  if(!r?.closed_at){
     return true;
-
   }
 
-
-  const t =
+  const t=
   new Date(
     String(
       r.closed_at
@@ -975,11 +904,10 @@ function upcoming(r){
     '+09:00'
   ).getTime();
 
-
   return(
     Number.isNaN(t)
     ||
-    t > Date.now()
+    t>Date.now()
   );
 
 }
@@ -991,18 +919,12 @@ function upcoming(r){
 
 function previewReady(r){
 
-  const p =
+  const p=
   r?.preview?.racers;
 
-
-  if(
-    !p
-  ){
-
+  if(!p){
     return false;
-
   }
-
 
   for(
     let i=1;
@@ -1013,42 +935,82 @@ function previewReady(r){
     if(
       !p[String(i)]
     ){
-
       return false;
-
     }
 
-
-    const e =
+    const e=
     Number(
       p[String(i)]
       .exhibition_time
     );
 
-
-    const s =
+    const s=
     Number(
       p[String(i)]
       .start_timing
     );
 
-
     if(
       !Number.isFinite(e)
       ||
-      e <= 0
+      e<=0
       ||
       !Number.isFinite(s)
     ){
-
       return false;
-
     }
 
   }
 
-
   return true;
+
+}
+
+
+/* ==============================
+   天候・水面情報
+============================== */
+
+function weatherInfo(r){
+
+  const p=
+  r?.preview
+  ||
+  {};
+
+  return{
+
+    windSpeed:
+    num(
+      p.wind_speed
+    ),
+
+    windDirection:
+    num(
+      p.wind_direction_number
+    ),
+
+    wave:
+    num(
+      p.wave_height
+    ),
+
+    weather:
+    num(
+      p.weather_number
+    ),
+
+    air:
+    num(
+      p.air_temperature
+    ),
+
+    water:
+    num(
+      p.water_temperature
+    )
+
+  };
 
 }
 
@@ -1063,126 +1025,110 @@ function scoreBoat(
   entry
 ){
 
-  let s = 0;
+  let s=0;
 
-
-  const nw =
+  const nw=
   num(
     r?.national_win_rate,
     5
   );
 
-
-  const n2 =
+  const n2=
   num(
     r?.national_top_2_percent,
     30
   );
 
-
-  const n3 =
+  const n3=
   num(
     r?.national_top_3_percent,
     45
   );
 
-
-  const lw =
+  const lw=
   num(
     r?.local_win_rate,
     nw
   );
 
-
-  const l2 =
+  const l2=
   num(
     r?.local_top_2_percent,
     n2
   );
 
-
-  const m2 =
+  const m2=
   num(
     r?.motor_top_2_percent,
     30
   );
 
-
-  const m3 =
+  const m3=
   num(
     r?.motor_top_3_percent,
     45
   );
 
-
-  const b2 =
+  const b2=
   num(
     r?.boat_top_2_percent,
     30
   );
 
-
-  const ast =
+  const ast=
   num(
     r?.average_start_timing,
     .18
   );
 
-
-  const ex =
+  const ex=
   num(
     p?.exhibition_time,
     6.85
   );
 
-
-  const est =
+  const est=
   num(
     p?.start_timing,
     ast
   );
 
-
-  const rank =
+  const rank=
   num(
     r?.rank_number,
     4
   );
 
-
-  const f =
+  const f=
   num(
     r?.flying_count,
     0
   );
 
-
-  const course =
+  const course=
   num(
     p?.course_number,
     entry
   );
 
+  s+=
+  nw*8
+  +
+  n2*.35
+  +
+  n3*.12
+  +
+  lw*4
+  +
+  l2*.18
+  +
+  m2*.4
+  +
+  m3*.1
+  +
+  b2*.15;
 
-  s +=
-  nw * 8
-  +
-  n2 * .35
-  +
-  n3 * .12
-  +
-  lw * 4
-  +
-  l2 * .18
-  +
-  m2 * .4
-  +
-  m3 * .1
-  +
-  b2 * .15;
-
-
-  s +=
+  s+=
   Math.max(
     0,
     (.22-ast)*100
@@ -1198,8 +1144,7 @@ function scoreBoat(
     (.2-est)*60
   );
 
-
-  s +=
+  s+=
   rank===1
   ?
   9
@@ -1214,12 +1159,10 @@ function scoreBoat(
   :
   -2;
 
+  s-=
+  f*4;
 
-  s -=
-  f * 4;
-
-
-  s +=
+  s+=
   ({
     1:16,
     2:7,
@@ -1227,10 +1170,84 @@ function scoreBoat(
     4:2,
     5:-1,
     6:-4
-  }[course] || 0);
-
+  }[course]||0);
 
   return s;
+
+}
+
+
+/* ==============================
+   展示順位
+============================== */
+
+function exhibitionRank(boats){
+
+  return[
+    ...boats
+  ]
+  .sort(
+    (a,b)=>
+    num(
+      a.preview?.exhibition_time,
+      99
+    )
+    -
+    num(
+      b.preview?.exhibition_time,
+      99
+    )
+  )
+  .map(
+    x=>x.boat
+  );
+
+}
+
+
+/* ==============================
+   展示ST順位
+============================== */
+
+function startRank(boats){
+
+  return[
+    ...boats
+  ]
+  .sort(
+    (a,b)=>
+    num(
+      a.preview?.start_timing,
+      9
+    )
+    -
+    num(
+      b.preview?.start_timing,
+      9
+    )
+  )
+  .map(
+    x=>x.boat
+  );
+
+}
+
+
+/* ==============================
+   進入変化
+============================== */
+
+function courseChanges(boats){
+
+  return boats.filter(
+    x=>
+    num(
+      x.preview?.course_number,
+      x.boat
+    )
+    !==
+    x.boat
+  );
 
 }
 
@@ -1244,14 +1261,10 @@ function evaluate(r){
   if(
     !previewReady(r)
   ){
-
     return null;
-
   }
 
-
-  const boats = [];
-
+  const boats=[];
 
   for(
     let i=1;
@@ -1259,28 +1272,23 @@ function evaluate(r){
     i++
   ){
 
-    const rr =
+    const rr=
     r?.racers?.[
       String(i)
     ];
 
-
-    const p =
+    const p=
     r?.preview?.racers?.[
       String(i)
     ];
-
 
     if(
       !rr
       ||
       !p
     ){
-
       return null;
-
     }
-
 
     boats.push({
 
@@ -1301,26 +1309,25 @@ function evaluate(r){
 
   }
 
-
   boats.sort(
     (a,b)=>
     b.score-a.score
   );
 
-
-  const g1 =
+  const g1=
   boats[0].score
   -
   boats[1].score;
 
-
-  const g2 =
+  const g2=
   boats[1].score
   -
   boats[2].score;
 
+  const w=
+  weatherInfo(r);
 
-  let rating =
+  let rating=
   64
   +
   Math.min(
@@ -1339,56 +1346,90 @@ function evaluate(r){
     )
   );
 
-
   if(
     boats[0].boat===1
   ){
-
-    rating += 6;
-
+    rating+=6;
   }
 
+  if(
+    w.windSpeed>=5
+  ){
+    rating-=3;
+  }
 
-  const wind =
-  num(
-    r?.preview?.wind_speed
+  if(
+    w.windSpeed>=8
+  ){
+    rating-=4;
+  }
+
+  if(
+    w.wave>=5
+  ){
+    rating-=3;
+  }
+
+  if(
+    w.wave>=8
+  ){
+    rating-=4;
+  }
+
+  const exRanks=
+  exhibitionRank(
+    boats
   );
 
-
-  const wave =
-  num(
-    r?.preview?.wave_height
+  const stRanks=
+  startRank(
+    boats
   );
 
-
   if(
-    wind>=5
+    exRanks[0]
+    ===
+    boats[0].boat
   ){
-
-    rating -= 3;
-
+    rating+=2;
   }
 
-
   if(
-    wind>=8
+    stRanks[0]
+    ===
+    boats[0].boat
   ){
-
-    rating -= 4;
-
+    rating+=2;
   }
 
-
   if(
-    wave>=5
+    exRanks
+    .slice(0,2)
+    .includes(
+      boats[0].boat
+    )
+    &&
+    stRanks
+    .slice(0,2)
+    .includes(
+      boats[0].boat
+    )
   ){
-
-    rating -= 3;
-
+    rating+=2;
   }
 
+  const changes=
+  courseChanges(
+    boats
+  );
 
-  rating =
+  if(
+    changes.length>=2
+  ){
+    rating-=3;
+  }
+
+  rating=
   Math.round(
     Math.max(
       0,
@@ -1399,14 +1440,77 @@ function evaluate(r){
     )
   );
 
-
-  const stable =
-  wind < 8
+  const stable=
+  w.windSpeed<8
   &&
-  wave < 7
+  w.wave<7
   &&
-  g1 >= 5;
+  g1>=5;
 
+  const skip=
+  rating<82
+  ||
+  w.windSpeed>=10
+  ||
+  w.wave>=10
+  ||
+  changes.length>=4;
+
+  const reasons=[];
+
+  reasons.push(
+    `AI上位艇 ${
+      boats
+      .slice(0,3)
+      .map(
+        x=>x.boat+'号艇'
+      )
+      .join('・')
+    }`
+  );
+
+  reasons.push(
+    `展示上位 ${
+      exRanks
+      .slice(0,3)
+      .map(
+        x=>x+'号艇'
+      )
+      .join('・')
+    }`
+  );
+
+  reasons.push(
+    `ST上位 ${
+      stRanks
+      .slice(0,3)
+      .map(
+        x=>x+'号艇'
+      )
+      .join('・')
+    }`
+  );
+
+  reasons.push(
+    `風 ${w.windSpeed}m / 波 ${w.wave}cm`
+  );
+
+  if(
+    changes.length
+  ){
+
+    reasons.push(
+      `進入変化 ${
+        changes
+        .map(
+          x=>
+          `${x.boat}号艇→${num(x.preview.course_number)}コース`
+        )
+        .join('、')
+      }`
+    );
+
+  }
 
   return{
 
@@ -1421,15 +1525,153 @@ function evaluate(r){
       rating>=82
       &&
       stable
+      &&
+      !skip
     )
     ?
     'S'
     :
     'B',
 
-    gap1:g1
+    gap1:g1,
+
+    weather:w,
+
+    exhibitionRank:
+    exRanks,
+
+    startRank:
+    stRanks,
+
+    courseChanges:
+    changes,
+
+    reasons,
+
+    skip
 
   };
+
+}
+
+
+/* ==============================
+   艇の確率化
+============================== */
+
+function probabilityMap(boats){
+
+  const raw={};
+
+  let total=0;
+
+  for(
+    const x
+    of
+    boats
+  ){
+
+    const v=
+    Math.exp(
+      x.score/45
+    );
+
+    raw[x.boat]=v;
+
+    total+=v;
+
+  }
+
+  for(
+    const k
+    of
+    Object.keys(raw)
+  ){
+
+    raw[k]/=
+    total;
+
+  }
+
+  return raw;
+
+}
+
+
+/* ==============================
+   3連単推定確率
+============================== */
+
+function comboProbability(
+  combo,
+  boats
+){
+
+  const p=
+  probabilityMap(
+    boats
+  );
+
+  const a=
+  combo
+  .split('-')
+  .map(Number);
+
+  if(
+    a.length!==3
+  ){
+    return 0;
+  }
+
+  const p1=
+  p[a[0]]
+  ||
+  0;
+
+  const rem1=
+  1-p1;
+
+  const p2=
+  rem1>0
+  ?
+  (
+    p[a[1]]
+    ||
+    0
+  )
+  /
+  rem1
+  :
+  0;
+
+  const rem2=
+  1
+  -
+  p1
+  -
+  (
+    p[a[1]]
+    ||
+    0
+  );
+
+  const p3=
+  rem2>0
+  ?
+  (
+    p[a[2]]
+    ||
+    0
+  )
+  /
+  rem2
+  :
+  0;
+
+  return Math.max(
+    0,
+    p1*p2*p3
+  );
 
 }
 
@@ -1438,80 +1680,135 @@ function evaluate(r){
    本線2・押さえ5・穴3
 ============================== */
 
-function makeTickets(b){
+function makeTickets(a){
 
-  const [
-    a,
-    c,
-    d,
-    e,
-    f,
-    g
-  ] =
+  const b=
+  a.boats;
+
+  const[
+    x1,
+    x2,
+    x3,
+    x4,
+    x5,
+    x6
+  ]=
   b.map(
     x=>x.boat
   );
 
+  const main=[
 
-  const main = [
+    `${x1}-${x2}-${x3}`,
 
-    `${a}-${c}-${d}`,
-
-    `${a}-${d}-${c}`
-
-  ];
-
-
-  const cover = [
-
-    `${a}-${c}-${e}`,
-
-    `${a}-${d}-${e}`,
-
-    `${a}-${e}-${c}`,
-
-    `${c}-${a}-${d}`,
-
-    `${c}-${d}-${a}`
+    `${x1}-${x3}-${x2}`
 
   ];
 
+  const cover=[
 
-  const normalHole = [
+    `${x1}-${x2}-${x4}`,
 
-    `${d}-${a}-${c}`,
+    `${x1}-${x3}-${x4}`,
 
-    `${c}-${e}-${a}`
+    `${x1}-${x4}-${x2}`,
+
+    `${x2}-${x1}-${x3}`,
+
+    `${x2}-${x3}-${x1}`
 
   ];
 
+  const normalHole=[
 
-  const used =
+    `${x3}-${x1}-${x2}`,
+
+    `${x2}-${x4}-${x1}`
+
+  ];
+
+  const used=
   new Set([
+
     ...main,
+
     ...cover,
+
     ...normalHole
+
   ]);
 
+  const ex=
+  a.exhibitionRank;
 
-  /* 穴3点のうち1点は特殊ロジック */
+  const st=
+  a.startRank;
 
-  const special = [
+  const w=
+  a.weather;
 
-    `${e}-${a}-${d}`,
+  const attackBoat=
+  [
+    ...new Set([
+      ex[0],
+      st[0],
+      ex[1],
+      st[1],
+      x4,
+      x5,
+      x6
+    ])
+  ]
+  .find(
+    n=>n!==x1
+  )
+  ||
+  x4;
 
-    `${f}-${c}-${a}`,
+  let specialCandidates=[];
 
-    `${g}-${a}-${c}`,
+  if(
+    w.windSpeed>=5
+    ||
+    w.wave>=4
+  ){
 
-    `${d}-${f}-${a}`
+    specialCandidates=[
 
-  ].find(
+      `${attackBoat}-${x1}-${x2}`,
+
+      `${attackBoat}-${x2}-${x1}`,
+
+      `${x3}-${attackBoat}-${x1}`,
+
+      `${x4}-${x1}-${attackBoat}`
+
+    ];
+
+  }
+  else{
+
+    specialCandidates=[
+
+      `${x4}-${x1}-${x3}`,
+
+      `${x5}-${x2}-${x1}`,
+
+      `${x6}-${x1}-${x2}`,
+
+      `${x3}-${x5}-${x1}`
+
+    ];
+
+  }
+
+  const special=
+  specialCandidates
+  .find(
     x=>!used.has(x)
   )
   ||
-  `${e}-${a}-${d}`;
-
+  `${x4}-${x1}-${x3}`;
 
   return{
 
@@ -1522,23 +1819,24 @@ function makeTickets(b){
     hole:[
       ...normalHole,
       special
-    ]
+    ],
+
+    special
 
   };
 
 }
-
-
-/* ==============================
+  /* ==============================
    資金配分
 ============================== */
 
 function allocate(
   t,
-  budget
+  budget,
+  a
 ){
 
-  const all = [
+  const all=[
 
     ...t.main.map(
       combo=>({
@@ -1563,8 +1861,36 @@ function allocate(
 
   ];
 
+  const enriched=
+  all.map(
+    x=>{
 
-  const units =
+      const probability=
+      comboProbability(
+        x.combo,
+        a.boats
+      );
+
+      return{
+
+        ...x,
+
+        probability,
+
+        expectedScore:
+        probability,
+
+        special:
+        x.combo
+        ===
+        t.special
+
+      };
+
+    }
+  );
+
+  const units=
   Math.max(
     10,
     Math.floor(
@@ -1572,47 +1898,103 @@ function allocate(
     )
   );
 
-
-  const base =
-  Math.floor(
-    units/all.length
+  const weights=
+  enriched.map(
+    x=>
+    x.group==='main'
+    ?
+    1.35
+    :
+    x.group==='cover'
+    ?
+    1
+    :
+    .8
   );
 
+  const totalWeight=
+  weights.reduce(
+    (s,x)=>s+x,
+    0
+  );
 
-  let rem =
-  units
-  -
-  base*all.length;
+  let assigned=0;
 
+  const out=
+  enriched.map(
+    (x,i)=>{
 
-  return all.map(
-    x=>{
+      const unitsFor=
+      Math.max(
+        1,
+        Math.floor(
+          units
+          *
+          weights[i]
+          /
+          totalWeight
+        )
+      );
 
-      const plus =
-      rem>0
-      ?
-      1
-      :
-      0;
-
-
-      if(
-        rem>0
-      ){
-
-        rem--;
-
-      }
-
+      assigned+=
+      unitsFor;
 
       return{
+
         ...x,
+
         money:
-        (base+plus)*100
+        unitsFor*100
+
       };
 
     }
   );
+
+  let diff=
+  units-assigned;
+
+  let i=0;
+
+  while(
+    diff>0
+  ){
+
+    out[
+      i%out.length
+    ].money+=100;
+
+    diff--;
+
+    i++;
+
+  }
+
+  while(
+    diff<0
+  ){
+
+    const target=
+    out
+    .slice()
+    .reverse()
+    .find(
+      x=>x.money>100
+    );
+
+    if(
+      !target
+    ){
+      break;
+    }
+
+    target.money-=100;
+
+    diff++;
+
+  }
+
+  return out;
 
 }
 
@@ -1625,7 +2007,7 @@ function records(){
 
   try{
 
-    const x =
+    const x=
     JSON.parse(
       localStorage.getItem(
         STORAGE_KEY
@@ -1633,7 +2015,6 @@ function records(){
       ||
       '[]'
     );
-
 
     return Array.isArray(x)
     ?
@@ -1667,43 +2048,92 @@ function save(x){
 
 function savePrediction(a){
 
-  const r =
+  const r=
   a.race;
 
-
-  const key =
+  const key=
   raceKey(r);
 
-
-  const rs =
+  const rs=
   records();
 
+  const ticketSet=
+  makeTickets(a);
 
-  const tickets =
+  const tickets=
   allocate(
-    makeTickets(
-      a.boats
-    ),
+    ticketSet,
     num(
       $('budget').value,
       1000
-    )
+    ),
+    a
   );
 
-
-  const stake =
+  const stake=
   tickets.reduce(
     (s,x)=>
     s+x.money,
     0
   );
 
+  const weather=
+  a.weather;
 
-  const old =
+  const predictionMeta={
+
+    windSpeed:
+    weather.windSpeed,
+
+    windDirection:
+    weather.windDirection,
+
+    wave:
+    weather.wave,
+
+    weather:
+    weather.weather,
+
+    airTemperature:
+    weather.air,
+
+    waterTemperature:
+    weather.water,
+
+    exhibitionRank:
+    a.exhibitionRank,
+
+    startRank:
+    a.startRank,
+
+    courseChanges:
+    a.courseChanges.map(
+      x=>({
+
+        boat:
+        x.boat,
+
+        course:
+        num(
+          x.preview?.course_number,
+          x.boat
+        )
+
+      })
+    ),
+
+    reasons:
+    a.reasons,
+
+    specialHole:
+    ticketSet.special
+
+  };
+
+  const old=
   rs.find(
     x=>x.key===key
   );
-
 
   if(
     old
@@ -1713,18 +2143,24 @@ function savePrediction(a){
       !old.done
     ){
 
-      old.tickets =
+      old.tickets=
       tickets;
 
-      old.stake =
+      old.stake=
       stake;
 
-      old.rating =
+      old.rating=
       a.rating;
 
-      old.savedAt =
+      old.predictionMeta=
+      predictionMeta;
+
+      old.savedAt=
       new Date()
       .toISOString();
+
+      old.model=
+      'gold-v2-weather-ev';
 
       save(rs);
 
@@ -1733,7 +2169,6 @@ function savePrediction(a){
     return;
 
   }
-
 
   rs.push({
 
@@ -1783,10 +2218,11 @@ function savePrediction(a){
     .toISOString(),
 
     model:
-    'gold-v1-2-5-3-special-hole'
+    'gold-v2-weather-ev',
+
+    predictionMeta
 
   });
-
 
   save(rs);
 
@@ -1799,9 +2235,10 @@ function savePrediction(a){
 
 function payouts(r){
 
-  const t =
-  r?.result?.payouts?.trifecta;
-
+  const t=
+  r?.result
+  ?.payouts
+  ?.trifecta;
 
   return Array.isArray(t)
   ?
@@ -1818,12 +2255,10 @@ function payouts(r){
 
 function settle(races){
 
-  const rs =
+  const rs=
   records();
 
-
-  let ch = false;
-
+  let ch=false;
 
   for(
     const rec
@@ -1834,13 +2269,10 @@ function settle(races){
     if(
       rec.done
     ){
-
       continue;
-
     }
 
-
-    const r =
+    const r=
     races.find(
       x=>
       raceKey(x)
@@ -1848,88 +2280,68 @@ function settle(races){
       rec.key
     );
 
-
     if(
       !r
     ){
-
       continue;
-
     }
 
-
-    const p =
+    const p=
     payouts(r);
-
 
     if(
       !p.length
     ){
-
       continue;
-
     }
 
-
-    const w =
+    const w=
     p[0];
 
-
-    const combo =
+    const combo=
     String(
       w.combination
       ||
       ''
     );
 
-
-    const pay =
+    const pay=
     num(
       w.amount
     );
 
-
     if(
       !combo
     ){
-
       continue;
-
     }
 
-
-    rec.done =
+    rec.done=
     true;
 
-
-    rec.result =
+    rec.result=
     combo;
 
-
-    rec.payout =
+    rec.payout=
     pay;
 
-
-    rec.resultOdds =
+    rec.resultOdds=
     pay>0
     ?
     pay/100
     :
     0;
 
-
-    const ht =
+    const ht=
     rec.tickets.find(
       t=>
       t.combo===combo
     );
 
-
-    rec.hit =
+    rec.hit=
     !!ht;
 
-
-    rec.returnAmount =
+    rec.returnAmount=
     ht
     ?
     Math.round(
@@ -1940,12 +2352,10 @@ function settle(races){
     :
     0;
 
-
-    ch =
+    ch=
     true;
 
   }
-
 
   if(
     ch
@@ -1963,29 +2373,50 @@ function settle(races){
 ============================== */
 
 function ticketRows(
-  a,
+  arr,
   g
 ){
 
-  return a
+  return arr
   .filter(
-    x=>
-    x.group===g
+    x=>x.group===g
   )
   .map(
-    x=>
-    `
+    x=>`
+
     <div class="ticket">
 
       <span class="combo">
-        ${x.combo}
+        ${x.combo}${x.special?' ★':''}
       </span>
 
       <span class="money">
         ${x.money.toLocaleString()}円
       </span>
 
+      <div class="ticket-sub">
+
+        AI推定 ${
+          (
+            x.probability
+            *
+            100
+          )
+          .toFixed(1)
+        }%
+
+        ${
+          x.special
+          ?
+          ' ／ 天候・展示連動の特殊穴'
+          :
+          ''
+        }
+
+      </div>
+
     </div>
+
     `
   )
   .join('');
@@ -2002,33 +2433,34 @@ function raceHTML(
   i
 ){
 
-  const r =
+  const r=
   a.race;
 
+  const ticketSet=
+  makeTickets(a);
 
-  const t =
+  const t=
   allocate(
-    makeTickets(
-      a.boats
-    ),
+    ticketSet,
     num(
       $('budget').value,
       1000
-    )
+    ),
+    a
   );
 
-
-  const id =
+  const id=
   'r'+i;
 
-
-  const total =
+  const total=
   t.reduce(
     (s,x)=>
     s+x.money,
     0
   );
 
+  const w=
+  a.weather;
 
   return`
 
@@ -2039,6 +2471,7 @@ function raceHTML(
       <div>
 
         <div class="race-name">
+
           ${
             STADIUMS[
               r.stadium_number
@@ -2046,23 +2479,25 @@ function raceHTML(
             ||
             '会場'
           }
+
           ${r.race_number}R
+
         </div>
 
         <div class="race-meta">
+
           締切 ${closeTime(r)}
           ／ 回収率重視S評価
+
         </div>
 
       </div>
-
 
       <div class="smark">
         S
       </div>
 
     </div>
-
 
     <div class="ai-box">
 
@@ -2078,15 +2513,14 @@ function raceHTML(
 
       </div>
 
-
       <div class="candidate-grid">
 
         ${
           a.boats
           .slice(0,3)
           .map(
-            (x,j)=>
-            `
+            (x,j)=>`
+
             <div class="candidate">
 
               <small>
@@ -2098,6 +2532,7 @@ function raceHTML(
               </b>
 
             </div>
+
             `
           )
           .join('')
@@ -2105,8 +2540,49 @@ function raceHTML(
 
       </div>
 
-    </div>
+      <div class="weather-grid">
 
+        <div class="weather-item">
+          <small>天候</small>
+          <b>
+            ${
+              WEATHER_NAMES[
+                w.weather
+              ]
+              ||
+              '-'
+            }
+          </b>
+        </div>
+
+        <div class="weather-item">
+          <small>風速</small>
+          <b>${w.windSpeed}m</b>
+        </div>
+
+        <div class="weather-item">
+          <small>波高</small>
+          <b>${w.wave}cm</b>
+        </div>
+
+        <div class="weather-item">
+          <small>気温</small>
+          <b>${w.air}℃</b>
+        </div>
+
+        <div class="weather-item">
+          <small>水温</small>
+          <b>${w.water}℃</b>
+        </div>
+
+        <div class="weather-item">
+          <small>風向番号</small>
+          <b>${w.windDirection||'-'}</b>
+        </div>
+
+      </div>
+
+    </div>
 
     <button
       class="gold-btn"
@@ -2114,7 +2590,6 @@ function raceHTML(
     >
       買い目を見る ▼
     </button>
-
 
     <div
       class="detail"
@@ -2132,7 +2607,6 @@ function raceHTML(
         )
       }
 
-
       <div class="bet-head cover">
         押さえ 5点
       </div>
@@ -2144,7 +2618,6 @@ function raceHTML(
         )
       }
 
-
       <div class="bet-head hole">
         穴 3点
       </div>
@@ -2155,7 +2628,6 @@ function raceHTML(
           'hole'
         )
       }
-
 
       <div class="total">
 
@@ -2169,16 +2641,34 @@ function raceHTML(
 
       </div>
 
+      <div class="reason">
+
+        <b>
+          今回のAI判断根拠
+        </b>
+
+        <br>
+
+        ${
+          a.reasons
+          .map(
+            x=>'・'+x
+          )
+          .join('<br>')
+        }
+
+      </div>
 
       <div class="logic">
 
-        穴3点のうち1点は、
-        AI順位だけでは選ばれにくい
-        組み合わせを狙う特殊ロジックです。
+        ★は穴3点のうち1点に入る特殊ロジックです。<br>
 
-        表示上は他の穴と区別しません。
+        通常のAI順位だけでなく、
+        展示順位・展示ST・風速・波高・進入変化を見て
+        「通常人気では拾いにくい展開」を狙います。<br>
 
-        完全なランダムではありません。
+        内部では期待値とレースの安定性も評価し、
+        条件が悪いレースはS評価から外します。
 
       </div>
 
@@ -2197,14 +2687,12 @@ function raceHTML(
 
 function display(){
 
-  const s =
+  const s=
   analyses.filter(
-    x=>
-    x.grade==='S'
+    x=>x.grade==='S'
   );
 
-
-  $('results').innerHTML =
+  $('results').innerHTML=
   s.length
   ?
   s.map(
@@ -2212,47 +2700,52 @@ function display(){
   ).join('')
   :
   `
-  <div class="empty">
-    現在表示できるS評価レースはありません。
-  </div>
-  `;
 
+  <div class="empty">
+
+    現在表示できるS評価レースはありません。<br>
+
+    期待値や水面条件が整うまで見送りです。
+
+  </div>
+
+  `;
 
   document
   .querySelectorAll(
     '[data-detail]'
   )
   .forEach(
-    b=>
-    b.onclick=
-    ()=>{
+    b=>{
 
-      const d =
-      $(
-        b.dataset.detail
-      );
+      b.onclick=
+      ()=>{
 
+        const d=
+        $(
+          b.dataset.detail
+        );
 
-      const open =
-      d.style.display
-      ===
-      'block';
+        const open=
+        d.style.display
+        ===
+        'block';
 
+        d.style.display=
+        open
+        ?
+        'none'
+        :
+        'block';
 
-      d.style.display =
-      open
-      ?
-      'none'
-      :
-      'block';
+        b.textContent=
+        open
+        ?
+        '買い目を見る ▼'
+        :
+        '買い目を閉じる ▲';
 
-
-      b.textContent =
-      open
-      ?
-      '買い目を見る ▼'
-      :
-      '買い目を閉じる ▲';
+      };
 
     }
   );
@@ -2269,8 +2762,7 @@ function dataSignature(races){
   return JSON.stringify(
 
     races.map(
-      r=>
-      [
+      r=>[
 
         raceKey(r),
 
@@ -2278,7 +2770,15 @@ function dataSignature(races){
 
         r.preview?.wind_speed,
 
+        r.preview?.wind_direction_number,
+
         r.preview?.wave_height,
+
+        r.preview?.weather_number,
+
+        r.preview?.air_temperature,
+
+        r.preview?.water_temperature,
 
         ...Array.from(
           {
@@ -2286,15 +2786,15 @@ function dataSignature(races){
           },
           (_,i)=>{
 
-            const k =
-            String(i+1);
+            const k=
+            String(
+              i+1
+            );
 
-
-            const p =
+            const p=
             r.preview
             ?.racers
             ?.[k];
-
 
             return[
 
@@ -2335,11 +2835,11 @@ function dataSignature(races){
 
 function analyzeRaces(races){
 
-  settle(races);
+  settle(
+    races
+  );
 
-
-  const arr = [];
-
+  const arr=[];
 
   for(
     const r
@@ -2352,43 +2852,39 @@ function analyzeRaces(races){
       ||
       !previewReady(r)
     ){
-
       continue;
-
     }
 
-
-    const a =
+    const a=
     evaluate(r);
-
 
     if(
       a?.grade==='S'
     ){
 
-      arr.push(a);
+      arr.push(
+        a
+      );
 
-      savePrediction(a);
+      savePrediction(
+        a
+      );
 
     }
 
   }
-
 
   arr.sort(
     (a,b)=>
     b.rating-a.rating
   );
 
-
-  analyses =
+  analyses=
   arr;
-
 
   display();
 
   renderStats();
-
 
   return arr;
 
@@ -2406,19 +2902,14 @@ async function autoRefresh(
   if(
     autoUpdateBusy
   ){
-
     return;
-
   }
 
-
-  autoUpdateBusy =
+  autoUpdateBusy=
   true;
 
-
-  const st =
+  const st=
   $('status');
-
 
   try{
 
@@ -2428,51 +2919,50 @@ async function autoRefresh(
       !analyses.length
     ){
 
-      st.textContent =
+      st.textContent=
       '最新データを自動取得しています…';
 
     }
 
-
-    const data =
+    const data=
     await fetchToday();
 
-
-    const races =
+    const races=
     flatten(data);
 
+    const sig=
+    dataSignature(
+      races
+    );
 
-    const sig =
-    dataSignature(races);
-
-
-    /* 結果は常にチェック */
-
-    settle(races);
-
-
-    /* データが変わった時だけAI再分析 */
+    settle(
+      races
+    );
 
     if(
       force
       ||
-      sig !== lastDataSignature
+      sig!==lastDataSignature
     ){
 
-      lastDataSignature =
+      lastDataSignature=
       sig;
 
+      const arr=
+      analyzeRaces(
+        races
+      );
 
-      const arr =
-      analyzeRaces(races);
-
-
-      st.innerHTML =
+      st.innerHTML=
       `
+
       自動更新完了　
       🔥 S評価：${arr.length}レース
+
       <br>
-      データ更新時だけAI予想を再計算します。
+
+      天候・水面・展示データ更新時にAIを再計算します。
+
       `;
 
     }
@@ -2480,13 +2970,16 @@ async function autoRefresh(
 
       renderStats();
 
-
-      st.innerHTML =
+      st.innerHTML=
       `
+
       自動確認済み　
       🔥 S評価：${analyses.length}レース
+
       <br>
+
       最新データに変化はありません。
+
       `;
 
     }
@@ -2496,14 +2989,13 @@ async function autoRefresh(
 
     console.error(e);
 
-
-    st.textContent =
+    st.textContent=
     '自動更新に失敗しました。通信が戻ると次回の自動更新で再試行します。';
 
   }
   finally{
 
-    autoUpdateBusy =
+    autoUpdateBusy=
     false;
 
   }
@@ -2517,18 +3009,14 @@ async function autoRefresh(
 
 function filterRecords(){
 
-  const all =
+  const all=
   records();
-
 
   if(
     period==='all'
   ){
-
     return all;
-
   }
-
 
   if(
     period==='day'
@@ -2541,20 +3029,25 @@ function filterRecords(){
 
   }
 
-
-  const f =
+  const f=
   $('fromDate').value;
 
-
-  const t =
+  const t=
   $('toDate').value;
-
 
   return all.filter(
     x=>
-    (!f || x.date>=f)
+    (
+      !f
+      ||
+      x.date>=f
+    )
     &&
-    (!t || x.date<=t)
+    (
+      !t
+      ||
+      x.date<=t
+    )
   );
 
 }
@@ -2566,22 +3059,19 @@ function filterRecords(){
 
 function calc(rs){
 
-  const done =
+  const done=
   rs.filter(
-    x=>
-    x.done
+    x=>x.done
   );
 
-
-  const stake =
+  const stake=
   done.reduce(
     (s,x)=>
     s+num(x.stake),
     0
   );
 
-
-  const ret =
+  const ret=
   done.reduce(
     (s,x)=>
     s+num(
@@ -2590,32 +3080,34 @@ function calc(rs){
     0
   );
 
-
-  const hits =
+  const hits=
   done.filter(
-    x=>
-    x.hit
+    x=>x.hit
   ).length;
 
-
-  const each =
+  const each=
   done.map(
     x=>({
+
       ...x,
 
       raceRoi:
       num(x.stake)>0
       ?
-      num(x.returnAmount)
+      num(
+        x.returnAmount
+      )
       /
-      num(x.stake)
+      num(
+        x.stake
+      )
       *
       100
       :
       0
+
     })
   );
-
 
   return{
 
@@ -2633,14 +3125,22 @@ function calc(rs){
     hitRate:
     done.length
     ?
-    hits/done.length*100
+    hits
+    /
+    done.length
+    *
+    100
     :
     0,
 
     roi:
     stake
     ?
-    ret/stake*100
+    ret
+    /
+    stake
+    *
+    100
     :
     0,
 
@@ -2652,8 +3152,7 @@ function calc(rs){
     ?
     Math.max(
       ...each.map(
-        x=>
-        num(
+        x=>num(
           x.returnAmount
         )
       )
@@ -2666,8 +3165,7 @@ function calc(rs){
     ?
     Math.max(
       ...each.map(
-        x=>
-        x.raceRoi
+        x=>x.raceRoi
       )
     )
     :
@@ -2684,23 +3182,20 @@ function calc(rs){
 
 function renderStats(){
 
-  const rs =
+  const rs=
   filterRecords();
 
-
-  const s =
+  const s=
   calc(rs);
 
-
-  const pc =
+  const pc=
   s.profit>=0
   ?
   'green'
   :
   'red';
 
-
-  $('stats').innerHTML =
+  $('stats').innerHTML=
   `
 
   <div class="stats-grid">
@@ -2757,7 +3252,6 @@ function renderStats(){
 
   </div>
 
-
   <div class="profit">
 
     <span>
@@ -2765,6 +3259,7 @@ function renderStats(){
     </span>
 
     <strong class="${pc}">
+
       ${
         s.profit>=0
         ?
@@ -2772,17 +3267,22 @@ function renderStats(){
         :
         ''
       }
+
       ${s.profit.toLocaleString()}円
+
     </strong>
 
   </div>
 
   `;
 
+  renderHistory(
+    rs
+  );
 
-  renderHistory(rs);
-
-  renderVenue(rs);
+  renderVenue(
+    rs
+  );
 
 }
 
@@ -2793,7 +3293,7 @@ function renderStats(){
 
 function renderHistory(rs){
 
-  const done =
+  const done=
   rs
   .filter(
     x=>x.done
@@ -2807,29 +3307,33 @@ function renderHistory(rs){
       String(a.date)
     )
     ||
-    num(b.raceNumber)
+    num(
+      b.raceNumber
+    )
     -
-    num(a.raceNumber)
+    num(
+      a.raceNumber
+    )
   );
-
 
   if(
     !done.length
   ){
 
-    $('history').innerHTML =
+    $('history').innerHTML=
     `
+
     <div class="empty">
       確定済みレースはありません。
     </div>
+
     `;
 
     return;
 
   }
 
-
-  $('history').innerHTML =
+  $('history').innerHTML=
   `
 
   <div class="history-scroll">
@@ -2860,14 +3364,13 @@ function renderHistory(rs){
 
       </thead>
 
-
       <tbody>
 
       ${
         done.map(
           x=>{
 
-            const rr =
+            const rr=
             num(x.stake)>0
             ?
             num(
@@ -2882,8 +3385,7 @@ function renderHistory(rs){
             :
             0;
 
-
-            const od =
+            const od=
             num(
               x.resultOdds,
               num(
@@ -2892,7 +3394,6 @@ function renderHistory(rs){
               /
               100
             );
-
 
             return`
 
@@ -2911,12 +3412,15 @@ function renderHistory(rs){
               </td>
 
               <td>
+
                 <b>
                   ${x.result||'-'}
                 </b>
+
               </td>
 
               <td class="odds">
+
                 ${
                   od
                   ?
@@ -2924,9 +3428,11 @@ function renderHistory(rs){
                   :
                   '-'
                 }
+
               </td>
 
               <td class="${x.hit?'hit':'miss'}">
+
                 ${
                   x.hit
                   ?
@@ -2934,6 +3440,7 @@ function renderHistory(rs){
                   :
                   '× 不的中'
                 }
+
               </td>
 
               <td>
@@ -2959,7 +3466,6 @@ function renderHistory(rs){
 
   </div>
 
-
   <div class="notice">
 
     オッズは3連単の
@@ -2978,15 +3484,13 @@ function renderHistory(rs){
 
 function renderVenue(rs){
 
-  const done =
+  const done=
   rs.filter(
     x=>x.done
   );
 
-
-  const m =
+  const m=
   new Map();
-
 
   for(
     const x
@@ -3007,7 +3511,6 @@ function renderVenue(rs){
 
     }
 
-
     m.get(
       x.venue
     )
@@ -3015,29 +3518,34 @@ function renderVenue(rs){
 
   }
 
-
   if(
     !m.size
   ){
 
-    $('venueStats').innerHTML =
+    $('venueStats').innerHTML=
     `
+
     <div class="empty">
       会場別成績はまだありません。
     </div>
+
     `;
 
     return;
 
   }
 
-
-  const rows =
-  [...m.entries()]
+  const rows=
+  [
+    ...m.entries()
+  ]
   .map(
     ([venue,a])=>({
+
       venue,
+
       ...calc(a)
+
     })
   )
   .sort(
@@ -3045,8 +3553,7 @@ function renderVenue(rs){
     b.roi-a.roi
   );
 
-
-  $('venueStats').innerHTML =
+  $('venueStats').innerHTML=
   `
 
   <div class="venue-row">
@@ -3061,11 +3568,10 @@ function renderVenue(rs){
 
   </div>
 
-
   ${
     rows.map(
-      x=>
-      `
+      x=>`
+
       <div class="venue-row">
 
         <span>
@@ -3085,6 +3591,7 @@ function renderVenue(rs){
         </span>
 
       </div>
+
       `
     )
     .join('')
@@ -3106,12 +3613,10 @@ function showStats(
 
   $('statsSection')
   .style
-  .display =
+  .display=
   'block';
 
-
   renderStats();
-
 
   if(
     openHistory
@@ -3119,16 +3624,14 @@ function showStats(
 
     $('historyWrap')
     .style
-    .display =
+    .display=
     'block';
 
-
     $('historyToggle')
-    .textContent =
+    .textContent=
     '一覧を隠す';
 
   }
-
 
   if(
     openVenue
@@ -3136,21 +3639,22 @@ function showStats(
 
     $('venueWrap')
     .style
-    .display =
+    .display=
     'block';
 
-
     $('venueToggle')
-    .textContent =
+    .textContent=
     '会場別成績を隠す';
 
   }
 
-
   $('statsSection')
   .scrollIntoView({
+
     behavior:'smooth',
+
     block:'start'
+
   });
 
 }
@@ -3160,31 +3664,30 @@ function showStats(
    ボタン操作
 ============================== */
 
-$('statsOpen').onclick =
+$('statsOpen').onclick=
 ()=>showStats();
 
 
-$('historyOpen').onclick =
+$('historyOpen').onclick=
 ()=>showStats(
   true,
   false
 );
 
 
-$('venueOpen').onclick =
+$('venueOpen').onclick=
 ()=>showStats(
   false,
   true
 );
 
 
-$('qStats').onclick =
+$('qStats').onclick=
 ()=>showStats();
 
 
-$('qTop').onclick =
-()=>
-$('top')
+$('qTop').onclick=
+()=>$('top')
 .scrollIntoView({
   behavior:'smooth'
 });
@@ -3194,21 +3697,18 @@ $('top')
    資金変更時
 ============================== */
 
-$('budget').onchange =
+$('budget').onchange=
 ()=>{
 
   display();
 
-
   analyses
   .filter(
-    x=>
-    x.grade==='S'
+    x=>x.grade==='S'
   )
   .forEach(
     savePrediction
   );
-
 
   renderStats();
 
@@ -3219,29 +3719,26 @@ $('budget').onchange =
    的中一覧開閉
 ============================== */
 
-$('historyToggle').onclick =
+$('historyToggle').onclick=
 ()=>{
 
-  const w =
+  const w=
   $('historyWrap');
 
-
-  const o =
+  const o=
   w.style.display
   ===
   'block';
 
-
-  w.style.display =
+  w.style.display=
   o
   ?
   'none'
   :
   'block';
 
-
   $('historyToggle')
-  .textContent =
+  .textContent=
   o
   ?
   '一覧を表示'
@@ -3255,29 +3752,26 @@ $('historyToggle').onclick =
    会場別開閉
 ============================== */
 
-$('venueToggle').onclick =
+$('venueToggle').onclick=
 ()=>{
 
-  const w =
+  const w=
   $('venueWrap');
 
-
-  const o =
+  const o=
   w.style.display
   ===
   'block';
 
-
-  w.style.display =
+  w.style.display=
   o
   ?
   'none'
   :
   'block';
 
-
   $('venueToggle')
-  .textContent =
+  .textContent=
   o
   ?
   '会場別成績を表示'
@@ -3296,46 +3790,46 @@ document
   '.tab'
 )
 .forEach(
-  b=>
-  b.onclick=
-  ()=>{
+  b=>{
 
-    period =
-    b.dataset.period;
+    b.onclick=
+    ()=>{
 
+      period=
+      b.dataset.period;
 
-    document
-    .querySelectorAll(
-      '.tab'
-    )
-    .forEach(
-      x=>
-      x.classList.toggle(
-        'active',
-        x===b
+      document
+      .querySelectorAll(
+        '.tab'
       )
-    );
+      .forEach(
+        x=>
+        x.classList.toggle(
+          'active',
+          x===b
+        )
+      );
 
+      $('rangeBox')
+      .classList
+      .toggle(
+        'show',
+        period==='custom'
+      );
 
-    $('rangeBox')
-    .classList
-    .toggle(
-      'show',
-      period==='custom'
-    );
+      renderStats();
 
-
-    renderStats();
+    };
 
   }
 );
 
 
-$('fromDate').onchange =
+$('fromDate').onchange=
 renderStats;
 
 
-$('toDate').onchange =
+$('toDate').onchange=
 renderStats;
 
 
@@ -3355,7 +3849,9 @@ AI分析
 Sレース表示
 */
 
-autoRefresh(true);
+autoRefresh(
+  true
+);
 
 
 /* ==============================
@@ -3369,7 +3865,9 @@ setInterval(
       !document.hidden
     ){
 
-      autoRefresh(false);
+      autoRefresh(
+        false
+      );
 
     }
 
@@ -3384,7 +3882,9 @@ setInterval(
 
 window.addEventListener(
   'focus',
-  ()=>autoRefresh(true)
+  ()=>autoRefresh(
+    true
+  )
 );
 
 
@@ -3400,7 +3900,9 @@ document.addEventListener(
       !document.hidden
     ){
 
-      autoRefresh(true);
+      autoRefresh(
+        true
+      );
 
     }
 
