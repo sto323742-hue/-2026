@@ -4,15 +4,11 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#050505">
-
 <title>BOAT RACE AI予想 Ver.3</title>
 
 <style>
 *{box-sizing:border-box}
-
-html{
-  scroll-behavior:smooth
-}
+html{scroll-behavior:smooth}
 
 body{
   margin:0;
@@ -24,78 +20,65 @@ body{
   "Segoe UI",
   "Hiragino Kaku Gothic ProN",
   "Yu Gothic",
-  sans-serif
+  sans-serif;
 }
 
-button,
-input,
-select{
-  font:inherit
-}
-
-button{
-  cursor:pointer
-}
+button,input,select{font:inherit}
+button{cursor:pointer}
 
 .wrap{
   max-width:820px;
   margin:auto;
-  padding:16px 10px 100px
+  padding:16px 10px 100px;
 }
 
 .header{
   text-align:center;
-  padding:10px 4px 18px
+  padding:10px 4px 18px;
 }
 
 .brand{
   font-size:27px;
   font-weight:950;
-  letter-spacing:.4px
+  letter-spacing:.4px;
 }
 
-.brand .gold{
-  color:#efc559
+.brand .gold,
+.ver{
+  color:#efc559;
 }
 
 .ver{
   font-size:12px;
-  color:#efc559;
-  margin-left:5px
+  margin-left:5px;
 }
 
 .sub{
   margin-top:6px;
   color:#9d9d9d;
-  font-size:12px
+  font-size:12px;
 }
 
 .panel,
 .race{
-  background:
-  linear-gradient(
-    180deg,
-    #111,
-    #090909
-  );
-
+  background:linear-gradient(180deg,#111,#090909);
   border:1px solid #765b19;
   border-radius:18px;
   padding:15px;
-  margin-bottom:14px
+  margin-bottom:14px;
 }
 
 .panel-title{
   color:#f3ca5b;
   font-weight:950;
   font-size:19px;
-  margin-bottom:13px
+  margin-bottom:13px;
 }
 
 .budget-label{
   font-size:12px;
   color:#c9b98a;
-  margin-bottom:6px
+  margin-bottom:6px;
 }
 
 select,
@@ -107,15 +90,7 @@ input[type=date]{
   background:#080808;
   color:#fff;
   padding:0 12px;
-  font-size:16px
-}
-
-.gold-btn,
-.toggle{
-  width:100%;
-  border:0;
-  border-radius:13px;
-  font-weight:900
+  font-size:16px;
 }
 
 .status{
@@ -126,36 +101,40 @@ input[type=date]{
   border:1px solid #26210f;
   color:#c8c0a8;
   font-size:12px;
-  line-height:1.7
+  line-height:1.7;
 }
 
 .notice{
   margin-top:8px;
   color:#777;
   font-size:10px;
-  line-height:1.6
+  line-height:1.6;
 }
 
 .race{
-  border-color:#6f571d
+  border-color:#6f571d;
 }
 
-.race-head{
+.race-head,
+.ai-top,
+.total,
+.profit{
   display:flex;
   align-items:center;
   justify-content:space-between;
-  gap:10px
+  gap:10px;
 }
 
 .race-name{
   font-size:20px;
-  font-weight:950
+  font-weight:950;
 }
 
 .race-meta{
   font-size:11px;
-  color:#a9a9a9;
-  margin-top:4px
+  color:#aaa;
+  margin-top:4px;
+  line-height:1.6;
 }
 
 .smark{
@@ -168,7 +147,7 @@ input[type=date]{
   justify-content:center;
   color:#f1c95e;
   font-size:23px;
-  font-weight:950
+  font-weight:950;
 }
 
 .ai-box{
@@ -176,94 +155,73 @@ input[type=date]{
   background:#080808;
   border:1px solid #29220e;
   border-radius:12px;
-  padding:11px
-}
-
-.ai-top{
-  display:flex;
-  justify-content:space-between;
-  align-items:center
+  padding:11px;
 }
 
 .ai-score{
   font-size:23px;
   color:#f2cd67;
-  font-weight:950
+  font-weight:950;
 }
 
 .candidate-grid{
   display:grid;
   grid-template-columns:repeat(3,1fr);
   gap:6px;
-  margin-top:9px
+  margin-top:9px;
 }
 
 .candidate{
   background:#111;
   border-radius:9px;
   text-align:center;
-  padding:8px 3px
+  padding:8px 3px;
 }
 
-.candidate small{
+.candidate small,
+.weather-item small{
   display:block;
   color:#8d8d8d;
-  font-size:9px
+  font-size:9px;
 }
 
 .candidate b{
-  font-size:17px
+  font-size:17px;
 }
 
 .weather-grid{
   display:grid;
   grid-template-columns:repeat(3,1fr);
   gap:6px;
-  margin-top:10px
+  margin-top:10px;
 }
 
 .weather-item{
   background:#111;
   border-radius:9px;
   padding:8px 4px;
-  text-align:center
-}
-
-.weather-item small{
-  display:block;
-  color:#898989;
-  font-size:9px
+  text-align:center;
 }
 
 .weather-item b{
   display:block;
   margin-top:2px;
-  font-size:13px
+  font-size:13px;
 }
-
-
-/* ==============================
-   展開予測
-============================== */
 
 .scenario-box{
   margin-top:10px;
   padding:11px;
   border-radius:12px;
   border:1px solid #584516;
-  background:
-  linear-gradient(
-    135deg,
-    #151005,
-    #090909
-  )
+  background:linear-gradient(135deg,#151005,#090909);
 }
 
 .scenario-title{
   color:#f2cd67;
   font-size:13px;
   font-weight:950;
-  margin-bottom:8px
+  margin-bottom:8px;
 }
 
 .scenario-main{
@@ -274,22 +232,20 @@ input[type=date]{
   padding:10px;
   border-radius:10px;
   background:#111;
-  border:1px solid #382d12
+  border:1px solid #382d12;
 }
 
-.scenario-main strong{
-  color:#ffd971;
-  font-size:17px
-}
-
+.scenario-main strong,
 .scenario-main span{
   color:#ffd971;
-  font-size:20px;
-  font-weight:950
+  font-weight:950;
 }
 
+.scenario-main strong{font-size:17px}
+.scenario-main span{font-size:20px}
+
 .scenario-list{
-  margin-top:6px
+  margin-top:6px;
 }
 
 .scenario-row{
@@ -298,62 +254,65 @@ input[type=date]{
   gap:6px;
   padding:7px 8px;
   border-bottom:1px solid #26200e;
-  font-size:11px
+  font-size:11px;
 }
 
 .scenario-row:last-child{
-  border-bottom:0
+  border-bottom:0;
 }
 
 .scenario-row b{
   text-align:right;
-  color:#e8ca73
+  color:#e8ca73;
 }
 
 .scenario-note{
   margin-top:7px;
   color:#8e846b;
   font-size:9px;
-  line-height:1.55
+  line-height:1.55;
 }
 
+.gold-btn,
+.toggle{
+  width:100%;
+  border-radius:13px;
+  font-weight:900;
+}
 
 .gold-btn{
   min-height:44px;
   margin-top:10px;
   background:#17140d;
   border:1px solid #6e581d;
-  color:#f0cc68
+  color:#f0cc68;
+}
+
+.toggle{
+  min-height:45px;
+  margin-top:8px;
+  background:#131313;
+  border:1px solid #55451a;
+  color:#edcc70;
 }
 
 .detail{
   display:none;
-  margin-top:8px
+  margin-top:8px;
 }
 
 .bet-head{
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
   margin-top:7px;
   padding:9px 10px;
   border-radius:10px;
   background:#0b0b0b;
   border:1px solid #302813;
-  font-weight:900
+  font-weight:900;
 }
 
-.bet-head.main{
-  color:#71baff
-}
-
-.bet-head.cover{
-  color:#e8d7a4
-}
-
-.bet-head.hole{
-  color:#ff9b52
-}
+.bet-head.main{color:#71baff}
+.bet-head.cover{color:#e8d7a4}
+.bet-head.hole{color:#ff9b52}
 
 .ticket{
   display:grid;
@@ -361,60 +320,54 @@ input[type=date]{
   gap:8px;
   padding:8px 10px;
   border-bottom:1px solid #24200f;
-  background:#090909
+  background:#090909;
 }
 
 .combo{
   font-weight:950;
-  letter-spacing:1px
+  letter-spacing:1px;
 }
 
 .money{
   color:#efd16e;
-  font-weight:900
+  font-weight:900;
 }
 
 .ticket-sub{
   grid-column:1/-1;
   color:#8f8f8f;
   font-size:9px;
-  line-height:1.5
+  line-height:1.5;
 }
 
 .total{
-  display:flex;
-  justify-content:space-between;
   border-top:1px solid #6d551c;
   margin-top:9px;
   padding-top:9px;
-  font-weight:950
+  font-weight:950;
 }
 
-.logic{
+.logic,
+.reason{
   margin-top:9px;
   padding:10px;
   border-radius:10px;
   background:#0a0a0a;
   color:#aaa;
   font-size:10px;
-  line-height:1.65
+  line-height:1.65;
 }
 
 .reason{
-  margin-top:9px;
-  padding:11px;
   border:1px solid #463814;
-  border-radius:11px;
   background:#0b0905;
   color:#c8bb96;
-  font-size:10px;
-  line-height:1.75
 }
 
 .menu{
   display:grid;
   grid-template-columns:repeat(3,1fr);
-  gap:7px
+  gap:7px;
 }
 
 .menu button{
@@ -423,17 +376,17 @@ input[type=date]{
   border:1px solid #55451a;
   background:#111;
   color:#e8ca73;
-  font-weight:900
+  font-weight:900;
 }
 
 .stats{
-  display:none
+  display:none;
 }
 
 .tabs{
   display:grid;
   grid-template-columns:repeat(3,1fr);
-  gap:6px
+  gap:6px;
 }
 
 .tab{
@@ -442,104 +395,174 @@ input[type=date]{
   background:#131313;
   color:#ddd;
   border-radius:10px;
-  font-weight:900
+  font-weight:900;
 }
 
 .tab.active{
-  background:
-  linear-gradient(
-    135deg,
-    #f4d070,
-    #c8901f
-  );
-  color:#070707
+  background:linear-gradient(135deg,#f4d070,#c8901f);
+  color:#070707;
 }
 
 .range{
   display:none;
   grid-template-columns:1fr 1fr;
   gap:8px;
-  margin-top:8px
+  margin-top:8px;
 }
 
 .range.show{
-  display:grid
+  display:grid;
 }
 
 .stats-grid{
   display:grid;
   grid-template-columns:repeat(2,1fr);
   gap:7px;
-  margin-top:10px
+  margin-top:10px;
 }
 
 .stat{
   background:#090909;
   border:1px solid #2c2510;
   border-radius:11px;
-  padding:11px
+  padding:11px;
 }
 
 .stat small{
   display:block;
   color:#aa9e78;
-  font-size:10px
+  font-size:10px;
 }
 
 .stat b{
   display:block;
   margin-top:3px;
-  font-size:19px
+  font-size:19px;
 }
 
-.green{
-  color:#58dc8d
-}
-
-.red{
-  color:#ff6a6a
-}
+.green{color:#58dc8d}
+.red{color:#ff6a6a}
 
 .profit{
   margin-top:9px;
   padding:14px;
   border:1px solid #8a6719;
   border-radius:12px;
-  background:
-  linear-gradient(
-    90deg,
-    #171005,
-    #080808
-  );
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-  gap:8px
+  background:linear-gradient(90deg,#171005,#080808);
 }
 
 .profit strong{
   font-size:26px;
-  color:#f1cc65
+  color:#f1cc65;
 }
 
 .section-title{
   margin:16px 0 8px;
   color:#f2cd68;
-  font-weight:950
+  font-weight:950;
+}
+
+.history-wrap,
+.venue-wrap{
+  display:none;
+}
+
+
+/* =======================================
+   的中・不的中 会場別タブ
+======================================= */
+
+.history-controls{
+  margin:10px 0;
+}
+
+.venue-tabs{
+  display:flex;
+  gap:7px;
+  overflow-x:auto;
+  padding:2px 0 8px;
+  scrollbar-width:none;
+  -webkit-overflow-scrolling:touch;
+}
+
+.venue-tabs::-webkit-scrollbar{
+  display:none;
+}
+
+.venue-chip{
+  flex:0 0 auto;
+  min-width:67px;
+  height:40px;
+  padding:0 11px;
+  border:1px solid #55451a;
+  border-radius:10px;
+  background:#111;
+  color:#ddd;
+  font-size:12px;
+  font-weight:900;
+}
+
+.venue-chip.active{
+  background:linear-gradient(135deg,#f4d070,#c8901f);
+  color:#080808;
+  border-color:#e9c057;
+}
+
+.result-tabs{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:7px;
+  margin:4px 0 9px;
+}
+
+.result-chip{
+  min-height:42px;
+  border-radius:10px;
+  border:1px solid #4a421e;
+  background:#111;
+  color:#ddd;
+  font-size:11px;
+  font-weight:900;
+}
+
+.result-chip.active.all{
+  background:#d5aa3c;
+  color:#080808;
+}
+
+.result-chip.active.hit-only{
+  border-color:#35c77b;
+  background:#0c2b1d;
+  color:#65eaa5;
+}
+
+.result-chip.active.miss-only{
+  border-color:#d85050;
+  background:#2d1010;
+  color:#ff8888;
+}
+
+.history-caption{
+  display:flex;
+  justify-content:space-between;
+  gap:8px;
+  margin:7px 1px;
+  color:#9b906f;
+  font-size:10px;
 }
 
 .history-scroll{
   overflow-x:auto;
   border:1px solid #342b12;
-  border-radius:12px
+  border-radius:12px;
 }
 
 .history-table{
-  min-width:760px;
+  min-width:940px;
   width:100%;
   border-collapse:collapse;
   background:#080808;
-  font-size:11px
+  font-size:11px;
 }
 
 .history-table th,
@@ -547,45 +570,38 @@ input[type=date]{
   padding:9px 7px;
   border-bottom:1px solid #25200f;
   border-right:1px solid #201c0e;
-  text-align:center
+  text-align:center;
+  white-space:nowrap;
 }
 
 .history-table th{
   color:#d8bb65;
-  background:#0d0c08
+  background:#0d0c08;
 }
 
 .hit{
-  color:#ff665c;
-  font-weight:950
+  color:#58dc8d;
+  font-weight:950;
 }
 
 .miss{
-  color:#6fb4ff;
-  font-weight:950
+  color:#ff6a6a;
+  font-weight:950;
 }
 
 .odds{
   color:#f0d06c;
-  font-weight:950
+  font-weight:950;
 }
 
 .roi{
   color:#58dc8d;
-  font-weight:950
+  font-weight:950;
 }
 
-.toggle{
-  min-height:45px;
-  margin-top:8px;
-  background:#131313;
-  border:1px solid #55451a;
-  color:#edcc70
-}
-
-.history-wrap,
-.venue-wrap{
-  display:none
+.scenario-mini{
+  color:#e8ca73;
+  font-weight:900;
 }
 
 .venue-row{
@@ -594,7 +610,7 @@ input[type=date]{
   gap:5px;
   padding:9px 3px;
   border-bottom:1px solid #26200e;
-  font-size:11px
+  font-size:11px;
 }
 
 .footer{
@@ -602,21 +618,17 @@ input[type=date]{
   color:#686868;
   font-size:10px;
   line-height:1.7;
-  margin-top:24px
+  margin-top:24px;
 }
 
 .quick{
   position:fixed;
   right:9px;
-  bottom:
-  calc(
-    11px +
-    env(safe-area-inset-bottom)
-  );
+  bottom:calc(11px + env(safe-area-inset-bottom));
   display:flex;
   flex-direction:column;
   gap:6px;
-  z-index:20
+  z-index:20;
 }
 
 .quick button{
@@ -626,7 +638,7 @@ input[type=date]{
   border-radius:999px;
   background:#111;
   color:#f0cc68;
-  font-weight:900
+  font-weight:900;
 }
 
 .empty{
@@ -636,43 +648,51 @@ input[type=date]{
   background:#0d0d0d;
   border:1px solid #302812;
   border-radius:14px;
-  margin-bottom:12px
+  margin-bottom:12px;
 }
 
 @media(max-width:480px){
 
   .brand{
-    font-size:23px
+    font-size:23px;
   }
 
   .wrap{
     padding-left:9px;
-    padding-right:9px
+    padding-right:9px;
   }
 
   .panel,
   .race{
-    padding:13px
+    padding:13px;
   }
 
   .stat b{
-    font-size:17px
+    font-size:17px;
   }
 
   .profit strong{
-    font-size:23px
+    font-size:23px;
   }
 
   .range{
-    grid-template-columns:1fr
+    grid-template-columns:1fr;
   }
 
   .candidate b{
-    font-size:16px
+    font-size:16px;
   }
 
   .menu{
-    grid-template-columns:1fr
+    grid-template-columns:1fr;
+  }
+
+  .venue-chip{
+    min-width:64px;
+  }
+
+  .result-chip{
+    font-size:10px;
   }
 }
 </style>
@@ -685,15 +705,9 @@ input[type=date]{
 <header class="header">
 
   <div class="brand">
-    <span class="gold">
-      🚤 BOAT RACE
-    </span>
-
+    <span class="gold">🚤 BOAT RACE</span>
     AI予想
-
-    <span class="ver">
-      Ver.3
-    </span>
+    <span class="ver">Ver.3</span>
   </div>
 
   <div class="sub">
@@ -714,44 +728,23 @@ input[type=date]{
   </div>
 
   <select id="budget">
-    <option value="1000">
-      1,000円
-    </option>
-
-    <option value="2000">
-      2,000円
-    </option>
-
-    <option value="3000">
-      3,000円
-    </option>
-
-    <option value="5000">
-      5,000円
-    </option>
-
-    <option value="10000">
-      10,000円
-    </option>
+    <option value="1000">1,000円</option>
+    <option value="2000">2,000円</option>
+    <option value="3000">3,000円</option>
+    <option value="5000">5,000円</option>
+    <option value="10000">10,000円</option>
   </select>
 
-  <div
-    class="status"
-    id="status"
-  >
+  <div class="status" id="status">
     最新データを自動取得しています…
   </div>
 
   <div class="notice">
-
-    ページを開くだけで自動更新します。<br>
-
+    ページを開くだけで自動更新します。
     展示・ST・進入・風・波などに変化があった時、
-    AIが艇評価と展開予測を再計算します。<br>
-
+    AIが艇評価と展開予測を再計算します。
     AI数値は独自モデルの評価値であり、
     実際の的中率を保証するものではありません。
-
   </div>
 
 </section>
@@ -815,6 +808,7 @@ input[type=date]{
 
   </div>
 
+
   <div
     class="range"
     id="rangeBox"
@@ -832,7 +826,9 @@ input[type=date]{
 
   </div>
 
+
   <div id="stats"></div>
+
 
   <div class="section-title">
     的中・不的中レース
@@ -900,17 +896,17 @@ input[type=date]{
 
 <script>
 
-/* ==============================
+/* =====================================
    基本設定
-============================== */
+===================================== */
 
-const API_BASE =
+const API_BASE=
 'https://boatraceopenapi.github.io/api/v1';
 
-const STORAGE_KEY =
+const STORAGE_KEY=
 'boat_ai_gold_v1_records';
 
-const MODEL_NAME =
+const MODEL_NAME=
 'gold-v3-scenario';
 
 const STADIUMS={
@@ -955,6 +951,12 @@ let period='day';
 let lastDataSignature='';
 let autoUpdateBusy=false;
 
+/*
+  的中・不的中一覧の状態
+*/
+let historyVenue='all';
+let historyResult='all';
+
 
 const $=
 id=>
@@ -981,9 +983,9 @@ Math.max(
 );
 
 
-/* ==============================
+/* =====================================
    日本時間
-============================== */
+===================================== */
 
 function todayJST(){
 
@@ -1003,9 +1005,9 @@ function todayJST(){
 }
 
 
-/* ==============================
-   API URL
-============================== */
+/* =====================================
+   API
+===================================== */
 
 function apiURL(d){
 
@@ -1014,18 +1016,11 @@ function apiURL(d){
 }
 
 
-/* ==============================
-   最新データ取得
-============================== */
-
 async function fetchToday(){
-
-  const d=
-  todayJST();
 
   const r=
   await fetch(
-    apiURL(d)
+    apiURL(todayJST())
     +
     '?t='
     +
@@ -1035,9 +1030,7 @@ async function fetchToday(){
     }
   );
 
-  if(
-    !r.ok
-  ){
+  if(!r.ok){
 
     throw Error(
       'data '
@@ -1052,9 +1045,9 @@ async function fetchToday(){
 }
 
 
-/* ==============================
-   レース一覧化
-============================== */
+/* =====================================
+   レース一覧
+===================================== */
 
 function flatten(data){
 
@@ -1081,9 +1074,7 @@ function flatten(data){
       )
     ){
 
-      if(
-        !r
-      ){
+      if(!r){
         continue;
       }
 
@@ -1114,28 +1105,12 @@ function flatten(data){
 }
 
 
-/* ==============================
-   レースキー
-============================== */
-
 function raceKey(r){
 
-  return `${
-    r.date
-    ||
-    todayJST()
-  }_${
-    r.stadium_number
-  }_${
-    r.race_number
-  }`;
+  return `${r.date||todayJST()}_${r.stadium_number}_${r.race_number}`;
 
 }
 
-
-/* ==============================
-   締切時刻
-============================== */
 
 function closeTime(r){
 
@@ -1158,15 +1133,9 @@ function closeTime(r){
 }
 
 
-/* ==============================
-   締切前判定
-============================== */
-
 function upcoming(r){
 
-  if(
-    !r?.closed_at
-  ){
+  if(!r?.closed_at){
     return true;
   }
 
@@ -1193,18 +1162,16 @@ function upcoming(r){
 }
 
 
-/* ==============================
-   展示情報確認
-============================== */
+/* =====================================
+   展示確認
+===================================== */
 
 function previewReady(r){
 
   const p=
   r?.preview?.racers;
 
-  if(
-    !p
-  ){
+  if(!p){
     return false;
   }
 
@@ -1214,22 +1181,21 @@ function previewReady(r){
     i++
   ){
 
-    if(
-      !p[String(i)]
-    ){
+    const x=
+    p[String(i)];
+
+    if(!x){
       return false;
     }
 
     const e=
     Number(
-      p[String(i)]
-      .exhibition_time
+      x.exhibition_time
     );
 
     const s=
     Number(
-      p[String(i)]
-      .start_timing
+      x.start_timing
     );
 
     if(
@@ -1249,9 +1215,9 @@ function previewReady(r){
 }
 
 
-/* ==============================
-   天候・水面
-============================== */
+/* =====================================
+   天候
+===================================== */
 
 function weatherInfo(r){
 
@@ -1297,9 +1263,9 @@ function weatherInfo(r){
 }
 
 
-/* ==============================
-   艇スコア
-============================== */
+/* =====================================
+   艇AIスコア
+===================================== */
 
 function scoreBoat(
   r,
@@ -1394,8 +1360,6 @@ function scoreBoat(
   );
 
 
-  /* 基礎能力 */
-
   s+=
   nw*8
   +
@@ -1414,8 +1378,6 @@ function scoreBoat(
   b2*.15;
 
 
-  /* ST・展示 */
-
   s+=
   Math.max(
     0,
@@ -1433,8 +1395,6 @@ function scoreBoat(
   );
 
 
-  /* 級別 */
-
   s+=
   rank===1
   ?
@@ -1451,13 +1411,9 @@ function scoreBoat(
   -2;
 
 
-  /* F */
-
   s-=
   f*4;
 
-
-  /* コース補正 */
 
   s+=
   ({
@@ -1475,9 +1431,9 @@ function scoreBoat(
 }
 
 
-/* ==============================
+/* =====================================
    展示順位
-============================== */
+===================================== */
 
 function exhibitionRank(boats){
 
@@ -1487,14 +1443,12 @@ function exhibitionRank(boats){
   .sort(
     (a,b)=>
     num(
-      a.preview
-      ?.exhibition_time,
+      a.preview?.exhibition_time,
       99
     )
     -
     num(
-      b.preview
-      ?.exhibition_time,
+      b.preview?.exhibition_time,
       99
     )
   )
@@ -1505,9 +1459,9 @@ function exhibitionRank(boats){
 }
 
 
-/* ==============================
-   展示ST順位
-============================== */
+/* =====================================
+   ST順位
+===================================== */
 
 function startRank(boats){
 
@@ -1517,14 +1471,12 @@ function startRank(boats){
   .sort(
     (a,b)=>
     num(
-      a.preview
-      ?.start_timing,
+      a.preview?.start_timing,
       9
     )
     -
     num(
-      b.preview
-      ?.start_timing,
+      b.preview?.start_timing,
       9
     )
   )
@@ -1535,17 +1487,16 @@ function startRank(boats){
 }
 
 
-/* ==============================
+/* =====================================
    進入変化
-============================== */
+===================================== */
 
 function courseChanges(boats){
 
   return boats.filter(
     x=>
     num(
-      x.preview
-      ?.course_number,
+      x.preview?.course_number,
       x.boat
     )
     !==
@@ -1554,10 +1505,6 @@ function courseChanges(boats){
 
 }
 
-
-/* ==============================
-   スコア順位取得
-============================== */
 
 function rankIndex(
   arr,
@@ -1578,9 +1525,9 @@ function rankIndex(
 }
 
 
-/* ==========================================================
-   Ver.3 展開予測エンジン
-========================================================== */
+/* ==================================================
+   展開予測
+================================================== */
 
 function scenarioForecast(
   boats,
@@ -1612,8 +1559,7 @@ function scenarioForecast(
 
     const course=
     num(
-      x.preview
-      ?.course_number,
+      x.preview?.course_number,
       boat
     );
 
@@ -1648,8 +1594,7 @@ function scenarioForecast(
 
     const actualST=
     num(
-      x.preview
-      ?.start_timing,
+      x.preview?.start_timing,
       .18
     );
 
@@ -1658,16 +1603,14 @@ function scenarioForecast(
       (
         .19-actualST
       )
-      *
-      100,
+      *100,
       -5,
       9
     );
 
     const motor=
     num(
-      x.racer
-      ?.motor_top_2_percent,
+      x.racer?.motor_top_2_percent,
       30
     );
 
@@ -1689,40 +1632,26 @@ function scenarioForecast(
     motorBoost;
 
 
-    /* --------------------------
-       1コース 逃げ
-    -------------------------- */
-
-    if(
-      course===1
-    ){
+    if(course===1){
 
       let v=
       34
       +
       base;
 
-      if(
-        stPos<=1
-      ){
+      if(stPos<=1){
         v+=4;
       }
 
-      if(
-        exPos<=1
-      ){
+      if(exPos<=1){
         v+=3;
       }
 
-      if(
-        w.windSpeed>=7
-      ){
+      if(w.windSpeed>=7){
         v-=4;
       }
 
-      if(
-        w.wave>=7
-      ){
+      if(w.wave>=7){
         v-=4;
       }
 
@@ -1735,22 +1664,14 @@ function scenarioForecast(
     }
 
 
-    /* --------------------------
-       2コース 差し
-    -------------------------- */
-
-    if(
-      course===2
-    ){
+    if(course===2){
 
       let v=
       17
       +
       base;
 
-      if(
-        stPos<=2
-      ){
+      if(stPos<=2){
         v+=2;
       }
 
@@ -1762,10 +1683,6 @@ function scenarioForecast(
 
     }
 
-
-    /* --------------------------
-       3〜5コース まくり
-    -------------------------- */
 
     if(
       course>=3
@@ -1788,21 +1705,15 @@ function scenarioForecast(
       +
       base;
 
-      if(
-        stPos===0
-      ){
+      if(stPos===0){
         v+=6;
       }
 
-      if(
-        stPos<=1
-      ){
+      if(stPos<=1){
         v+=3;
       }
 
-      if(
-        exPos<=1
-      ){
+      if(exPos<=1){
         v+=2;
       }
 
@@ -1815,13 +1726,7 @@ function scenarioForecast(
     }
 
 
-    /* --------------------------
-       3〜6コース まくり差し
-    -------------------------- */
-
-    if(
-      course>=3
-    ){
+    if(course>=3){
 
       let v=
       (
@@ -1842,15 +1747,11 @@ function scenarioForecast(
       +
       base*.9;
 
-      if(
-        exPos<=2
-      ){
+      if(exPos<=2){
         v+=2;
       }
 
-      if(
-        stPos<=2
-      ){
+      if(stPos<=2){
         v+=2;
       }
 
@@ -1863,13 +1764,7 @@ function scenarioForecast(
     }
 
 
-    /* --------------------------
-       外枠 展開突き
-    -------------------------- */
-
-    if(
-      course>=4
-    ){
+    if(course>=4){
 
       let v=
       (
@@ -1886,15 +1781,11 @@ function scenarioForecast(
       +
       base*.75;
 
-      if(
-        w.windSpeed>=5
-      ){
+      if(w.windSpeed>=5){
         v+=2;
       }
 
-      if(
-        w.wave>=4
-      ){
+      if(w.wave>=4){
         v+=2;
       }
 
@@ -1908,11 +1799,6 @@ function scenarioForecast(
 
   }
 
-
-  /*
-   softmax
-   展開ごとの相対確率化
-  */
 
   const maxScore=
   Math.max(
@@ -1943,6 +1829,7 @@ function scenarioForecast(
 
   }
 
+
   for(
     const x
     of
@@ -1967,10 +1854,6 @@ function scenarioForecast(
   );
 
 
-  /*
-   1着艇ごとの展開確率
-  */
-
   const firstMap={};
 
   for(
@@ -1980,6 +1863,7 @@ function scenarioForecast(
   ){
     firstMap[i]=0;
   }
+
 
   for(
     const x
@@ -1992,11 +1876,6 @@ function scenarioForecast(
 
   }
 
-
-  /*
-   最有力の攻め役
-   逃げ以外を優先
-  */
 
   const attacker=
   candidates.find(
@@ -2023,9 +1902,9 @@ function scenarioForecast(
 }
 
 
-/* ==============================
-   レースAI評価
-============================== */
+/* =====================================
+   AI評価
+===================================== */
 
 function evaluate(r){
 
@@ -2034,7 +1913,6 @@ function evaluate(r){
   ){
     return null;
   }
-
 
   const boats=[];
 
@@ -2051,11 +1929,9 @@ function evaluate(r){
     ];
 
     const p=
-    r?.preview
-    ?.racers?.[
+    r?.preview?.racers?.[
       String(i)
     ];
-
 
     if(
       !rr
@@ -2064,7 +1940,6 @@ function evaluate(r){
     ){
       return null;
     }
-
 
     boats.push({
 
@@ -2097,7 +1972,6 @@ function evaluate(r){
   -
   boats[1].score;
 
-
   const g2=
   boats[1].score
   -
@@ -2125,10 +1999,6 @@ function evaluate(r){
     boats
   );
 
-
-  /*
-   展開予測
-  */
 
   const scenario=
   scenarioForecast(
@@ -2159,20 +2029,12 @@ function evaluate(r){
   );
 
 
-  /*
-   1号艇AIトップ
-  */
-
   if(
     boats[0].boat===1
   ){
     rating+=6;
   }
 
-
-  /*
-   水面
-  */
 
   if(
     w.windSpeed>=5
@@ -2199,10 +2061,6 @@ function evaluate(r){
   }
 
 
-  /*
-   展示一致
-  */
-
   if(
     exRanks[0]
     ===
@@ -2211,10 +2069,6 @@ function evaluate(r){
     rating+=2;
   }
 
-
-  /*
-   ST一致
-  */
 
   if(
     stRanks[0]
@@ -2242,10 +2096,6 @@ function evaluate(r){
   }
 
 
-  /*
-   進入変化
-  */
-
   if(
     changes.length>=2
   ){
@@ -2253,14 +2103,8 @@ function evaluate(r){
   }
 
 
-  /*
-   展開の集中度
-   一番有力な展開が明確なら加点
-  */
-
   const scenarioTop=
-  scenario.top
-  ?.probability
+  scenario.top?.probability
   ||
   0;
 
@@ -2283,11 +2127,6 @@ function evaluate(r){
     rating-=3;
   }
 
-
-  /*
-   AIトップ艇と
-   展開予測1着艇が一致
-  */
 
   if(
     scenario.top
@@ -2390,8 +2229,7 @@ function evaluate(r){
       } ${
         (
           scenario.top.probability
-          *
-          100
+          *100
         )
         .toFixed(1)
       }%`
@@ -2428,8 +2266,7 @@ function evaluate(r){
             x.boat
           }号艇→${
             num(
-              x.preview
-              ?.course_number
+              x.preview?.course_number
             )
           }コース`
         )
@@ -2467,14 +2304,11 @@ function evaluate(r){
 
     weather:w,
 
-    exhibitionRank:
-    exRanks,
+    exhibitionRank:exRanks,
 
-    startRank:
-    stRanks,
+    startRank:stRanks,
 
-    courseChanges:
-    changes,
+    courseChanges:changes,
 
     scenario,
 
@@ -2487,15 +2321,16 @@ function evaluate(r){
 }
 
 
-/* ==============================
-   艇の基礎確率
-============================== */
+/* =====================================
+   3連単確率
+===================================== */
 
 function probabilityMap(boats){
 
   const raw={};
 
   let total=0;
+
 
   for(
     const x
@@ -2532,13 +2367,10 @@ function probabilityMap(boats){
 }
 
 
-/* ==============================
-   全3連単120通り
-============================== */
-
 function allCombos(){
 
   const out=[];
+
 
   for(
     let a=1;
@@ -2557,6 +2389,7 @@ function allCombos(){
       ){
         continue;
       }
+
 
       for(
         let c=1;
@@ -2582,14 +2415,11 @@ function allCombos(){
 
   }
 
+
   return out;
 
 }
 
-
-/* ==============================
-   基礎3連単確率
-============================== */
 
 function baseComboProbability(
   combo,
@@ -2601,17 +2431,11 @@ function baseComboProbability(
     boats
   );
 
+
   const a=
   combo
   .split('-')
   .map(Number);
-
-
-  if(
-    a.length!==3
-  ){
-    return 0;
-  }
 
 
   const p1=
@@ -2672,10 +2496,6 @@ function baseComboProbability(
 }
 
 
-/* ==============================
-   展開補正3連単重み
-============================== */
-
 function comboRawWeight(
   combo,
   a
@@ -2699,16 +2519,10 @@ function comboRawWeight(
 
 
   const scenarioHead=
-  a.scenario
-  ?.firstMap?.[head]
+  a.scenario?.firstMap?.[head]
   ||
   1/6;
 
-
-  /*
-   1着展開確率を
-   3連単確率にブレンド
-  */
 
   const factor=
   clamp(
@@ -2728,10 +2542,6 @@ function comboRawWeight(
 }
 
 
-/* ==============================
-   展開補正後3連単推定確率
-============================== */
-
 function comboProbability(
   combo,
   a
@@ -2741,7 +2551,6 @@ function comboProbability(
   allCombos();
 
   let total=0;
-
   let target=0;
 
 
@@ -2777,11 +2586,10 @@ function comboProbability(
 }
 
 
-/* ==========================================================
-   Ver.3
+/* =====================================
+   買い目作成
    本線2・押さえ5・穴3
-   展開予測連動
-========================================================== */
+===================================== */
 
 function makeTickets(a){
 
@@ -2808,11 +2616,6 @@ function makeTickets(a){
   );
 
 
-  /*
-   本線
-   展開補正後確率トップ2
-  */
-
   const main=
   scored
   .slice(0,2)
@@ -2820,11 +2623,6 @@ function makeTickets(a){
     x=>x.combo
   );
 
-
-  /*
-   押さえ
-   次の5点
-  */
 
   const cover=
   scored
@@ -2841,10 +2639,6 @@ function makeTickets(a){
   ]);
 
 
-  /*
-   展開予測の攻め役
-  */
-
   const attacker=
   a.scenario
   ?.attacker
@@ -2858,12 +2652,6 @@ function makeTickets(a){
     x=>x.boat
   );
 
-
-  /*
-   特殊穴候補
-   攻め役が1着になる展開から
-   最も確率が高いものを選択
-  */
 
   let special=null;
 
@@ -2884,10 +2672,12 @@ function makeTickets(a){
           return false;
         }
 
+
         const p=
         x.combo
         .split('-')
         .map(Number);
+
 
         return(
           p[0]===attacker
@@ -2920,11 +2710,6 @@ function makeTickets(a){
   }
 
 
-  /*
-   万一攻め役候補から
-   選べなかった場合
-  */
-
   if(
     !special
   ){
@@ -2941,10 +2726,12 @@ function makeTickets(a){
           return false;
         }
 
+
         const p=
         x.combo
         .split('-')
         .map(Number);
+
 
         return(
           p[0]
@@ -2967,14 +2754,6 @@ function makeTickets(a){
   }
 
 
-  /*
-   通常穴2点
-
-   ただの大穴ではなく、
-   展開確率が残っていて
-   本線・押さえと違う形を選択
-  */
-
   const holeCandidates=
   scored
   .slice(7)
@@ -2986,14 +2765,17 @@ function makeTickets(a){
       .split('-')
       .map(Number);
 
+
       const first=
       p[0];
+
 
       const firstScenario=
       a.scenario
       ?.firstMap?.[first]
       ||
       0;
+
 
       const outsider=
       (
@@ -3006,12 +2788,14 @@ function makeTickets(a){
       :
       1;
 
+
       const middleBonus=
       index>=3
       ?
       1.08
       :
       1;
+
 
       return{
 
@@ -3072,10 +2856,6 @@ function makeTickets(a){
   }
 
 
-  /*
-   3点未満になった時の補完
-  */
-
   for(
     const x
     of
@@ -3087,6 +2867,7 @@ function makeTickets(a){
     ){
       break;
     }
+
 
     if(
       !used.has(
@@ -3123,9 +2904,9 @@ function makeTickets(a){
 }
 
 
-/* ==============================
+/* =====================================
    資金配分
-============================== */
+===================================== */
 
 function allocate(
   t,
@@ -3169,13 +2950,11 @@ function allocate(
         a
       );
 
+
       return{
 
         ...x,
 
-        probability,
-
-        expectedScore:
         probability,
 
         special:
@@ -3197,11 +2976,6 @@ function allocate(
     )
   );
 
-
-  /*
-   回収率重視
-   本線 > 押さえ > 穴
-  */
 
   const weights=
   enriched.map(
@@ -3318,9 +3092,9 @@ function allocate(
 }
 
 
-/* ==============================
-   成績保存
-============================== */
+/* =====================================
+   保存
+===================================== */
 
 function records(){
 
@@ -3361,9 +3135,9 @@ function save(x){
 }
 
 
-/* ==============================
+/* =====================================
    予想保存
-============================== */
+===================================== */
 
 function savePrediction(a){
 
@@ -3441,8 +3215,7 @@ function savePrediction(a){
 
         course:
         num(
-          x.preview
-          ?.course_number,
+          x.preview?.course_number,
           x.boat
         )
 
@@ -3469,8 +3242,7 @@ function savePrediction(a){
     ),
 
     attacker:
-    a.scenario
-    ?.attacker
+    a.scenario?.attacker
     ?
     {
       boat:
@@ -3594,9 +3366,9 @@ function savePrediction(a){
 }
 
 
-/* ==============================
-   払戻情報
-============================== */
+/* =====================================
+   結果判定
+===================================== */
 
 function payouts(r){
 
@@ -3614,10 +3386,6 @@ function payouts(r){
 
 }
 
-
-/* ==============================
-   的中・不的中自動判定
-============================== */
 
 function settle(races){
 
@@ -3723,6 +3491,12 @@ function settle(races){
     !!ht;
 
 
+    rec.hitGroup=
+    ht?.group
+    ||
+    '';
+
+
     rec.returnAmount=
     ht
     ?
@@ -3733,6 +3507,11 @@ function settle(races){
     )
     :
     0;
+
+
+    rec.settledAt=
+    new Date()
+    .toISOString();
 
 
     ch=
@@ -3750,9 +3529,9 @@ function settle(races){
 }
 
 
-/* ==============================
+/* =====================================
    買い目表示
-============================== */
+===================================== */
 
 function ticketRows(
   arr,
@@ -3788,11 +3567,14 @@ function ticketRows(
 
       <div class="ticket-sub">
 
-        展開補正AI推定 ${(
-          x.probability
-          *
-          100
-        ).toFixed(1)}%
+        展開補正AI推定 ${
+          (
+            x.probability
+            *
+            100
+          )
+          .toFixed(1)
+        }%
 
         ${
           x.special
@@ -3813,9 +3595,9 @@ function ticketRows(
 }
 
 
-/* ==============================
-   展開予測HTML
-============================== */
+/* =====================================
+   展開予測表示
+===================================== */
 
 function scenarioHTML(a){
 
@@ -3847,22 +3629,22 @@ function scenarioHTML(a){
     <div class="scenario-main">
 
       <strong>
-        ${
-          top.boat
-        }号艇 ${
-          top.tactic
-        }
+        ${top.boat}号艇 ${top.tactic}
       </strong>
 
       <span>
-        ${(
-          top.probability
-          *
-          100
-        ).toFixed(1)}%
+        ${
+          (
+            top.probability
+            *
+            100
+          )
+          .toFixed(1)
+        }%
       </span>
 
     </div>
+
 
     <div class="scenario-list">
 
@@ -3880,11 +3662,14 @@ function scenarioHTML(a){
             </span>
 
             <b>
-              ${(
-                x.probability
-                *
-                100
-              ).toFixed(1)}%
+              ${
+                (
+                  x.probability
+                  *
+                  100
+                )
+                .toFixed(1)
+              }%
             </b>
 
           </div>
@@ -3895,6 +3680,7 @@ function scenarioHTML(a){
       }
 
     </div>
+
 
     <div class="scenario-note">
 
@@ -3910,9 +3696,9 @@ function scenarioHTML(a){
 }
 
 
-/* ==============================
-   SレースHTML
-============================== */
+/* =====================================
+   レース表示
+===================================== */
 
 function raceHTML(
   a,
@@ -4038,86 +3824,33 @@ function raceHTML(
       <div class="weather-grid">
 
         <div class="weather-item">
-
-          <small>
-            天候
-          </small>
-
-          <b>
-            ${
-              WEATHER_NAMES[
-                w.weather
-              ]
-              ||
-              '-'
-            }
-          </b>
-
+          <small>天候</small>
+          <b>${WEATHER_NAMES[w.weather]||'-'}</b>
         </div>
 
-
         <div class="weather-item">
-
-          <small>
-            風速
-          </small>
-
-          <b>
-            ${w.windSpeed}m
-          </b>
-
+          <small>風速</small>
+          <b>${w.windSpeed}m</b>
         </div>
 
-
         <div class="weather-item">
-
-          <small>
-            波高
-          </small>
-
-          <b>
-            ${w.wave}cm
-          </b>
-
+          <small>波高</small>
+          <b>${w.wave}cm</b>
         </div>
 
-
         <div class="weather-item">
-
-          <small>
-            気温
-          </small>
-
-          <b>
-            ${w.air}℃
-          </b>
-
+          <small>気温</small>
+          <b>${w.air}℃</b>
         </div>
 
-
         <div class="weather-item">
-
-          <small>
-            水温
-          </small>
-
-          <b>
-            ${w.water}℃
-          </b>
-
+          <small>水温</small>
+          <b>${w.water}℃</b>
         </div>
 
-
         <div class="weather-item">
-
-          <small>
-            風向番号
-          </small>
-
-          <b>
-            ${w.windDirection||'-'}
-          </b>
-
+          <small>風向番号</small>
+          <b>${w.windDirection||'-'}</b>
         </div>
 
       </div>
@@ -4132,9 +3865,7 @@ function raceHTML(
       class="gold-btn"
       data-detail="${id}"
     >
-
       買い目を見る ▼
-
     </button>
 
 
@@ -4235,13 +3966,6 @@ function raceHTML(
         ★は穴3点のうち1点に入る
         「攻め役連動の特殊穴」です。
 
-        <br><br>
-
-        水面が荒れている、
-        進入変化が大きい、
-        展開予測が分散している場合は
-        S評価から外し見送りします。
-
       </div>
 
     </div>
@@ -4253,9 +3977,9 @@ function raceHTML(
 }
 
 
-/* ==============================
+/* =====================================
    Sレース表示
-============================== */
+===================================== */
 
 function display(){
 
@@ -4280,10 +4004,11 @@ function display(){
 
     現在表示できるS評価レースはありません。
 
-    <br><br>
+    <br>
 
-    展示・水面・展開条件が整うまで
-    AIは見送りします。
+    <small>
+      展示・水面・展開条件が整うまでAIは見送ります。
+    </small>
 
   </div>
 
@@ -4335,9 +4060,9 @@ function display(){
 }
 
 
-/* ==============================
-   データ変更判定
-============================== */
+/* =====================================
+   データ変化判定
+===================================== */
 
 function dataSignature(races){
 
@@ -4350,23 +4075,17 @@ function dataSignature(races){
 
         r.closed_at,
 
-        r.preview
-        ?.wind_speed,
+        r.preview?.wind_speed,
 
-        r.preview
-        ?.wind_direction_number,
+        r.preview?.wind_direction_number,
 
-        r.preview
-        ?.wave_height,
+        r.preview?.wave_height,
 
-        r.preview
-        ?.weather_number,
+        r.preview?.weather_number,
 
-        r.preview
-        ?.air_temperature,
+        r.preview?.air_temperature,
 
-        r.preview
-        ?.water_temperature,
+        r.preview?.water_temperature,
 
         ...Array.from(
           {
@@ -4374,17 +4093,10 @@ function dataSignature(races){
           },
           (_,i)=>{
 
-            const k=
-            String(
-              i+1
-            );
-
-
             const p=
-            r.preview
-            ?.racers
-            ?.[k];
-
+            r.preview?.racers?.[
+              String(i+1)
+            ];
 
             return[
 
@@ -4419,9 +4131,9 @@ function dataSignature(races){
 }
 
 
-/* ==============================
+/* =====================================
    AI再計算
-============================== */
+===================================== */
 
 function analyzeRaces(races){
 
@@ -4491,9 +4203,9 @@ function analyzeRaces(races){
 }
 
 
-/* ==============================
-   完全自動更新
-============================== */
+/* =====================================
+   自動更新
+===================================== */
 
 async function autoRefresh(
   force=false
@@ -4533,7 +4245,9 @@ async function autoRefresh(
 
 
     const races=
-    flatten(data);
+    flatten(
+      data
+    );
 
 
     const sig=
@@ -4571,8 +4285,7 @@ async function autoRefresh(
 
       <br>
 
-      展示・水面・進入・展開を
-      Ver.3 AIが自動分析しました。
+      展示・水面・進入・展開をVer.3 AIが自動分析しました。
 
       `;
 
@@ -4616,9 +4329,9 @@ async function autoRefresh(
 }
 
 
-/* ==============================
-   成績期間
-============================== */
+/* =====================================
+   期間
+===================================== */
 
 function filterRecords(){
 
@@ -4671,9 +4384,9 @@ function filterRecords(){
 }
 
 
-/* ==============================
+/* =====================================
    成績計算
-============================== */
+===================================== */
 
 function calc(rs){
 
@@ -4806,9 +4519,9 @@ function calc(rs){
 }
 
 
-/* ==============================
+/* =====================================
    成績表示
-============================== */
+===================================== */
 
 function renderStats(){
 
@@ -4817,7 +4530,9 @@ function renderStats(){
 
 
   const s=
-  calc(rs);
+  calc(
+    rs
+  );
 
 
   const pc=
@@ -4833,108 +4548,46 @@ function renderStats(){
 
   <div class="stats-grid">
 
-
     <div class="stat">
-
-      <small>
-        確定レース
-      </small>
-
-      <b>
-        ${s.races}R
-      </b>
-
+      <small>確定レース</small>
+      <b>${s.races}R</b>
     </div>
 
-
     <div class="stat">
-
-      <small>
-        的中数
-      </small>
-
-      <b>
-        ${s.hits}R
-      </b>
-
+      <small>的中数</small>
+      <b>${s.hits}R</b>
     </div>
 
-
     <div class="stat">
-
-      <small>
-        的中率
-      </small>
-
-      <b>
-        ${s.hitRate.toFixed(1)}%
-      </b>
-
+      <small>的中率</small>
+      <b>${s.hitRate.toFixed(1)}%</b>
     </div>
 
-
     <div class="stat">
-
-      <small>
-        回収率
-      </small>
-
-      <b class="green">
+      <small>回収率</small>
+      <b class="${s.roi>=100?'green':''}">
         ${s.roi.toFixed(1)}%
       </b>
-
     </div>
 
-
     <div class="stat">
-
-      <small>
-        投資額
-      </small>
-
-      <b>
-        ${s.stake.toLocaleString()}円
-      </b>
-
+      <small>投資額</small>
+      <b>${s.stake.toLocaleString()}円</b>
     </div>
 
-
     <div class="stat">
-
-      <small>
-        払戻金
-      </small>
-
-      <b>
-        ${s.ret.toLocaleString()}円
-      </b>
-
+      <small>払戻金</small>
+      <b>${s.ret.toLocaleString()}円</b>
     </div>
 
-
     <div class="stat">
-
-      <small>
-        最高払戻
-      </small>
-
-      <b>
-        ${s.maxPayout.toLocaleString()}円
-      </b>
-
+      <small>最高払戻</small>
+      <b>${s.maxPayout.toLocaleString()}円</b>
     </div>
 
-
     <div class="stat">
-
-      <small>
-        最高回収率
-      </small>
-
-      <b>
-        ${s.maxRoi.toFixed(1)}%
-      </b>
-
+      <small>最高回収率</small>
+      <b>${s.maxRoi.toFixed(1)}%</b>
     </div>
 
   </div>
@@ -4977,13 +4630,35 @@ function renderStats(){
 }
 
 
-/* ==============================
-   的中・不的中一覧
-============================== */
+/* =====================================
+   保存済み展開予測
+===================================== */
+
+function topScenarioText(x){
+
+  const s=
+  x?.predictionMeta
+  ?.scenario
+  ?.[0];
+
+
+  return s
+  ?
+  `${s.boat}号艇 ${s.tactic}`
+  :
+  '-';
+
+}
+
+
+/* ==================================================
+   的中・不的中
+   会場タブ＋結果タブ
+================================================== */
 
 function renderHistory(rs){
 
-  const done=
+  const allDone=
   rs
   .filter(
     x=>x.done
@@ -5010,7 +4685,7 @@ function renderHistory(rs){
 
 
   if(
-    !done.length
+    !allDone.length
   ){
 
     $('history').innerHTML=
@@ -5027,7 +4702,163 @@ function renderHistory(rs){
   }
 
 
-  $('history').innerHTML=
+  const venueNames=
+  Object.values(
+    STADIUMS
+  );
+
+
+  const venueBase=
+  historyVenue==='all'
+  ?
+  allDone
+  :
+  allDone.filter(
+    x=>
+    x.venue===historyVenue
+  );
+
+
+  const hits=
+  venueBase.filter(
+    x=>x.hit
+  )
+  .length;
+
+
+  const misses=
+  venueBase.length-hits;
+
+
+  let shown=
+  venueBase;
+
+
+  if(
+    historyResult==='hit'
+  ){
+
+    shown=
+    venueBase.filter(
+      x=>x.hit
+    );
+
+  }
+
+
+  if(
+    historyResult==='miss'
+  ){
+
+    shown=
+    venueBase.filter(
+      x=>!x.hit
+    );
+
+  }
+
+
+  const venueTabs=
+  `
+
+  <div class="venue-tabs">
+
+    <button
+      class="venue-chip ${
+        historyVenue==='all'
+        ?
+        'active'
+        :
+        ''
+      }"
+      data-hvenue="all"
+    >
+      全会場
+    </button>
+
+
+    ${
+      venueNames
+      .map(
+        v=>`
+
+        <button
+          class="venue-chip ${
+            historyVenue===v
+            ?
+            'active'
+            :
+            ''
+          }"
+          data-hvenue="${v}"
+        >
+          ${v}
+        </button>
+
+        `
+      )
+      .join('')
+    }
+
+  </div>
+
+  `;
+
+
+  const resultTabs=
+  `
+
+  <div class="result-tabs">
+
+    <button
+      class="result-chip all ${
+        historyResult==='all'
+        ?
+        'active'
+        :
+        ''
+      }"
+      data-hresult="all"
+    >
+      すべて (${venueBase.length}R)
+    </button>
+
+
+    <button
+      class="result-chip hit-only ${
+        historyResult==='hit'
+        ?
+        'active'
+        :
+        ''
+      }"
+      data-hresult="hit"
+    >
+      ● 的中のみ (${hits}R)
+    </button>
+
+
+    <button
+      class="result-chip miss-only ${
+        historyResult==='miss'
+        ?
+        'active'
+        :
+        ''
+      }"
+      data-hresult="miss"
+    >
+      ● 不的中のみ (${misses}R)
+    </button>
+
+  </div>
+
+  `;
+
+
+  const body=
+  shown.length
+  ?
   `
 
   <div class="history-scroll">
@@ -5038,37 +4869,25 @@ function renderHistory(rs){
 
         <tr>
 
-          <th>
-            日付
-          </th>
+          <th>日付</th>
 
-          <th>
-            場
-          </th>
+          <th>場</th>
 
-          <th>
-            R
-          </th>
+          <th>R</th>
 
-          <th>
-            結果
-          </th>
+          <th>AI展開</th>
 
-          <th>
-            オッズ
-          </th>
+          <th>結果</th>
 
-          <th>
-            判定
-          </th>
+          <th>オッズ</th>
 
-          <th>
-            払戻金
-          </th>
+          <th>判定</th>
 
-          <th>
-            回収率
-          </th>
+          <th>的中枠</th>
+
+          <th>払戻金</th>
+
+          <th>回収率</th>
 
         </tr>
 
@@ -5078,8 +4897,9 @@ function renderHistory(rs){
       <tbody>
 
       ${
-        done.map(
+        shown.map(
           x=>{
+
 
             const rr=
             num(
@@ -5110,20 +4930,40 @@ function renderHistory(rs){
             );
 
 
+            const group=
+            x.hitGroup==='main'
+            ?
+            '本線'
+            :
+            x.hitGroup==='cover'
+            ?
+            '押さえ'
+            :
+            x.hitGroup==='hole'
+            ?
+            '穴'
+            :
+            '-';
+
+
             return`
 
             <tr>
 
               <td>
-                ${x.date.slice(5)}
+                ${x.date?.slice(5)||'-'}
               </td>
 
               <td>
-                ${x.venue}
+                ${x.venue||'-'}
               </td>
 
               <td>
                 ${x.raceNumber}R
+              </td>
+
+              <td class="scenario-mini">
+                ${topScenarioText(x)}
               </td>
 
               <td>
@@ -5160,6 +5000,10 @@ function renderHistory(rs){
                   '× 不的中'
                 }
 
+              </td>
+
+              <td>
+                ${group}
               </td>
 
               <td>
@@ -5200,22 +5044,118 @@ function renderHistory(rs){
 
   </div>
 
+  `
+  :
+  `
+
+  <div class="empty">
+    この条件の確定レースはありません。
+  </div>
+
+  `;
+
+
+  $('history').innerHTML=
+  `
+
+  <div class="history-controls">
+
+    ${venueTabs}
+
+    ${resultTabs}
+
+    <div class="history-caption">
+
+      <span>
+        ${
+          historyVenue==='all'
+          ?
+          '全会場'
+          :
+          historyVenue
+        }
+      </span>
+
+      <span>
+        ${shown.length}R表示
+      </span>
+
+    </div>
+
+  </div>
+
+
+  ${body}
+
 
   <div class="notice">
 
-    オッズ表示は
-    3連単確定払戻額÷100です。
+    会場タブは横にスライドできます。<br>
+
+    オッズ表示は3連単確定払戻額÷100です。
 
   </div>
 
   `;
 
+
+  document
+  .querySelectorAll(
+    '[data-hvenue]'
+  )
+  .forEach(
+    b=>{
+
+      b.onclick=
+      ()=>{
+
+        historyVenue=
+        b.dataset.hvenue;
+
+
+        historyResult=
+        'all';
+
+
+        renderHistory(
+          rs
+        );
+
+      };
+
+    }
+  );
+
+
+  document
+  .querySelectorAll(
+    '[data-hresult]'
+  )
+  .forEach(
+    b=>{
+
+      b.onclick=
+      ()=>{
+
+        historyResult=
+        b.dataset.hresult;
+
+
+        renderHistory(
+          rs
+        );
+
+      };
+
+    }
+  );
+
 }
 
 
-/* ==============================
+/* =====================================
    会場別成績
-============================== */
+===================================== */
 
 function renderVenue(rs){
 
@@ -5299,21 +5239,13 @@ function renderVenue(rs){
 
   <div class="venue-row">
 
-    <b>
-      会場
-    </b>
+    <b>会場</b>
 
-    <b>
-      R
-    </b>
+    <b>R</b>
 
-    <b>
-      的中率
-    </b>
+    <b>的中率</b>
 
-    <b>
-      回収率
-    </b>
+    <b>回収率</b>
 
   </div>
 
@@ -5360,9 +5292,9 @@ function renderVenue(rs){
 }
 
 
-/* ==============================
-   成績へ移動
-============================== */
+/* =====================================
+   成績表示へ
+===================================== */
 
 function showStats(
   openHistory=false,
@@ -5424,9 +5356,9 @@ function showStats(
 }
 
 
-/* ==============================
-   ボタン操作
-============================== */
+/* =====================================
+   ボタン
+===================================== */
 
 $('statsOpen').onclick=
 ()=>showStats();
@@ -5458,10 +5390,6 @@ $('top')
 });
 
 
-/* ==============================
-   資金変更
-============================== */
-
 $('budget').onchange=
 ()=>{
 
@@ -5481,10 +5409,6 @@ $('budget').onchange=
 
 };
 
-
-/* ==============================
-   的中一覧開閉
-============================== */
 
 $('historyToggle').onclick=
 ()=>{
@@ -5518,10 +5442,6 @@ $('historyToggle').onclick=
 };
 
 
-/* ==============================
-   会場別開閉
-============================== */
-
 $('venueToggle').onclick=
 ()=>{
 
@@ -5554,9 +5474,9 @@ $('venueToggle').onclick=
 };
 
 
-/* ==============================
+/* =====================================
    集計期間
-============================== */
+===================================== */
 
 document
 .querySelectorAll(
@@ -5609,35 +5529,18 @@ $('toDate').onchange=
 renderStats;
 
 
-/* ==============================
+/* =====================================
    起動
-============================== */
+===================================== */
 
 renderStats();
-
-
-/*
- ページを開く
- ↓
- 最新データ取得
- ↓
- 展示・水面評価
- ↓
- 展開予測
- ↓
- Sレース選定
- ↓
- 10点生成
-*/
 
 autoRefresh(
   true
 );
 
 
-/* ==============================
-   60秒ごと自動更新
-============================== */
+/* 60秒ごとに自動確認 */
 
 setInterval(
   ()=>{
@@ -5657,24 +5560,21 @@ setInterval(
 );
 
 
-/* ==============================
-   アプリへ戻った時
-============================== */
+/* Safariへ戻った時 */
 
-window.addEventListener(
+window
+.addEventListener(
   'focus',
-  ()=>
-  autoRefresh(
+  ()=>autoRefresh(
     true
   )
 );
 
 
-/* ==============================
-   スマホ画面復帰時
-============================== */
+/* タブ復帰 */
 
-document.addEventListener(
+document
+.addEventListener(
   'visibilitychange',
   ()=>{
 
