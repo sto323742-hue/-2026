@@ -118,6 +118,10 @@ input[type=date]{
   line-height:1.6;
 }
 
+/* =========================
+   S評価レース
+========================= */
+
 .race{
   border-color:#6f571d;
 }
@@ -216,6 +220,10 @@ input[type=date]{
   font-size:13px;
 }
 
+/* =========================
+   展開予測
+========================= */
+
 .scenario-box{
   margin-top:10px;
   padding:11px;
@@ -285,6 +293,10 @@ input[type=date]{
   line-height:1.55;
 }
 
+/* =========================
+   買い目
+========================= */
+
 .gold-btn,
 .toggle{
   width:100%;
@@ -313,9 +325,7 @@ input[type=date]{
   margin-top:8px;
 }
 
-/* ========================================
-   買い目 本線・狙い・穴 横3列表示
-======================================== */
+/* 本線・狙い・穴 横並び */
 
 .bet-grid{
   display:grid;
@@ -332,37 +342,19 @@ input[type=date]{
   background:#090909;
 }
 
-/* 本線 */
 .bet-col.main-col{
   border-color:#285e91;
-  background:
-    linear-gradient(
-      180deg,
-      #071425,
-      #090909
-    );
+  background:linear-gradient(180deg,#071425,#090909);
 }
 
-/* 狙い */
 .bet-col.cover-col{
   border-color:#65562d;
-  background:
-    linear-gradient(
-      180deg,
-      #171205,
-      #090909
-    );
+  background:linear-gradient(180deg,#171205,#090909);
 }
 
-/* 穴 */
 .bet-col.hole-col{
   border-color:#8a4b22;
-  background:
-    linear-gradient(
-      180deg,
-      #211006,
-      #090909
-    );
+  background:linear-gradient(180deg,#211006,#090909);
 }
 
 .bet-head{
@@ -435,35 +427,6 @@ input[type=date]{
   font-weight:950;
 }
 
-/* iPhone等の小さい画面でも横3列を維持 */
-@media(max-width:420px){
-
-  .bet-grid{
-    gap:4px;
-  }
-
-  .bet-head{
-    font-size:11px;
-    padding:8px 2px;
-  }
-
-  .ticket{
-    padding:7px 3px;
-  }
-
-  .combo{
-    font-size:14px;
-  }
-
-  .money{
-    font-size:10px;
-  }
-
-  .ticket-sub{
-    font-size:6.5px;
-  }
-}
-
 .logic,
 .reason{
   margin-top:9px;
@@ -480,6 +443,10 @@ input[type=date]{
   background:#0b0905;
   color:#c8bb96;
 }
+
+/* =========================
+   操作メニュー
+========================= */
 
 .menu{
   display:grid;
@@ -516,12 +483,7 @@ input[type=date]{
 }
 
 .tab.active{
-  background:
-    linear-gradient(
-      135deg,
-      #f4d070,
-      #c8901f
-    );
+  background:linear-gradient(135deg,#f4d070,#c8901f);
   color:#070707;
 }
 
@@ -535,6 +497,10 @@ input[type=date]{
 .range.show{
   display:grid;
 }
+
+/* =========================
+   成績
+========================= */
 
 .stats-grid{
   display:grid;
@@ -575,12 +541,7 @@ input[type=date]{
   padding:14px;
   border:1px solid #8a6719;
   border-radius:12px;
-  background:
-    linear-gradient(
-      90deg,
-      #171005,
-      #080808
-    );
+  background:linear-gradient(90deg,#171005,#080808);
 }
 
 .profit strong{
@@ -598,6 +559,10 @@ input[type=date]{
 .venue-wrap{
   display:none;
 }
+
+/* =========================
+   履歴
+========================= */
 
 .history-controls{
   margin:10px 0;
@@ -630,12 +595,7 @@ input[type=date]{
 }
 
 .venue-chip.active{
-  background:
-    linear-gradient(
-      135deg,
-      #f4d070,
-      #c8901f
-    );
+  background:linear-gradient(135deg,#f4d070,#c8901f);
   color:#080808;
   border-color:#e9c057;
 }
@@ -736,57 +696,22 @@ input[type=date]{
   font-weight:900;
 }
 
+/* =========================
+   会場別
+========================= */
+
 .venue-row{
   display:grid;
-  grid-template-columns:
-    1.1fr .7fr .8fr .9fr 1fr;
+  grid-template-columns:1.1fr .7fr .8fr .9fr 1fr;
   gap:5px;
   padding:9px 3px;
   border-bottom:1px solid #26200e;
   font-size:11px;
 }
 
-.footer{
-  text-align:center;
-  color:#686868;
-  font-size:10px;
-  line-height:1.7;
-  margin-top:24px;
-}
-
-.quick{
-  position:fixed;
-  right:9px;
-  bottom:
-    calc(
-      11px +
-      env(safe-area-inset-bottom)
-    );
-  display:flex;
-  flex-direction:column;
-  gap:6px;
-  z-index:20;
-}
-
-.quick button{
-  height:42px;
-  min-width:75px;
-  border:1px solid #745a19;
-  border-radius:999px;
-  background:#111;
-  color:#f0cc68;
-  font-weight:900;
-}
-
-.empty{
-  padding:22px 10px;
-  text-align:center;
-  color:#aaa;
-  background:#0d0d0d;
-  border:1px solid #302812;
-  border-radius:14px;
-  margin-bottom:12px;
-}
+/* =========================
+   学習
+========================= */
 
 .learning-grid{
   display:grid;
@@ -819,12 +744,7 @@ input[type=date]{
   padding:12px;
   border:1px solid #5c4918;
   border-radius:12px;
-  background:
-    linear-gradient(
-      135deg,
-      #151005,
-      #090909
-    );
+  background:linear-gradient(135deg,#151005,#090909);
   font-size:11px;
   line-height:1.7;
   color:#cfc3a0;
@@ -860,12 +780,7 @@ input[type=date]{
 
 .progress-fill{
   height:100%;
-  background:
-    linear-gradient(
-      90deg,
-      #b77a18,
-      #f0cc68
-    );
+  background:linear-gradient(90deg,#b77a18,#f0cc68);
   border-radius:999px;
 }
 
@@ -911,6 +826,8 @@ input[type=date]{
   line-height:1.6;
 }
 
+/* 開閉 */
+
 .learning-accordion{
   margin-top:14px;
 }
@@ -926,30 +843,160 @@ input[type=date]{
   align-items:center;
   justify-content:space-between;
   gap:10px;
-  text-align:left;
-  font-weight:950;
   padding:8px 2px;
+  font-weight:950;
+  font-size:16px;
+  text-align:left;
 }
 
-.accordion-head span:last-child{
+.accordion-head .accordion-arrow{
+  flex:0 0 auto;
   width:28px;
   height:28px;
+  border:1px solid #5b491a;
+  border-radius:50%;
   display:flex;
   align-items:center;
   justify-content:center;
-  border-radius:50%;
-  border:1px solid #5b4717;
-  flex:0 0 auto;
+  color:#efc559;
+  background:#111;
+  transition:transform .2s ease;
+}
+
+.accordion-head[aria-expanded="true"] .accordion-arrow{
+  transform:rotate(180deg);
 }
 
 .accordion-body{
   display:none;
+  padding-top:2px;
 }
 
 .accordion-body.open{
   display:block;
 }
 
+/* =========================
+   その他
+========================= */
+
+.footer{
+  text-align:center;
+  color:#686868;
+  font-size:10px;
+  line-height:1.7;
+  margin-top:24px;
+}
+
+.quick{
+  position:fixed;
+  right:9px;
+  bottom:calc(11px + env(safe-area-inset-bottom));
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+  z-index:20;
+}
+
+.quick button{
+  height:42px;
+  min-width:75px;
+  border:1px solid #745a19;
+  border-radius:999px;
+  background:#111;
+  color:#f0cc68;
+  font-weight:900;
+}
+
+.empty{
+  padding:22px 10px;
+  text-align:center;
+  color:#aaa;
+  background:#0d0d0d;
+  border:1px solid #302812;
+  border-radius:14px;
+  margin-bottom:12px;
+}
+
+@media(max-width:420px){
+  .bet-grid{
+    gap:4px;
+  }
+
+  .bet-head{
+    font-size:11px;
+    padding:8px 2px;
+  }
+
+  .ticket{
+    padding:7px 3px;
+  }
+
+  .combo{
+    font-size:14px;
+  }
+
+  .money{
+    font-size:10px;
+  }
+
+  .ticket-sub{
+    font-size:6.5px;
+  }
+}
+
+@media(max-width:480px){
+  .brand{
+    font-size:23px;
+  }
+
+  .wrap{
+    padding-left:9px;
+    padding-right:9px;
+  }
+
+  .panel,
+  .race{
+    padding:13px;
+  }
+
+  .stat b{
+    font-size:17px;
+  }
+
+  .profit strong{
+    font-size:23px;
+  }
+
+  .range{
+    grid-template-columns:1fr;
+  }
+
+  .candidate b{
+    font-size:16px;
+  }
+
+  .menu{
+    grid-template-columns:repeat(3,1fr);
+  }
+
+  .menu button{
+    padding:8px 3px;
+    font-size:13px;
+  }
+
+  .weather-grid{
+    grid-template-columns:repeat(3,1fr);
+  }
+
+  .venue-chip{
+    min-width:64px;
+  }
+
+  .result-chip{
+    font-size:10px;
+  }
+}
 </style>
 </head>
 
@@ -958,25 +1005,16 @@ input[type=date]{
 <div class="wrap" id="top">
 
 <header class="header">
-
   <div class="brand">
-    🚤
-    <span class="gold">
-      BOAT RACE
-    </span>
+    <span class="gold">🚤 BOAT RACE</span>
     AI予想
-    <span class="ver">
-      Ver.3
-    </span>
+    <span class="ver">Ver.3</span>
   </div>
 
   <div class="sub">
-    展示予測 × 学習データ ×
-    不的中接近度 × 会場別100R学習
+    展示予測 × 学習データ × 不的中接近度 × 会場別100R学習
   </div>
-
 </header>
-
 
 <section class="panel">
 
@@ -984,27 +1022,20 @@ input[type=date]{
     本日のS評価レース
   </div>
 
-  <div
-    class="status"
-    id="status"
-  >
+  <div class="status" id="status">
     最新データを自動取得しています…
   </div>
 
   <div class="notice">
     本線3点・狙い4点・穴3点＝合計10点。<br>
-    本線＝AI推定確率上位、
-    狙い＝展開・攻め役・期待値重視、
+    本線＝AI推定確率上位、狙い＝展開・攻め役・期待値重視、
     穴＝高配当シナリオ。<br>
-    展示情報が6艇分揃ったレースのみ
-    S評価判定します。
+    展示情報が6艇分揃ったレースのみS評価判定します。
   </div>
 
 </section>
 
-
 <div id="results"></div>
-
 
 <section class="panel">
 
@@ -1013,7 +1044,6 @@ input[type=date]{
   </div>
 
   <div class="menu">
-
     <button id="statsOpen">
       📊 成績
     </button>
@@ -1025,11 +1055,9 @@ input[type=date]{
     <button id="venueOpen">
       🏁 会場別
     </button>
-
   </div>
 
 </section>
-
 
 <section
   class="panel stats"
@@ -1043,7 +1071,7 @@ input[type=date]{
   <div class="tabs">
 
     <button
-      class="tab"
+      class="tab active"
       data-period="day"
     >
       今日
@@ -1057,7 +1085,7 @@ input[type=date]{
     </button>
 
     <button
-      class="tab active"
+      class="tab"
       data-period="all"
     >
       全期間
@@ -1065,12 +1093,10 @@ input[type=date]{
 
   </div>
 
-
   <div
     class="range"
     id="rangeBox"
   >
-
     <input
       type="date"
       id="fromDate"
@@ -1080,68 +1106,66 @@ input[type=date]{
       type="date"
       id="toDate"
     >
-
   </div>
 
-
   <div id="stats"></div>
-
 
   <div class="learning-accordion">
 
     <button
       class="accordion-head"
-      data-accordion="learningStats"
+      id="learningStatsToggle"
+      type="button"
+      aria-expanded="false"
+      aria-controls="learningStatsWrap"
     >
-
       <span>
         🧠 不的中接近度分析
       </span>
 
-      <span>
-        ▲
+      <span class="accordion-arrow">
+        ▼
       </span>
-
     </button>
 
     <div
-      class="accordion-body open"
-      id="learningStats"
+      class="accordion-body"
+      id="learningStatsWrap"
     >
+      <div id="learningStats"></div>
     </div>
 
   </div>
-
 
   <div class="learning-accordion">
 
     <button
       class="accordion-head"
-      data-accordion="learningProgress"
+      id="learningProgressToggle"
+      type="button"
+      aria-expanded="false"
+      aria-controls="learningProgressWrap"
     >
-
       <span>
-        📈 会場別 学習進捗
-        （100R基準）
+        📍 会場別 学習進捗（100R基準）
       </span>
 
-      <span>
-        ▲
+      <span class="accordion-arrow">
+        ▼
       </span>
-
     </button>
 
     <div
-      class="accordion-body open"
-      id="learningProgress"
+      class="accordion-body"
+      id="learningProgressWrap"
     >
+      <div id="learningProgress"></div>
     </div>
 
   </div>
 
-
   <div class="section-title">
-    レース別結果
+    的中・不的中レース
   </div>
 
   <button
@@ -1157,7 +1181,6 @@ input[type=date]{
   >
     <div id="history"></div>
   </div>
-
 
   <div class="section-title">
     会場別成績
@@ -1179,6 +1202,12 @@ input[type=date]{
 
 </section>
 
+<footer class="footer">
+  AI予想は過去・当日データから算出した参考情報です。<br>
+  購入判断はご自身の責任でお願いします。
+</footer>
+
+</div>
 
 <div class="quick">
 
@@ -1192,23 +1221,15 @@ input[type=date]{
 
 </div>
 
-
-<div class="footer">
-
-  AI予想は過去・当日データから
-  算出した参考情報です。<br>
-
-  購入判断はご自身の責任でお願いします。
-
-</div>
-
-</div>
-
-
 <script>
 
-const API =
-  'https://boatraceopenapi.vercel.app/api/races';
+/* ==========================================
+   BOAT RACE AI Ver.3
+   基本設定
+========================================== */
+
+const API_BASE =
+  'https://boatraceopenapi.github.io/api/v1';
 
 const STORAGE_KEY =
   'boat_ai_gold_v1_records';
@@ -1219,1243 +1240,1245 @@ const UI_STATE_KEY =
 const MODEL_NAME =
   'gold-v3-learning-proximity-venue100';
 
-const EVALUATION_STAKE =
-  1000;
-
-const VENUE_TARGET =
-  100;
-
-let analyses = [];
-
-let lastDataSignature = '';
-
-let autoUpdateBusy = false;
-
-let period = 'all';
-
-let historyVenue = 'all';
-
-let historyResult = 'all';
-
+const EVALUATION_STAKE = 1000;
 
 const STADIUMS = {
-
-  '01':'桐生',
-  '02':'戸田',
-  '03':'江戸川',
-  '04':'平和島',
-  '05':'多摩川',
-  '06':'浜名湖',
-  '07':'蒲郡',
-  '08':'常滑',
-  '09':'津',
-  '10':'三国',
-  '11':'びわこ',
-  '12':'住之江',
-  '13':'尼崎',
-  '14':'鳴門',
-  '15':'丸亀',
-  '16':'児島',
-  '17':'宮島',
-  '18':'徳山',
-  '19':'下関',
-  '20':'若松',
-  '21':'芦屋',
-  '22':'福岡',
-  '23':'唐津',
-  '24':'大村'
-
+  1:'桐生',
+  2:'戸田',
+  3:'江戸川',
+  4:'平和島',
+  5:'多摩川',
+  6:'浜名湖',
+  7:'蒲郡',
+  8:'常滑',
+  9:'津',
+  10:'三国',
+  11:'びわこ',
+  12:'住之江',
+  13:'尼崎',
+  14:'鳴門',
+  15:'丸亀',
+  16:'児島',
+  17:'宮島',
+  18:'徳山',
+  19:'下関',
+  20:'若松',
+  21:'芦屋',
+  22:'福岡',
+  23:'唐津',
+  24:'大村'
 };
 
-
 const WEATHER_NAMES = {
-
   1:'晴',
   2:'曇',
   3:'雨',
   4:'雪',
   5:'霧'
-
 };
 
+let analyses = [];
 
-const $ =
-  id =>
-    document.getElementById(id);
+let period = 'day';
 
+let lastDataSignature = '';
 
-function num(v,d=0){
+let autoUpdateBusy = false;
 
-  const n =
-    Number(v);
+let historyVenue = 'all';
 
-  return Number.isFinite(n)
-    ? n
+let historyResult = 'all';
+
+const $ = id =>
+  document.getElementById(id);
+
+const num = (v,d=0) =>
+  Number.isFinite(Number(v))
+    ? Number(v)
     : d;
 
-}
-
-
-function clamp(v,min,max){
-
-  return Math.max(
-    min,
-    Math.min(max,v)
+const clamp = (v,a,b) =>
+  Math.max(
+    a,
+    Math.min(b,v)
   );
 
-}
-
+/* ==========================================
+   日本時間
+========================================== */
 
 function todayJST(){
 
-  return new Intl
-    .DateTimeFormat(
-      'sv-SE',
-      {
-        timeZone:'Asia/Tokyo'
-      }
-    )
-    .format(
-      new Date()
-    );
-
-}
-
-
-function records(){
-
-  try{
-
-    const x =
-      JSON.parse(
-        localStorage.getItem(
-          STORAGE_KEY
-        ) || '[]'
-      );
-
-    return Array.isArray(x)
-      ? x
-      : [];
-
-  }catch{
-
-    return [];
-
-  }
-
-}
-
-
-function save(x){
-
-  localStorage.setItem(
-    STORAGE_KEY,
-    JSON.stringify(x)
+  return new Intl.DateTimeFormat(
+    'en-CA',
+    {
+      timeZone:'Asia/Tokyo',
+      year:'numeric',
+      month:'2-digit',
+      day:'2-digit'
+    }
+  ).format(
+    new Date()
   );
 
 }
 
+/* ==========================================
+   API URL
+========================================== */
 
-function uiState(){
+function apiURL(d){
+
+  return (
+    `${API_BASE}/` +
+    `${d.slice(0,4)}/` +
+    `${d.replaceAll('-','')}.json`
+  );
+
+}
+
+/* ==========================================
+   自動更新強化
+========================================== */
+
+function sleep(ms){
+
+  return new Promise(
+    resolve =>
+      setTimeout(resolve,ms)
+  );
+
+}
+
+async function fetchJSONWithTimeout(
+  url,
+  timeoutMs = 12000
+){
+
+  const controller =
+    new AbortController();
+
+  const timer =
+    setTimeout(
+      () => controller.abort(),
+      timeoutMs
+    );
 
   try{
 
-    return (
-      JSON.parse(
-        localStorage.getItem(
-          UI_STATE_KEY
-        ) || '{}'
-      ) || {}
-    );
-
-  }catch{
-
-    return {};
-
-  }
-
-}
-
-
-function saveUIState(next){
-
-  try{
-
-    localStorage.setItem(
-      UI_STATE_KEY,
-      JSON.stringify(next)
-    );
-
-  }catch{}
-
-}
-
-
-function raceKey(r){
-
-  return [
-    r.date,
-    r.stadium_number,
-    r.race_number
-  ].join('-');
-
-}
-
-
-function closeTime(r){
-
-  return r.closed_at
-    ? r.closed_at.substring(11,16)
-    : '--:--';
-
-}
-
-
-function parseCombo(v){
-
-  const m =
-    String(v || '')
-      .match(/\d/g);
-
-  return m
-    ? m.slice(0,3).map(Number)
-    : [];
-
-}
-
-
-function permutationDistance(
-  predicted,
-  actual
-){
-
-  const p =
-    parseCombo(predicted);
-
-  const a =
-    parseCombo(actual);
-
-  if(
-    p.length !== 3 ||
-    a.length !== 3
-  ){
-
-    return {
-      score:0,
-      type:'invalid'
-    };
-
-  }
-
-
-  if(
-    p.join('-') ===
-    a.join('-')
-  ){
-
-    return {
-      score:100,
-      type:'exact'
-    };
-
-  }
-
-
-  const sameSet =
-    [...p]
-      .sort()
-      .join('-') ===
-    [...a]
-      .sort()
-      .join('-');
-
-
-  if(sameSet){
-
-    return {
-      score:85,
-      type:'same3'
-    };
-
-  }
-
-
-  let samePosition = 0;
-
-  for(let i=0;i<3;i++){
-
-    if(p[i] === a[i]){
-      samePosition++;
-    }
-
-  }
-
-
-  const common =
-    p.filter(
-      x => a.includes(x)
-    ).length;
-
-
-  if(
-    common === 2 &&
-    samePosition >= 2
-  ){
-
-    return {
-      score:75,
-      type:'onePositionMiss'
-    };
-
-  }
-
-
-  if(common === 2){
-
-    return {
-      score:65,
-      type:'same2'
-    };
-
-  }
-
-
-  if(common === 1){
-
-    return {
-      score:35,
-      type:'same1'
-    };
-
-  }
-
-
-  return {
-    score:0,
-    type:'far'
-  };
-
-}
-
-
-function analyzePredictionCloseness(
-  rec,
-  result
-){
-
-  const tickets =
-    Array.isArray(rec?.tickets)
-      ? rec.tickets
-      : [];
-
-
-  let best = {
-
-    score:0,
-    type:'far',
-    combo:'',
-    group:''
-
-  };
-
-
-  for(const t of tickets){
-
-    const d =
-      permutationDistance(
-        t.combo,
-        result
+    const separator =
+      url.includes('?')
+        ? '&'
+        : '?';
+
+    const r =
+      await fetch(
+        url +
+        separator +
+        't=' +
+        Date.now(),
+        {
+          cache:'no-store',
+          signal:controller.signal
+        }
       );
-
-
-    if(d.score > best.score){
-
-      best = {
-
-        score:d.score,
-        type:d.type,
-        combo:t.combo,
-        group:t.group || ''
-
-      };
-
-    }
-
-  }
-
-
-  const label =
-
-    best.score === 100
-      ? '的中'
-
-      : best.type === 'same3'
-      ? '3艇一致・順番違い'
-
-      : best.type === 'onePositionMiss'
-      ? '着順1か所だけ外れ'
-
-      : best.type === 'same2'
-      ? '2艇一致'
-
-      : best.type === 'same1'
-      ? '1艇一致'
-
-      : '完全外れ';
-
-
-  return {
-
-    ...best,
-    label
-
-  };
-
-}
-
-
-function backfillLearningRecords(){
-
-  const rs =
-    records();
-
-  let changed =
-    false;
-
-
-  for(const rec of rs){
-
-    if(
-      !rec.learningSnapshot &&
-      Array.isArray(rec.tickets) &&
-      rec.tickets.length
-    ){
-
-      rec.learningSnapshot = {
-
-        model:
-          rec.model ||
-          MODEL_NAME,
-
-        savedAt:
-          rec.savedAt ||
-          '',
-
-        rating:
-          num(rec.rating),
-
-        grade:
-          rec.grade ||
-          'S',
-
-        tickets:
-          rec.tickets.map(
-            t => ({
-
-              combo:t.combo,
-
-              group:
-                t.group || '',
-
-              probability:
-                num(t.probability),
-
-              special:
-                !!t.special,
-
-              money:
-                num(t.money)
-
-            })
-          ),
-
-        predictionMeta:
-          rec.predictionMeta ||
-          null
-
-      };
-
-      changed =
-        true;
-
-    }
-
-
-    if(
-      rec.done &&
-      rec.result &&
-      !rec.proximity &&
-      Array.isArray(rec.tickets) &&
-      rec.tickets.length
-    ){
-
-      rec.proximity =
-        analyzePredictionCloseness(
-          rec,
-          rec.result
-        );
-
-      changed =
-        true;
-
-    }
-
-  }
-
-
-  if(changed){
-
-    save(rs);
-
-  }
-
-}
-
-
-function fetchToday(){
-
-  return fetch(
-    `${API}?date=${todayJST()}`
-  )
-  .then(r => {
 
     if(!r.ok){
 
       throw new Error(
-        'API '+r.status
+        `HTTP ${r.status}`
       );
 
     }
 
-    return r.json();
+    const data =
+      await r.json();
 
-  });
+    if(
+      !data ||
+      typeof data !== 'object'
+    ){
 
-}
-
-
-function flatten(data){
-
-  if(Array.isArray(data)){
-
-    return data.flatMap(
-      x =>
-        Array.isArray(x?.races)
-          ? x.races
-          : x
-    );
-
-  }
-
-
-  if(
-    data &&
-    typeof data === 'object'
-  ){
-
-    return Object
-      .values(data)
-      .flatMap(
-        x =>
-          Array.isArray(x)
-            ? x
-            : Array.isArray(x?.races)
-            ? x.races
-            : []
+      throw new Error(
+        'JSONデータ不正'
       );
 
+    }
+
+    return data;
+
+  }finally{
+
+    clearTimeout(timer);
+
   }
-
-
-  return [];
 
 }
 
+/* ==========================================
+   当日データ取得
+   2系統 × 最大3回
+========================================== */
 
-function upcoming(r){
+async function fetchToday(){
 
-  if(r?.result){
-    return false;
+  const date =
+    todayJST();
+
+  const urls = [
+
+    `${API_BASE}/today.json`,
+
+    apiURL(date)
+
+  ];
+
+  let lastError = null;
+
+  for(
+    let round = 1;
+    round <= 3;
+    round++
+  ){
+
+    for(
+      const url of urls
+    ){
+
+      try{
+
+        return await
+          fetchJSONWithTimeout(
+            url,
+            12000
+          );
+
+      }catch(e){
+
+        lastError = e;
+
+        console.warn(
+          `データ取得失敗 round=${round}`,
+          url,
+          e
+        );
+
+      }
+
+    }
+
+    if(round < 3){
+
+      await sleep(
+        round * 1500
+      );
+
+    }
+
   }
 
-
-  if(!r?.closed_at){
-    return true;
-  }
-
-
-  return (
-    new Date(
-      r.closed_at
-    ).getTime()
-    >
-    Date.now()-60000
+  throw (
+    lastError ||
+    new Error(
+      'データ取得に失敗しました'
+    )
   );
 
 }
 
+/* ==========================================
+   APIデータをレース配列へ変換
+========================================== */
+
+function flatten(data){
+
+  const out = [];
+
+  const ss =
+    data?.programs?.stadiums || {};
+
+  for(
+    const [sk,sd]
+    of Object.entries(ss)
+  ){
+
+    for(
+      const [rk,r]
+      of Object.entries(
+        sd?.races || {}
+      )
+    ){
+
+      if(!r) continue;
+
+      out.push({
+        ...r,
+
+        stadium_number:
+          num(
+            r.stadium_number,
+            sk
+          ),
+
+        race_number:
+          num(
+            r.race_number,
+            rk
+          )
+      });
+
+    }
+
+  }
+
+  return out;
+
+}
+
+/* ==========================================
+   レース識別
+========================================== */
+
+function raceKey(r){
+
+  return (
+    `${r.date || todayJST()}_` +
+    `${r.stadium_number}_` +
+    `${r.race_number}`
+  );
+
+}
+
+/* ==========================================
+   締切時刻
+========================================== */
+
+function closeTime(r){
+
+  const m =
+    String(
+      r?.closed_at || ''
+    ).match(
+      /(\d{2}):(\d{2})/
+    );
+
+  return m
+    ? `${m[1]}:${m[2]}`
+    : '--:--';
+
+}
+
+/* ==========================================
+   締切前判定
+========================================== */
+
+function upcoming(r){
+
+  if(
+    !r?.closed_at
+  ){
+    return true;
+  }
+
+  const t =
+    new Date(
+      String(
+        r.closed_at
+      ).replace(
+        ' ',
+        'T'
+      ) +
+      '+09:00'
+    ).getTime();
+
+  return (
+    Number.isNaN(t) ||
+    t > Date.now()
+  );
+
+}
+
+/* ==========================================
+   展示6艇揃い判定
+========================================== */
 
 function previewReady(r){
 
   const p =
     r?.preview?.racers;
 
-
   if(!p){
     return false;
   }
 
-
-  for(let i=1;i<=6;i++){
+  for(
+    let i=1;
+    i<=6;
+    i++
+  ){
 
     const x =
       p[String(i)];
-
 
     if(!x){
       return false;
     }
 
+    const e =
+      Number(
+        x.exhibition_time
+      );
+
+    const s =
+      Number(
+        x.start_timing
+      );
 
     if(
-      x.exhibition_time === null ||
-      x.exhibition_time === undefined ||
-      x.start_timing === null ||
-      x.start_timing === undefined
+      !Number.isFinite(e) ||
+      e <= 0 ||
+      !Number.isFinite(s)
     ){
-
       return false;
-
     }
 
   }
-
 
   return true;
 
 }
 
+/* ==========================================
+   天候情報
+========================================== */
 
-function racerScore(racer){
+function weatherInfo(r){
+
+  const p =
+    r?.preview || {};
+
+  return {
+
+    windSpeed:
+      num(p.wind_speed),
+
+    windDirection:
+      num(
+        p.wind_direction_number
+      ),
+
+    wave:
+      num(p.wave_height),
+
+    weather:
+      num(p.weather_number),
+
+    air:
+      num(p.air_temperature),
+
+    water:
+      num(p.water_temperature)
+
+  };
+
+}
+
+/* ==========================================
+   艇評価
+========================================== */
+
+function scoreBoat(
+  r,
+  p,
+  entry
+){
+
+  let s = 0;
+
+  const nw =
+    num(
+      r?.national_win_rate,
+      5
+    );
+
+  const n2 =
+    num(
+      r?.national_top_2_percent,
+      30
+    );
+
+  const n3 =
+    num(
+      r?.national_top_3_percent,
+      45
+    );
+
+  const lw =
+    num(
+      r?.local_win_rate,
+      nw
+    );
+
+  const l2 =
+    num(
+      r?.local_top_2_percent,
+      n2
+    );
+
+  const m2 =
+    num(
+      r?.motor_top_2_percent,
+      30
+    );
+
+  const m3 =
+    num(
+      r?.motor_top_3_percent,
+      45
+    );
+
+  const b2 =
+    num(
+      r?.boat_top_2_percent,
+      30
+    );
+
+  const ast =
+    num(
+      r?.average_start_timing,
+      .18
+    );
+
+  const ex =
+    num(
+      p?.exhibition_time,
+      6.85
+    );
+
+  const est =
+    num(
+      p?.start_timing,
+      ast
+    );
 
   const rank =
-    String(
-      racer?.class ||
-      racer?.rank ||
-      ''
-    ).toUpperCase();
-
-
-  const rankScore =
-
-    rank === 'A1'
-      ? 18
-
-      : rank === 'A2'
-      ? 12
-
-      : rank === 'B1'
-      ? 6
-
-      : 2;
-
-
-  const win =
     num(
-      racer?.rate_in_all_stadium,
-      num(
-        racer?.win_rate,
-        5
-      )
+      r?.rank_number,
+      4
     );
 
-
-  const motor =
+  const f =
     num(
-      racer?.motor_trifecta_rate,
-      num(
-        racer?.motor_2_rate,
-        30
-      )
+      r?.flying_count,
+      0
     );
 
+  const course =
+    num(
+      p?.course_number,
+      entry
+    );
 
-  return (
-    rankScore +
-    win*2.3 +
-    motor*.20
+  s +=
+    nw * 8 +
+    n2 * .35 +
+    n3 * .12 +
+    lw * 4 +
+    l2 * .18 +
+    m2 * .4 +
+    m3 * .1 +
+    b2 * .15;
+
+  s +=
+    Math.max(
+      0,
+      (.22-ast)*100
+    );
+
+  s +=
+    Math.max(
+      -10,
+      (6.9-ex)*75
+    );
+
+  s +=
+    Math.max(
+      -8,
+      (.2-est)*60
+    );
+
+  s +=
+    rank===1
+      ? 9
+      : rank===2
+      ? 5
+      : rank===3
+      ? 1
+      : -2;
+
+  s -= f * 4;
+
+  s += ({
+    1:16,
+    2:7,
+    3:5,
+    4:2,
+    5:-1,
+    6:-4
+  }[course] || 0);
+
+  return s;
+
+}
+
+/* ==========================================
+   展示順位
+========================================== */
+
+function exhibitionRank(
+  boats
+){
+
+  return [
+    ...boats
+  ]
+  .sort(
+    (a,b) =>
+      num(
+        a.preview?.exhibition_time,
+        99
+      ) -
+      num(
+        b.preview?.exhibition_time,
+        99
+      )
+  )
+  .map(
+    x => x.boat
   );
 
 }
 
+/* ==========================================
+   ST順位
+========================================== */
 
-function boatBaseScore(
-  racer,
-  preview,
+function startRank(
+  boats
+){
+
+  return [
+    ...boats
+  ]
+  .sort(
+    (a,b) =>
+      num(
+        a.preview?.start_timing,
+        9
+      ) -
+      num(
+        b.preview?.start_timing,
+        9
+      )
+  )
+  .map(
+    x => x.boat
+  );
+
+}
+
+/* ==========================================
+   進入変化
+========================================== */
+
+function courseChanges(
+  boats
+){
+
+  return boats.filter(
+    x =>
+      num(
+        x.preview?.course_number,
+        x.boat
+      ) !== x.boat
+  );
+
+}
+
+/* ==========================================
+   順位位置
+========================================== */
+
+function rankIndex(
+  arr,
   boat
 ){
 
-  const course =
-    num(
-      preview?.course_number,
-      boat
-    );
+  const i =
+    arr.indexOf(boat);
 
-
-  const courseBonus = {
-
-    1:16,
-    2:8,
-    3:5,
-    4:3,
-    5:1,
-    6:-1
-
-  };
-
-
-  const ex =
-    num(
-      preview?.exhibition_time,
-      6.9
-    );
-
-
-  const st =
-    num(
-      preview?.start_timing,
-      .20
-    );
-
-
-  let score =
-    racerScore(racer);
-
-
-  score +=
-    courseBonus[course] || 0;
-
-
-  score +=
-    (6.9-ex)*26;
-
-
-  score +=
-    (.20-st)*28;
-
-
-  return score;
+  return i < 0
+    ? 5
+    : i;
 
 }
 
+/*
+==========================================
+ここまでが前半です
+次の「後半①」を
+この直後にそのまま貼り付けてください。
+==========================================
+*//* ==========================================
+   展開予測
+========================================== */
 
-function weatherInfo(r){
-
-  return {
-
-    weather:
-      num(
-        r?.preview?.weather_number,
-        0
-      ),
-
-    windSpeed:
-      num(
-        r?.preview?.wind_speed,
-        0
-      ),
-
-    windDirection:
-      num(
-        r?.preview
-          ?.wind_direction_number,
-        0
-      ),
-
-    wave:
-      num(
-        r?.preview?.wave_height,
-        0
-      ),
-
-    air:
-      num(
-        r?.preview?.air_temperature,
-        0
-      ),
-
-    water:
-      num(
-        r?.preview?.water_temperature,
-        0
-      )
-
-  };
-
-}
-
-
-function tacticFor(
-  boat,
-  course
-){
-
-  if(course === 1){
-    return '逃げ';
-  }
-
-  if(course === 2){
-    return '差し';
-  }
-
-  if(
-    course === 3 ||
-    course === 4
-  ){
-    return 'まくり';
-  }
-
-  if(course >= 5){
-    return '展開突き';
-  }
-
-  return '自在';
-
-}
-
-
-function buildScenario(
+function scenarioForecast(
   boats,
-  weather
+  w,
+  exRanks,
+  stRanks
 ){
 
-  const raw =
-    boats.map(x => {
+  const candidates = [];
 
-      const course =
-        num(
-          x.preview?.course_number,
-          x.boat
-        );
-
-
-      const st =
-        num(
-          x.preview?.start_timing,
-          .20
-        );
-
-
-      const ex =
-        num(
-          x.preview?.exhibition_time,
-          6.9
-        );
-
-
-      let attack =
-        x.score;
-
-
-      if(course === 1){
-        attack += 10;
-      }
-
-
-      if(
-        course === 3 ||
-        course === 4
-      ){
-
-        attack +=
-          Math.max(
-            0,
-            (.18-st)*35
-          );
-
-      }
-
-
-      if(ex <= 6.75){
-        attack += 4;
-      }
-
-
-      if(weather.windSpeed >= 5){
-
-        if(course === 1){
-          attack -= 3;
-        }
-
-        if(
-          course === 3 ||
-          course === 4
-        ){
-          attack += 2;
-        }
-
-      }
-
-
-      if(weather.wave >= 4){
-
-        if(course === 1){
-          attack -= 2;
-        }
-
-      }
-
-
-      return {
-
-        boat:x.boat,
-        course,
-        tactic:
-          tacticFor(
-            x.boat,
-            course
-          ),
-        attack
-
-      };
-
-    });
-
-
-  const max =
-    Math.max(
-      ...raw.map(x=>x.attack)
-    );
-
-
-  const exp =
-    raw.map(
-      x =>
-        Math.exp(
-          (x.attack-max)/9
-        )
-    );
-
-
-  const sum =
-    exp.reduce(
-      (a,b)=>a+b,
+  const avgScore =
+    boats.reduce(
+      (s,x) => s + x.score,
       0
-    ) || 1;
+    ) / boats.length;
 
+  for(
+    const x of boats
+  ){
 
-  const candidates =
-    raw
-      .map(
-        (x,i)=>({
+    const boat =
+      x.boat;
 
-          ...x,
-
-          probability:
-            exp[i]/sum
-
-        })
-      )
-      .sort(
-        (a,b)=>
-          b.probability-
-          a.probability
+    const course =
+      num(
+        x.preview?.course_number,
+        boat
       );
 
+    const scoreDiff =
+      x.score - avgScore;
+
+    const exPos =
+      rankIndex(
+        exRanks,
+        boat
+      );
+
+    const stPos =
+      rankIndex(
+        stRanks,
+        boat
+      );
+
+    const exBoost =
+      (5-exPos) * 1.7;
+
+    const stBoost =
+      (5-stPos) * 2;
+
+    const startSharp =
+      clamp(
+        (
+          .19 -
+          num(
+            x.preview?.start_timing,
+            .18
+          )
+        ) * 100,
+        -5,
+        9
+      );
+
+    const motorBoost =
+      (
+        num(
+          x.racer?.motor_top_2_percent,
+          30
+        ) - 30
+      ) * .12;
+
+    const base =
+      scoreDiff * .14 +
+      exBoost +
+      stBoost +
+      startSharp +
+      motorBoost;
+
+    /* 逃げ */
+
+    if(
+      course === 1
+    ){
+
+      let v =
+        34 + base;
+
+      if(
+        stPos <= 1
+      ){
+        v += 4;
+      }
+
+      if(
+        exPos <= 1
+      ){
+        v += 3;
+      }
+
+      if(
+        w.windSpeed >= 7
+      ){
+        v -= 4;
+      }
+
+      if(
+        w.wave >= 7
+      ){
+        v -= 4;
+      }
+
+      candidates.push({
+        boat,
+        tactic:'逃げ',
+        score:v
+      });
+
+    }
+
+    /* 差し */
+
+    if(
+      course === 2
+    ){
+
+      let v =
+        17 + base;
+
+      if(
+        stPos <= 2
+      ){
+        v += 2;
+      }
+
+      candidates.push({
+        boat,
+        tactic:'差し',
+        score:v
+      });
+
+    }
+
+    /* まくり */
+
+    if(
+      course >= 3 &&
+      course <= 5
+    ){
+
+      let v =
+        (
+          course===3
+            ? 20
+            : course===4
+            ? 18
+            : 13
+        ) +
+        base;
+
+      if(
+        stPos === 0
+      ){
+        v += 6;
+      }
+
+      if(
+        stPos <= 1
+      ){
+        v += 3;
+      }
+
+      if(
+        exPos <= 1
+      ){
+        v += 2;
+      }
+
+      candidates.push({
+        boat,
+        tactic:'まくり',
+        score:v
+      });
+
+    }
+
+    /* まくり差し */
+
+    if(
+      course >= 3
+    ){
+
+      let v =
+        (
+          course===3
+            ? 17
+            : course===4
+            ? 19
+            : course===5
+            ? 16
+            : 11
+        ) +
+        base * .9;
+
+      if(
+        exPos <= 2
+      ){
+        v += 2;
+      }
+
+      if(
+        stPos <= 2
+      ){
+        v += 2;
+      }
+
+      candidates.push({
+        boat,
+        tactic:'まくり差し',
+        score:v
+      });
+
+    }
+
+    /* 展開突き */
+
+    if(
+      course >= 4
+    ){
+
+      let v =
+        (
+          course===4
+            ? 10
+            : course===5
+            ? 11
+            : 8
+        ) +
+        base * .75;
+
+      if(
+        w.windSpeed >= 5
+      ){
+        v += 2;
+      }
+
+      if(
+        w.wave >= 4
+      ){
+        v += 2;
+      }
+
+      candidates.push({
+        boat,
+        tactic:'展開突き',
+        score:v
+      });
+
+    }
+
+  }
+
+  const maxScore =
+    Math.max(
+      ...candidates.map(
+        x => x.score
+      )
+    );
+
+  let total = 0;
+
+  for(
+    const x of candidates
+  ){
+
+    x.raw =
+      Math.exp(
+        (
+          x.score -
+          maxScore
+        ) / 8
+      );
+
+    total +=
+      x.raw;
+
+  }
+
+  for(
+    const x of candidates
+  ){
+
+    x.probability =
+      total
+        ? x.raw / total
+        : 0;
+
+  }
+
+  candidates.sort(
+    (a,b) =>
+      b.probability -
+      a.probability
+  );
+
+  const firstMap = {
+    1:0,
+    2:0,
+    3:0,
+    4:0,
+    5:0,
+    6:0
+  };
+
+  for(
+    const x of candidates
+  ){
+
+    firstMap[x.boat] +=
+      x.probability;
+
+  }
 
   const attacker =
     candidates.find(
       x =>
-        (
-          x.course === 3 ||
-          x.course === 4
-        ) &&
-        x.probability >= .12
+        x.tactic !== '逃げ'
     ) ||
-    candidates[1] ||
     candidates[0];
 
-
   return {
-
-    top:
-      candidates[0],
-
+    candidates,
+    top:candidates[0],
     attacker,
-
-    candidates
-
+    firstMap
   };
 
 }
 
+/* ==========================================
+   S評価判定
+========================================== */
 
 function evaluate(r){
 
-  const racers =
-    r?.racers || {};
-
-
-  const previews =
-    r?.preview?.racers || {};
-
+  if(
+    !previewReady(r)
+  ){
+    return null;
+  }
 
   const boats = [];
 
+  for(
+    let i=1;
+    i<=6;
+    i++
+  ){
 
-  for(let i=1;i<=6;i++){
+    const rr =
+      r?.racers?.[
+        String(i)
+      ];
 
-    const racer =
-      racers[String(i)];
-
-
-    const preview =
-      previews[String(i)];
-
+    const p =
+      r?.preview?.racers?.[
+        String(i)
+      ];
 
     if(
-      !racer ||
-      !preview
+      !rr ||
+      !p
     ){
-
       return null;
-
     }
-
 
     boats.push({
 
       boat:i,
-      racer,
-      preview,
 
       score:
-        boatBaseScore(
-          racer,
-          preview,
+        scoreBoat(
+          rr,
+          p,
           i
-        )
+        ),
+
+      racer:rr,
+
+      preview:p
 
     });
 
   }
 
-
-  const weather =
-    weatherInfo(r);
-
-
-  const exSorted =
-    [...boats]
-      .sort(
-        (a,b)=>
-          num(
-            a.preview?.exhibition_time,
-            99
-          ) -
-          num(
-            b.preview?.exhibition_time,
-            99
-          )
-      );
-
-
-  const stSorted =
-    [...boats]
-      .sort(
-        (a,b)=>
-          num(
-            a.preview?.start_timing,
-            99
-          ) -
-          num(
-            b.preview?.start_timing,
-            99
-          )
-      );
-
-
-  const exRank =
-    new Map(
-      exSorted.map(
-        (x,i)=>[
-          x.boat,
-          i+1
-        ]
-      )
-    );
-
-
-  const stRank =
-    new Map(
-      stSorted.map(
-        (x,i)=>[
-          x.boat,
-          i+1
-        ]
-      )
-    );
-
-
-  for(const x of boats){
-
-    x.exRank =
-      exRank.get(x.boat);
-
-
-    x.stRank =
-      stRank.get(x.boat);
-
-
-    if(x.exRank === 1){
-      x.score += 7;
-    }
-
-    if(x.exRank === 2){
-      x.score += 4;
-    }
-
-    if(x.stRank === 1){
-      x.score += 6;
-    }
-
-    if(x.stRank === 2){
-      x.score += 3;
-    }
-
-  }
-
-
   boats.sort(
-    (a,b)=>
-      b.score-a.score
+    (a,b) =>
+      b.score -
+      a.score
   );
 
+  const g1 =
+    boats[0].score -
+    boats[1].score;
+
+  const g2 =
+    boats[1].score -
+    boats[2].score;
+
+  const w =
+    weatherInfo(r);
+
+  const exRanks =
+    exhibitionRank(
+      boats
+    );
+
+  const stRanks =
+    startRank(
+      boats
+    );
+
+  const changes =
+    courseChanges(
+      boats
+    );
 
   const scenario =
-    buildScenario(
+    scenarioForecast(
       boats,
-      weather
+      w,
+      exRanks,
+      stRanks
     );
-
-
-  const courseChanges =
-    boats.filter(
-      x =>
-        num(
-          x.preview?.course_number,
-          x.boat
-        ) !== x.boat
-    );
-
-
-  const top =
-    boats[0];
-
-
-  const second =
-    boats[1];
-
-
-  const third =
-    boats[2];
-
-
-  const gap1 =
-    top.score -
-    second.score;
-
-
-  const gap2 =
-    second.score -
-    third.score;
-
 
   let rating =
-    60;
-
-
-  rating +=
+    64 +
     Math.min(
-      17,
-      gap1*1.7
-    );
-
-
-  rating +=
-    Math.min(
-      7,
+      18,
       Math.max(
         0,
-        gap2
-      )*.7
+        g1 * 1.8
+      )
+    ) +
+    Math.min(
+      8,
+      Math.max(
+        0,
+        g2 * .9
+      )
     );
 
-
-  if(top.boat === 1){
+  if(
+    boats[0].boat === 1
+  ){
     rating += 6;
   }
 
-
-  if(top.exRank <= 2){
-    rating += 4;
+  if(
+    w.windSpeed >= 5
+  ){
+    rating -= 3;
   }
-
-
-  if(top.stRank <= 2){
-    rating += 4;
-  }
-
 
   if(
+    w.windSpeed >= 8
+  ){
+    rating -= 4;
+  }
+
+  if(
+    w.wave >= 5
+  ){
+    rating -= 3;
+  }
+
+  if(
+    w.wave >= 8
+  ){
+    rating -= 4;
+  }
+
+  if(
+    exRanks[0] ===
+    boats[0].boat
+  ){
+    rating += 2;
+  }
+
+  if(
+    stRanks[0] ===
+    boats[0].boat
+  ){
+    rating += 2;
+  }
+
+  if(
+    exRanks
+      .slice(0,2)
+      .includes(
+        boats[0].boat
+      ) &&
+    stRanks
+      .slice(0,2)
+      .includes(
+        boats[0].boat
+      )
+  ){
+    rating += 2;
+  }
+
+  if(
+    changes.length >= 2
+  ){
+    rating -= 3;
+  }
+
+  const scenarioTop =
+    scenario.top?.probability ||
+    0;
+
+  if(
+    scenarioTop >= .45
+  ){
+
+    rating += 4;
+
+  }else if(
+    scenarioTop >= .35
+  ){
+
+    rating += 2;
+
+  }else if(
+    scenarioTop < .23
+  ){
+
+    rating -= 3;
+
+  }
+
+  if(
+    scenario.top &&
     scenario.top.boat ===
-    top.boat
+      boats[0].boat
   ){
-
-    rating += 5;
-
+    rating += 3;
   }
-
-
-  const topScenario =
-    scenario.top.probability;
-
-
-  const secondScenario =
-    scenario.candidates[1]
-      ?.probability || 0;
-
-
-  if(
-    topScenario -
-    secondScenario >
-    .10
-  ){
-
-    rating += 4;
-
-  }
-
-
-  if(weather.windSpeed >= 6){
-    rating -= 7;
-  }
-
-
-  if(weather.wave >= 5){
-    rating -= 6;
-  }
-
-
-  if(courseChanges.length >= 3){
-    rating -= 6;
-  }
-
-
-  if(topScenario < .24){
-    rating -= 7;
-  }
-
 
   rating =
     Math.round(
@@ -2466,118 +2489,160 @@ function evaluate(r){
       )
     );
 
+  const stable =
+    w.windSpeed < 8 &&
+    w.wave < 7 &&
+    g1 >= 5;
 
-  const stableWater =
-    weather.windSpeed <= 6 &&
-    weather.wave <= 5;
+  const scenarioStable =
+    scenarioTop >= .24;
 
+  const skip =
+    rating < 82 ||
+    w.windSpeed >= 10 ||
+    w.wave >= 10 ||
+    changes.length >= 4 ||
+    !scenarioStable;
 
-  const stableEntry =
-    courseChanges.length <= 3;
+  const reasons = [
 
+    `AI上位艇 ${
+      boats
+        .slice(0,3)
+        .map(
+          x =>
+            x.boat +
+            '号艇'
+        )
+        .join('・')
+    }`,
 
-  const clear =
-    gap1 >= 4 ||
-    topScenario >= .28;
+    `展示上位 ${
+      exRanks
+        .slice(0,3)
+        .map(
+          x =>
+            x +
+            '号艇'
+        )
+        .join('・')
+    }`,
 
+    `ST上位 ${
+      stRanks
+        .slice(0,3)
+        .map(
+          x =>
+            x +
+            '号艇'
+        )
+        .join('・')
+    }`,
 
-  const grade =
-    (
-      rating >= 78 &&
-      stableWater &&
-      stableEntry &&
-      clear
-    )
-      ? 'S'
-      : 'A';
+    `風 ${w.windSpeed}m / 波 ${w.wave}cm`
 
-
-  const reasons = [];
-
-
-  reasons.push(
-    `${top.boat}号艇を総合1位評価`
-  );
-
-
-  if(top.exRank <= 2){
-
-    reasons.push(
-      `${top.boat}号艇は展示タイム上位`
-    );
-
-  }
-
-
-  if(top.stRank <= 2){
-
-    reasons.push(
-      `${top.boat}号艇は展示ST上位`
-    );
-
-  }
-
-
-  if(scenario?.attacker){
-
-    reasons.push(
-      `攻め役候補は${scenario.attacker.boat}号艇 ${scenario.attacker.tactic}`
-    );
-
-  }
-
-
-  if(courseChanges.length){
-
-    reasons.push(
-      `進入変化${courseChanges.length}艇を補正`
-    );
-
-  }
-
+  ];
 
   if(
-    weather.windSpeed >= 4 ||
-    weather.wave >= 3
+    scenario.top
   ){
 
     reasons.push(
-      `風${weather.windSpeed}m・波${weather.wave}cmを水面補正`
+      `最有力展開 ` +
+      `${scenario.top.boat}号艇 ` +
+      `${scenario.top.tactic} ` +
+      `${(
+        scenario.top.probability *
+        100
+      ).toFixed(1)}%`
     );
 
   }
 
+  if(
+    scenario.attacker
+  ){
+
+    reasons.push(
+      `攻め役候補 ` +
+      `${scenario.attacker.boat}号艇 ` +
+      `${scenario.attacker.tactic}`
+    );
+
+  }
+
+  if(
+    changes.length
+  ){
+
+    reasons.push(
+      `進入変化 ${
+        changes.map(
+          x =>
+            `${x.boat}号艇→` +
+            `${num(
+              x.preview?.course_number
+            )}コース`
+        ).join('、')
+      }`
+    );
+
+  }
 
   return {
 
     race:r,
+
     boats,
+
     rating,
-    grade,
-    weather,
-    scenario,
-    reasons,
+
+    grade:
+      rating >= 82 &&
+      stable &&
+      scenarioStable &&
+      !skip
+        ? 'S'
+        : 'B',
+
+    gap1:g1,
+
+    weather:w,
 
     exhibitionRank:
-      exSorted.map(
-        x=>x.boat
-      ),
+      exRanks,
 
     startRank:
-      stSorted.map(
-        x=>x.boat
-      ),
+      stRanks,
 
-    courseChanges
+    courseChanges:
+      changes,
+
+    scenario,
+
+    reasons,
+
+    skip
 
   };
 
-}function probabilityMap(boats){
+}
+
+/* ==========================================
+   艇ごとの確率
+========================================== */
+
+function probabilityMap(
+  boats
+){
 
   const raw = {};
+
   let total = 0;
 
-  for(const x of boats){
+  for(
+    const x of boats
+  ){
 
     const v =
       Math.exp(
@@ -2585,13 +2650,16 @@ function evaluate(r){
       );
 
     raw[x.boat] = v;
+
     total += v;
 
   }
 
-  for(const k of Object.keys(raw)){
+  for(
+    const k of Object.keys(raw)
+  ){
 
-    raw[k] /= total || 1;
+    raw[k] /= total;
 
   }
 
@@ -2599,20 +2667,37 @@ function evaluate(r){
 
 }
 
+/* ==========================================
+   3連単120通り生成
+========================================== */
 
 function allCombos(){
 
   const out = [];
 
-  for(let a=1;a<=6;a++){
+  for(
+    let a=1;
+    a<=6;
+    a++
+  ){
 
-    for(let b=1;b<=6;b++){
+    for(
+      let b=1;
+      b<=6;
+      b++
+    ){
 
-      if(b === a){
+      if(
+        b === a
+      ){
         continue;
       }
 
-      for(let c=1;c<=6;c++){
+      for(
+        let c=1;
+        c<=6;
+        c++
+      ){
 
         if(
           c === a ||
@@ -2635,6 +2720,9 @@ function allCombos(){
 
 }
 
+/* ==========================================
+   3連単基礎確率
+========================================== */
 
 function baseComboProbability(
   combo,
@@ -2642,197 +2730,165 @@ function baseComboProbability(
 ){
 
   const p =
-    probabilityMap(boats);
+    probabilityMap(
+      boats
+    );
 
   const a =
     combo
       .split('-')
       .map(Number);
 
-
-  if(a.length !== 3){
+  if(
+    a.length !== 3
+  ){
     return 0;
   }
-
 
   const p1 =
     p[a[0]] || 0;
 
-
-  const remain1 =
-    1-p1;
-
+  const rem1 =
+    1 - p1;
 
   const p2 =
-    remain1 > 0
-      ? (p[a[1]] || 0) / remain1
+    rem1 > 0
+      ? (
+          p[a[1]] || 0
+        ) / rem1
       : 0;
 
-
-  const remain2 =
+  const rem2 =
     1 -
     p1 -
     (p[a[1]] || 0);
 
-
   const p3 =
-    remain2 > 0
-      ? (p[a[2]] || 0) / remain2
+    rem2 > 0
+      ? (
+          p[a[2]] || 0
+        ) / rem2
       : 0;
-
 
   return Math.max(
     0,
-    p1*p2*p3
+    p1 * p2 * p3
   );
 
 }
 
-
-function scenarioFirstProbability(
-  analysis,
-  boat
-){
-
-  const found =
-    analysis?.scenario?.candidates
-      ?.find(
-        x => x.boat === boat
-      );
-
-
-  return found
-    ? num(found.probability,1/6)
-    : 1/6;
-
-}
-
+/* ==========================================
+   展開補正
+========================================== */
 
 function comboRawWeight(
   combo,
-  analysis
+  a
 ){
 
   const head =
     Number(
-      combo.split('-')[0]
+      combo
+        .split('-')[0]
     );
-
 
   const base =
     baseComboProbability(
       combo,
-      analysis.boats
+      a.boats
     );
-
 
   const scenarioHead =
-    scenarioFirstProbability(
-      analysis,
+    a.scenario?.firstMap?.[
       head
-    );
-
+    ] ||
+    1/6;
 
   const factor =
     clamp(
       Math.pow(
-        scenarioHead/(1/6),
+        scenarioHead /
+        (1/6),
         .45
       ),
       .55,
       1.70
     );
 
-
-  return base*factor;
+  return (
+    base *
+    factor
+  );
 
 }
 
+/* ==========================================
+   組み合わせ確率
+========================================== */
 
-function buildComboProbabilities(
-  analysis
+function comboProbability(
+  combo,
+  a
 ){
 
   const combos =
     allCombos();
 
+  let total = 0;
 
-  const weighted =
-    combos.map(
-      combo => ({
+  let target = 0;
 
-        combo,
+  for(
+    const c of combos
+  ){
 
-        weight:
-          comboRawWeight(
-            combo,
-            analysis
-          )
+    const w =
+      comboRawWeight(
+        c,
+        a
+      );
 
-      })
-    );
+    total += w;
 
+    if(
+      c === combo
+    ){
+      target = w;
+    }
 
-  const total =
-    weighted.reduce(
-      (s,x)=>s+x.weight,
-      0
-    ) || 1;
+  }
 
-
-  return weighted.map(
-    x => ({
-
-      combo:x.combo,
-
-      probability:
-        x.weight/total
-
-    })
-  );
+  return total
+    ? target / total
+    : 0;
 
 }
 
+/* ==========================================
+   本線3・狙い4・穴3
+========================================== */
 
-function comboProbability(
-  combo,
-  analysis
-){
-
-  const list =
-    buildComboProbabilities(
-      analysis
-    );
-
-
-  return (
-    list.find(
-      x => x.combo === combo
-    )?.probability || 0
-  );
-
-}
-
-
-function makeTickets(analysis){
+function makeTickets(a){
 
   const scored =
-    buildComboProbabilities(
-      analysis
-    )
-    .sort(
-      (a,b)=>
-        b.probability-
-        a.probability
-    );
+    allCombos()
+      .map(
+        combo => ({
+          combo,
+          probability:
+            comboProbability(
+              combo,
+              a
+            )
+        })
+      )
+      .sort(
+        (x,y) =>
+          y.probability -
+          x.probability
+      );
 
-
-  /*
-   ==========================
-   本線3点
-   AI推定確率上位
-   ==========================
-  */
+  /* 本線3点 */
 
   const main =
     scored
@@ -2841,43 +2897,30 @@ function makeTickets(analysis){
         x => x.combo
       );
 
-
   const usedMain =
     new Set(main);
 
-
   const topBoat =
-    analysis.boats[0]?.boat;
-
+    a.boats[0]?.boat;
 
   const top3 =
-    analysis.boats
+    a.boats
       .slice(0,3)
       .map(
         x => x.boat
       );
 
-
   const attacker =
-    analysis.scenario
-      ?.attacker
-      ?.boat;
-
+    a.scenario?.attacker?.boat;
 
   const topBoats =
-    analysis.boats
+    a.boats
       .slice(0,4)
       .map(
         x => x.boat
       );
 
-
-  /*
-   ==========================
-   狙い4点
-   展開＋期待値重視
-   ==========================
-  */
+  /* 狙い4点 */
 
   const targetCandidates =
     scored
@@ -2888,26 +2931,23 @@ function makeTickets(analysis){
           )
       )
       .map(
-        (x,index)=>{
+        (x,index) => {
 
           const p =
             x.combo
               .split('-')
               .map(Number);
 
-
           const firstScenario =
-            scenarioFirstProbability(
-              analysis,
-              p[0]
-            );
-
+            a.scenario
+              ?.firstMap
+              ?.[p[0]] ||
+            0;
 
           const nonFavorite =
             p[0] !== topBoat
               ? 1.18
               : 1;
-
 
           const attackerBonus =
             attacker &&
@@ -2915,19 +2955,16 @@ function makeTickets(analysis){
               ? 1.12
               : 1;
 
-
           const spreadBonus =
             top3.includes(p[1]) &&
             top3.includes(p[2])
               ? 1.06
               : 1;
 
-
           const rankBonus =
             index >= 2
               ? 1.05
               : 1;
-
 
           return {
 
@@ -2937,7 +2974,8 @@ function makeTickets(analysis){
               x.probability *
               (
                 1 +
-                firstScenario*1.15
+                firstScenario *
+                1.15
               ) *
               nonFavorite *
               attackerBonus *
@@ -2949,11 +2987,10 @@ function makeTickets(analysis){
         }
       )
       .sort(
-        (a,b)=>
-          b.targetScore-
-          a.targetScore
+        (x,y) =>
+          y.targetScore -
+          x.targetScore
       );
-
 
   const cover =
     targetCandidates
@@ -2962,28 +2999,21 @@ function makeTickets(analysis){
         x => x.combo
       );
 
-
   const used =
     new Set([
       ...main,
       ...cover
     ]);
 
+  /* 特殊穴 */
 
-  /*
-   ==========================
-   特殊穴 ★
-   攻め役連動
-   ==========================
-  */
+  let special = null;
 
-  let special =
-    null;
+  if(
+    attacker
+  ){
 
-
-  if(attacker){
-
-    const specialCandidates =
+    const ac =
       scored.filter(
         x => {
 
@@ -2995,39 +3025,40 @@ function makeTickets(analysis){
             return false;
           }
 
-
           const p =
             x.combo
               .split('-')
               .map(Number);
 
-
           return (
             p[0] === attacker &&
             (
-              topBoats.includes(p[1]) ||
-              topBoats.includes(p[2])
+              topBoats.includes(
+                p[1]
+              ) ||
+              topBoats.includes(
+                p[2]
+              )
             )
           );
 
         }
       );
 
-
     if(
-      specialCandidates.length
+      ac.length
     ){
 
       special =
-        specialCandidates[0]
-          .combo;
+        ac[0].combo;
 
     }
 
   }
 
-
-  if(!special){
+  if(
+    !special
+  ){
 
     special =
       scored.find(
@@ -3043,59 +3074,53 @@ function makeTickets(analysis){
 
           return (
             Number(
-              x.combo.split('-')[0]
+              x.combo[0]
             ) !== topBoat
           );
 
         }
-      )?.combo || null;
+      )?.combo;
 
   }
 
+  if(
+    special
+  ){
 
-  if(special){
-
-    used.add(special);
+    used.add(
+      special
+    );
 
   }
 
-
-  /*
-   ==========================
-   穴 残り2点
-   ==========================
-  */
+  /* 穴候補 */
 
   const holeCandidates =
     scored
       .slice(7)
       .map(
-        (x,index)=>{
+        (x,index) => {
 
           const first =
             Number(
-              x.combo.split('-')[0]
+              x.combo[0]
             );
-
 
           const firstScenario =
-            scenarioFirstProbability(
-              analysis,
-              first
-            );
-
+            a.scenario
+              ?.firstMap
+              ?.[first] ||
+            0;
 
           const outsider =
             first !== topBoat
               ? 1.30
               : 1;
 
-
           const middleBonus =
             index >= 4
               ? 1.10
               : 1;
-
 
           return {
 
@@ -3105,7 +3130,8 @@ function makeTickets(analysis){
               x.probability *
               (
                 1 +
-                firstScenario*1.8
+                firstScenario *
+                1.8
               ) *
               outsider *
               middleBonus
@@ -3121,11 +3147,10 @@ function makeTickets(analysis){
           )
       )
       .sort(
-        (a,b)=>
-          b.holeScore-
-          a.holeScore
+        (x,y) =>
+          y.holeScore -
+          x.holeScore
       );
-
 
   const hole =
     holeCandidates
@@ -3134,28 +3159,33 @@ function makeTickets(analysis){
         x => x.combo
       );
 
+  if(
+    special
+  ){
 
-  if(special){
-
-    hole.push(special);
+    hole.push(
+      special
+    );
 
   }
 
+  for(
+    const x of scored
+  ){
 
-  /*
-   念のため3点未満なら補充
-  */
-
-  for(const x of scored){
-
-    if(hole.length >= 3){
+    if(
+      hole.length >= 3
+    ){
       break;
     }
 
-
     if(
-      !used.has(x.combo) &&
-      !hole.includes(x.combo)
+      !used.has(
+        x.combo
+      ) &&
+      !hole.includes(
+        x.combo
+      )
     ){
 
       hole.push(
@@ -3165,7 +3195,6 @@ function makeTickets(analysis){
     }
 
   }
-
 
   return {
 
@@ -3182,30 +3211,33 @@ function makeTickets(analysis){
 
 }
 
+/* ==========================================
+   1R 1,000円検証用配分
+========================================== */
 
 function allocate(
-  ticketSet,
+  t,
   budget,
-  analysis
+  a
 ){
 
   const all = [
 
-    ...ticketSet.main.map(
+    ...t.main.map(
       combo => ({
         combo,
         group:'main'
       })
     ),
 
-    ...ticketSet.cover.map(
+    ...t.cover.map(
       combo => ({
         combo,
         group:'cover'
       })
     ),
 
-    ...ticketSet.hole.map(
+    ...t.hole.map(
       combo => ({
         combo,
         group:'hole'
@@ -3214,24 +3246,6 @@ function allocate(
 
   ];
 
-
-  const probabilities =
-    buildComboProbabilities(
-      analysis
-    );
-
-
-  const probMap =
-    new Map(
-      probabilities.map(
-        x => [
-          x.combo,
-          x.probability
-        ]
-      )
-    );
-
-
   const enriched =
     all.map(
       x => ({
@@ -3239,26 +3253,25 @@ function allocate(
         ...x,
 
         probability:
-          probMap.get(
-            x.combo
-          ) || 0,
+          comboProbability(
+            x.combo,
+            a
+          ),
 
         special:
           x.combo ===
-          ticketSet.special
+          t.special
 
       })
     );
-
 
   const units =
     Math.max(
       10,
       Math.floor(
-        budget/100
+        budget / 100
       )
     );
-
 
   const weights =
     enriched.map(
@@ -3270,21 +3283,17 @@ function allocate(
           : .8
     );
 
-
-  const totalWeight =
+  const tw =
     weights.reduce(
-      (s,x)=>s+x,
+      (s,x) => s+x,
       0
     );
 
-
-  let assigned =
-    0;
-
+  let assigned = 0;
 
   const out =
     enriched.map(
-      (x,i)=>{
+      (x,i) => {
 
         const u =
           Math.max(
@@ -3292,61 +3301,63 @@ function allocate(
             Math.floor(
               units *
               weights[i] /
-              totalWeight
+              tw
             )
           );
 
-
         assigned += u;
-
 
         return {
 
           ...x,
 
           money:
-            u*100
+            u * 100
 
         };
 
       }
     );
 
-
   let diff =
-    units-assigned;
+    units -
+    assigned;
 
+  let i = 0;
 
-  let i =
-    0;
-
-
-  while(diff > 0){
+  while(
+    diff > 0
+  ){
 
     out[
-      i%out.length
+      i % out.length
     ].money += 100;
 
     diff--;
+
     i++;
 
   }
 
-
-  while(diff < 0){
+  while(
+    diff < 0
+  ){
 
     const target =
-      [...out]
-        .reverse()
-        .find(
-          x => x.money > 100
-        );
+      [
+        ...out
+      ]
+      .reverse()
+      .find(
+        x =>
+          x.money > 100
+      );
 
-
-    if(!target){
+    if(
+      !target
+    ){
       break;
     }
-
 
     target.money -= 100;
 
@@ -3354,18 +3365,671 @@ function allocate(
 
   }
 
-
   return out;
 
 }
 
+/* ==========================================
+   保存データ
+========================================== */
 
-function proximityClass(p){
+function records(){
 
-  if(!p){
-    return 'prox-low';
+  try{
+
+    const x =
+      JSON.parse(
+        localStorage.getItem(
+          STORAGE_KEY
+        ) ||
+        '[]'
+      );
+
+    return Array.isArray(x)
+      ? x
+      : [];
+
+  }catch{
+
+    return [];
+
   }
 
+}
+
+function save(x){
+
+  localStorage.setItem(
+    STORAGE_KEY,
+    JSON.stringify(x)
+  );
+
+}
+
+/* ==========================================
+   UI状態
+========================================== */
+
+function uiState(){
+
+  try{
+
+    return (
+      JSON.parse(
+        localStorage.getItem(
+          UI_STATE_KEY
+        ) ||
+        '{}'
+      ) ||
+      {}
+    );
+
+  }catch{
+
+    return {};
+
+  }
+
+}
+
+function saveUIState(
+  next
+){
+
+  try{
+
+    localStorage.setItem(
+      UI_STATE_KEY,
+      JSON.stringify(next)
+    );
+
+  }catch{}
+
+}
+
+/* ==========================================
+   学習欄 開閉
+========================================== */
+
+function setAccordion(
+  toggleId,
+  wrapId,
+  open,
+  persist=true
+){
+
+  const btn =
+    $(toggleId);
+
+  const wrap =
+    $(wrapId);
+
+  if(
+    !btn ||
+    !wrap
+  ){
+    return;
+  }
+
+  btn.setAttribute(
+    'aria-expanded',
+    open
+      ? 'true'
+      : 'false'
+  );
+
+  wrap.classList.toggle(
+    'open',
+    open
+  );
+
+  if(
+    persist
+  ){
+
+    const st =
+      uiState();
+
+    st[toggleId] =
+      open;
+
+    saveUIState(st);
+
+  }
+
+}
+
+function initLearningAccordions(){
+
+  const st =
+    uiState();
+
+  const pairs = [
+
+    [
+      'learningStatsToggle',
+      'learningStatsWrap'
+    ],
+
+    [
+      'learningProgressToggle',
+      'learningProgressWrap'
+    ]
+
+  ];
+
+  for(
+    const [
+      toggleId,
+      wrapId
+    ] of pairs
+  ){
+
+    const open =
+      st[toggleId] === true;
+
+    setAccordion(
+      toggleId,
+      wrapId,
+      open,
+      false
+    );
+
+    const btn =
+      $(toggleId);
+
+    if(
+      btn
+    ){
+
+      btn.onclick =
+        () =>
+          setAccordion(
+            toggleId,
+            wrapId,
+            btn.getAttribute(
+              'aria-expanded'
+            ) !== 'true'
+          );
+
+    }
+
+  }
+
+}
+
+/* ==========================================
+   不的中接近度
+========================================== */
+
+function comboParts(
+  combo
+){
+
+  return String(
+    combo || ''
+  )
+  .split('-')
+  .map(Number)
+  .filter(
+    x =>
+      x >= 1 &&
+      x <= 6
+  )
+  .slice(0,3);
+
+}
+
+function analyzeTicketCloseness(
+  ticketCombo,
+  resultCombo
+){
+
+  const p =
+    comboParts(
+      ticketCombo
+    );
+
+  const r =
+    comboParts(
+      resultCombo
+    );
+
+  if(
+    p.length !== 3 ||
+    r.length !== 3
+  ){
+
+    return {
+
+      score:0,
+
+      type:'unknown',
+
+      label:'分析不可',
+
+      overlap:0,
+
+      positionMatches:0,
+
+      missPositions:[]
+
+    };
+
+  }
+
+  const pos =
+    [0,1,2].filter(
+      i =>
+        p[i] === r[i]
+    );
+
+  const positionMatches =
+    pos.length;
+
+  const overlap =
+    p.filter(
+      x =>
+        r.includes(x)
+    ).length;
+
+  const missPositions =
+    [0,1,2]
+      .filter(
+        i =>
+          p[i] !== r[i]
+      )
+      .map(
+        i => i+1
+      );
+
+  if(
+    ticketCombo ===
+    resultCombo
+  ){
+
+    return {
+
+      score:100,
+
+      type:'exact',
+
+      label:'完全一致',
+
+      overlap:3,
+
+      positionMatches:3,
+
+      missPositions:[]
+
+    };
+
+  }
+
+  if(
+    overlap === 3
+  ){
+
+    return {
+
+      score:90,
+
+      type:'three_wrong_order',
+
+      label:'3艇一致・順番違い',
+
+      overlap,
+
+      positionMatches,
+
+      missPositions
+
+    };
+
+  }
+
+  if(
+    positionMatches === 2
+  ){
+
+    const miss =
+      missPositions[0];
+
+    return {
+
+      score:82,
+
+      type:'two_positions',
+
+      label:
+        `${miss}着だけ外れ`,
+
+      overlap,
+
+      positionMatches,
+
+      missPositions
+
+    };
+
+  }
+
+  if(
+    overlap === 2
+  ){
+
+    return {
+
+      score:65,
+
+      type:'two_boats',
+
+      label:'2艇一致',
+
+      overlap,
+
+      positionMatches,
+
+      missPositions
+
+    };
+
+  }
+
+  if(
+    overlap === 1
+  ){
+
+    return {
+
+      score:35,
+
+      type:'one_boat',
+
+      label:'1艇一致',
+
+      overlap,
+
+      positionMatches,
+
+      missPositions
+
+    };
+
+  }
+
+  return {
+
+    score:0,
+
+    type:'none',
+
+    label:'完全外れ',
+
+    overlap:0,
+
+    positionMatches:0,
+
+    missPositions:[
+      1,
+      2,
+      3
+    ]
+
+  };
+
+}
+
+/* ==========================================
+   予想10点との接近度
+========================================== */
+
+function analyzePredictionCloseness(
+  rec,
+  resultCombo
+){
+
+  const ts =
+    Array.isArray(
+      rec?.tickets
+    )
+      ? rec.tickets
+      : [];
+
+  if(
+    !ts.length ||
+    !resultCombo
+  ){
+
+    return {
+
+      score:0,
+
+      type:'unknown',
+
+      label:
+        '予想10点データなし',
+
+      bestCombo:'',
+
+      bestGroup:'',
+
+      overlap:0,
+
+      positionMatches:0,
+
+      missPositions:[]
+
+    };
+
+  }
+
+  const ranked =
+    ts
+      .map(
+        t => ({
+
+          ...analyzeTicketCloseness(
+            t.combo,
+            resultCombo
+          ),
+
+          combo:
+            t.combo,
+
+          group:
+            t.group || '',
+
+          special:
+            !!t.special
+
+        })
+      )
+      .sort(
+        (a,b) =>
+          b.score -
+          a.score ||
+          b.positionMatches -
+          a.positionMatches ||
+          b.overlap -
+          a.overlap
+      );
+
+  const best =
+    ranked[0];
+
+  return {
+
+    score:
+      best.score,
+
+    type:
+      best.type,
+
+    label:
+      best.label,
+
+    bestCombo:
+      best.combo,
+
+    bestGroup:
+      best.group,
+
+    special:
+      best.special,
+
+    overlap:
+      best.overlap,
+
+    positionMatches:
+      best.positionMatches,
+
+    missPositions:
+      best.missPositions,
+
+    top3:
+      ranked
+        .slice(0,3)
+        .map(
+          x => ({
+
+            combo:x.combo,
+
+            group:x.group,
+
+            score:x.score,
+
+            label:x.label
+
+          })
+        )
+
+  };
+
+}
+
+/* ==========================================
+   過去データ 学習情報補完
+========================================== */
+
+function backfillLearningRecords(){
+
+  const rs =
+    records();
+
+  let changed =
+    false;
+
+  for(
+    const rec of rs
+  ){
+
+    if(
+      !rec.learningSnapshot &&
+      Array.isArray(
+        rec.tickets
+      ) &&
+      rec.tickets.length
+    ){
+
+      rec.learningSnapshot = {
+
+        model:
+          rec.model ||
+          MODEL_NAME,
+
+        savedAt:
+          rec.savedAt ||
+          '',
+
+        rating:
+          num(
+            rec.rating
+          ),
+
+        grade:
+          rec.grade ||
+          'S',
+
+        tickets:
+          rec.tickets.map(
+            t => ({
+
+              combo:
+                t.combo,
+
+              group:
+                t.group || '',
+
+              probability:
+                num(
+                  t.probability
+                ),
+
+              special:
+                !!t.special,
+
+              money:
+                num(
+                  t.money
+                )
+
+            })
+          ),
+
+        predictionMeta:
+          rec.predictionMeta ||
+          null
+
+      };
+
+      changed =
+        true;
+
+    }
+
+    if(
+      rec.done &&
+      rec.result &&
+      !rec.proximity &&
+      Array.isArray(
+        rec.tickets
+      ) &&
+      rec.tickets.length
+    ){
+
+      rec.proximity =
+        analyzePredictionCloseness(
+          rec,
+          rec.result
+        );
+
+      changed =
+        true;
+
+    }
+
+  }
+
+  if(
+    changed
+  ){
+
+    save(rs);
+
+  }
+
+}
+
+function proximityClass(
+  p
+){
+
+  if(
+    !p
+  ){
+    return 'prox-low';
+  }
 
   if(
     p.type === 'exact'
@@ -3373,27 +4037,25 @@ function proximityClass(p){
     return 'prox-exact';
   }
 
-
   if(
-    num(p.score) >= 80
+    p.score >= 80
   ){
     return 'prox-near';
   }
 
-
   if(
-    num(p.score) >= 60
+    p.score >= 60
   ){
     return 'prox-mid';
   }
-
 
   return 'prox-low';
 
 }
 
-
-function groupLabel(g){
+function groupLabel(
+  g
+){
 
   return (
     g === 'main'
@@ -3407,138 +4069,123 @@ function groupLabel(g){
 
 }
 
+/* ==========================================
+   学習集計
+========================================== */
 
-function initAccordions(){
-
-  document
-    .querySelectorAll(
-      '[data-accordion]'
-    )
-    .forEach(
-      btn => {
-
-        const id =
-          btn.dataset.accordion;
-
-
-        const body =
-          $(id);
-
-
-        if(!body){
-          return;
-        }
-
-
-        btn.onclick =
-          () => {
-
-            const open =
-              body.classList
-                .contains('open');
-
-
-            body.classList.toggle(
-              'open',
-              !open
-            );
-
-
-            const icon =
-              btn.querySelector(
-                'span:last-child'
-              );
-
-
-            if(icon){
-
-              icon.textContent =
-                open
-                  ? '▼'
-                  : '▲';
-
-            }
-
-          };
-
-      }
-    );
-
-}
-
-
-function learningSummary(rs){
+function learningSummary(
+  rs
+){
 
   const done =
     rs.filter(
       x => x.done
     );
 
-
   const miss =
     done.filter(
       x => !x.hit
     );
-
 
   const known =
     miss.filter(
       x =>
         x.proximity &&
         x.proximity.type !==
-        'invalid'
+        'unknown'
     );
 
+  const c = {
 
-  const count = {
+    three:0,
 
-    same3:0,
-    onePositionMiss:0,
-    same2:0,
-    same1:0,
-    far:0
+    twoPos:0,
+
+    twoBoats:0,
+
+    one:0,
+
+    none:0,
+
+    thirdOnly:0,
+
+    secondOnly:0,
+
+    firstOnly:0
 
   };
 
+  for(
+    const x of known
+  ){
 
-  for(const x of known){
+    const p =
+      x.proximity;
 
-    const t =
-      x.proximity?.type;
-
-
-    if(t === 'same3'){
-
-      count.same3++;
-
-    }else if(
-      t === 'onePositionMiss'
+    if(
+      p.type ===
+      'three_wrong_order'
     ){
 
-      count.onePositionMiss++;
+      c.three++;
 
     }else if(
-      t === 'same2'
+      p.type ===
+      'two_positions'
     ){
 
-      count.same2++;
+      c.twoPos++;
 
     }else if(
-      t === 'same1'
+      p.type ===
+      'two_boats'
     ){
 
-      count.same1++;
+      c.twoBoats++;
 
     }else if(
-      t === 'far'
+      p.type ===
+      'one_boat'
     ){
 
-      count.far++;
+      c.one++;
+
+    }else if(
+      p.type ===
+      'none'
+    ){
+
+      c.none++;
+
+    }
+
+    if(
+      p.type ===
+        'two_positions' &&
+      p.missPositions?.length === 1
+    ){
+
+      if(
+        p.missPositions[0] === 1
+      ){
+        c.firstOnly++;
+      }
+
+      if(
+        p.missPositions[0] === 2
+      ){
+        c.secondOnly++;
+      }
+
+      if(
+        p.missPositions[0] === 3
+      ){
+        c.thirdOnly++;
+      }
 
     }
 
   }
-
 
   const close =
     known.filter(
@@ -3548,247 +4195,149 @@ function learningSummary(rs){
         ) >= 65
     ).length;
 
-
   const closeRate =
     known.length
-      ? close /
-        known.length *
-        100
+      ? (
+          close /
+          known.length *
+          100
+        )
       : 0;
-
 
   return {
 
     done,
+
     miss,
+
     known,
-    count,
+
+    c,
+
     close,
+
     closeRate
 
   };
 
 }
 
+/* ==========================================
+   不的中接近度表示
+========================================== */
 
-function renderLearningStats(rs){
-
-  const root =
-    $('learningStats');
-
-
-  if(!root){
-    return;
-  }
-
+function renderLearningStats(
+  rs
+){
 
   const L =
     learningSummary(rs);
 
+  const root =
+    $('learningStats');
 
-  if(!L.done.length){
+  if(
+    !root
+  ){
+    return;
+  }
+
+  if(
+    !L.done.length
+  ){
 
     root.innerHTML =
-      `
-      <div class="empty">
-        結果が確定すると、
-        予想10点と実際の結果の接近度を
-        自動分析します。
-      </div>
-      `;
+      '<div class="empty">' +
+      '結果が確定すると、予想10点と実際の結果の接近度を自動分析します。' +
+      '</div>';
 
     return;
 
   }
 
+  root.innerHTML = `
 
-  root.innerHTML =
-    `
     <div class="learning-grid">
 
       <div class="learning-card">
-        <small>
-          分析済み不的中
-        </small>
-        <b>
-          ${L.known.length}R
-        </b>
+        <small>分析済み不的中</small>
+        <b>${L.known.length}R</b>
       </div>
 
       <div class="learning-card">
-        <small>
-          惜しい予想率（65点以上）
-        </small>
-        <b>
-          ${L.closeRate.toFixed(1)}%
-        </b>
+        <small>惜しい予想率（65点以上）</small>
+        <b>${L.closeRate.toFixed(1)}%</b>
       </div>
 
       <div class="learning-card">
-        <small>
-          3艇一致・順番違い
-        </small>
-        <b>
-          ${L.count.same3}R
-        </b>
+        <small>3艇一致・順番違い</small>
+        <b>${L.c.three}R</b>
       </div>
 
       <div class="learning-card">
-        <small>
-          着順1か所だけ外れ
-        </small>
-        <b>
-          ${L.count.onePositionMiss}R
-        </b>
+        <small>着順1か所だけ外れ</small>
+        <b>${L.c.twoPos}R</b>
       </div>
 
       <div class="learning-card">
-        <small>
-          2艇一致
-        </small>
-        <b>
-          ${L.count.same2}R
-        </b>
+        <small>2艇一致</small>
+        <b>${L.c.twoBoats}R</b>
       </div>
 
       <div class="learning-card">
-        <small>
-          完全外れ
-        </small>
-        <b>
-          ${L.count.far}R
-        </b>
+        <small>完全外れ</small>
+        <b>${L.c.none}R</b>
       </div>
 
     </div>
 
     <div class="learning-summary">
 
-      <b>
-        学習データ
-      </b>
+      <b>外し方の内訳</b>
       <br>
 
-      的中・不的中だけでなく、
-      「どこまで正解に近かったか」も保存しています。
+      1着だけ外れ：
+      ${L.c.firstOnly}R
+
+      ／
+
+      2着だけ外れ：
+      ${L.c.secondOnly}R
+
+      ／
+
+      3着だけ外れ：
+      ${L.c.thirdOnly}R
+
       <br>
 
-      会場別100R到達後に、
-      本線・狙い・穴の配分や展開補正を
-      検証する材料として使用します。
+      この偏りを会場別・条件別に蓄積し、
+      100R到達後のロジック調整材料として使います。
 
     </div>
 
     <div class="learning-note">
-      ※少数データだけでAIロジックを
-      自動変更しない設計です。
+      ※少数データだけで予想ロジックを自動変更しない設計です。
     </div>
-    `;
 
-}function calc(rs){
-
-  const done =
-    rs.filter(
-      x => x.done
-    );
-
-  const stake =
-    done.reduce(
-      (s,x) =>
-        s + num(x.stake),
-      0
-    );
-
-  const ret =
-    done.reduce(
-      (s,x) =>
-        s + num(x.returnAmount),
-      0
-    );
-
-  const hits =
-    done.filter(
-      x => x.hit
-    ).length;
-
-  const each =
-    done.map(
-      x => ({
-
-        ...x,
-
-        raceRoi:
-          num(x.stake) > 0
-            ? num(x.returnAmount) /
-              num(x.stake) *
-              100
-            : 0
-
-      })
-    );
-
-  return {
-
-    done,
-
-    races:
-      done.length,
-
-    hits,
-
-    stake,
-
-    ret,
-
-    hitRate:
-      done.length
-        ? hits /
-          done.length *
-          100
-        : 0,
-
-    roi:
-      stake
-        ? ret /
-          stake *
-          100
-        : 0,
-
-    profit:
-      ret - stake,
-
-    maxPayout:
-      each.length
-        ? Math.max(
-            ...each.map(
-              x =>
-                num(
-                  x.returnAmount
-                )
-            )
-          )
-        : 0,
-
-    maxRoi:
-      each.length
-        ? Math.max(
-            ...each.map(
-              x => x.raceRoi
-            )
-          )
-        : 0
-
-  };
+  `;
 
 }
 
+/* ==========================================
+   会場別100R学習進捗
+========================================== */
 
-function renderLearningProgress(rs){
+function renderLearningProgress(
+  rs
+){
 
   const root =
     $('learningProgress');
 
-  if(!root){
+  if(
+    !root
+  ){
     return;
   }
 
@@ -3806,7 +4355,8 @@ function renderLearningProgress(rs){
           const a =
             done.filter(
               x =>
-                x.venue === venue
+                x.venue ===
+                venue
             );
 
           const s =
@@ -3822,7 +4372,7 @@ function renderLearningProgress(rs){
             );
 
           const status =
-            count >= VENUE_TARGET
+            count >= 100
               ? '100R到達'
               : count >= 50
               ? '蓄積中'
@@ -3831,8 +4381,11 @@ function renderLearningProgress(rs){
           return {
 
             venue,
+
             count,
+
             pct,
+
             status,
 
             hitRate:
@@ -3855,12 +4408,13 @@ function renderLearningProgress(rs){
           )
       );
 
-  root.innerHTML =
-    `
+  root.innerHTML = `
+
     <div class="progress-list">
 
       ${rows.map(
         x => `
+
         <div class="progress-item">
 
           <div class="progress-top">
@@ -3906,25 +4460,30 @@ function renderLearningProgress(rs){
           </div>
 
         </div>
-        `
-      ).join('')}
+
+      `).join('')}
 
     </div>
 
     <div class="learning-note">
-      100Rは会場別の初回分析ラインです。
-      100R到達後も200R・300Rと
-      累計データを残します。
+
+      100Rは会場別の初回分析ライン。
+      100R到達後も200R・300Rと継続して累計データを残します。
+
     </div>
-    `;
+
+  `;
 
 }
 
+/* ==========================================
+   S評価予想保存
+========================================== */
 
-function savePrediction(analysis){
+function savePrediction(a){
 
   const r =
-    analysis.race;
+    a.race;
 
   const key =
     raceKey(r);
@@ -3933,15 +4492,13 @@ function savePrediction(analysis){
     records();
 
   const ticketSet =
-    makeTickets(
-      analysis
-    );
+    makeTickets(a);
 
   const tickets =
     allocate(
       ticketSet,
       EVALUATION_STAKE,
-      analysis
+      a
     );
 
   const stake =
@@ -3952,7 +4509,7 @@ function savePrediction(analysis){
     );
 
   const w =
-    analysis.weather;
+    a.weather;
 
   const predictionMeta = {
 
@@ -3975,13 +4532,13 @@ function savePrediction(analysis){
       w.water,
 
     exhibitionRank:
-      analysis.exhibitionRank,
+      a.exhibitionRank,
 
     startRank:
-      analysis.startRank,
+      a.startRank,
 
     courseChanges:
-      analysis.courseChanges.map(
+      a.courseChanges.map(
         x => ({
 
           boat:
@@ -3997,8 +4554,7 @@ function savePrediction(analysis){
       ),
 
     scenario:
-      analysis.scenario
-        .candidates
+      a.scenario.candidates
         .slice(0,6)
         .map(
           x => ({
@@ -4016,24 +4572,20 @@ function savePrediction(analysis){
         ),
 
     attacker:
-      analysis.scenario?.attacker
+      a.scenario?.attacker
         ? {
 
             boat:
-              analysis.scenario
-                .attacker
-                .boat,
+              a.scenario.attacker.boat,
 
             tactic:
-              analysis.scenario
-                .attacker
-                .tactic
+              a.scenario.attacker.tactic
 
           }
         : null,
 
     reasons:
-      analysis.reasons,
+      a.reasons,
 
     specialHole:
       ticketSet.special
@@ -4046,9 +4598,13 @@ function savePrediction(analysis){
         x.key === key
     );
 
-  if(old){
+  if(
+    old
+  ){
 
-    if(!old.done){
+    if(
+      !old.done
+    ){
 
       Object.assign(
         old,
@@ -4059,7 +4615,7 @@ function savePrediction(analysis){
           stake,
 
           rating:
-            analysis.rating,
+            a.rating,
 
           predictionMeta,
 
@@ -4070,7 +4626,7 @@ function savePrediction(analysis){
           model:
             MODEL_NAME,
 
-          learningSnapshot:{
+          learningSnapshot: {
 
             model:
               MODEL_NAME,
@@ -4080,7 +4636,7 @@ function savePrediction(analysis){
                 .toISOString(),
 
             rating:
-              analysis.rating,
+              a.rating,
 
             grade:'S',
 
@@ -4139,7 +4695,8 @@ function savePrediction(analysis){
     venue:
       STADIUMS[
         r.stadium_number
-      ] || '会場',
+      ] ||
+      '会場',
 
     raceNumber:
       r.race_number,
@@ -4147,7 +4704,7 @@ function savePrediction(analysis){
     grade:'S',
 
     rating:
-      analysis.rating,
+      a.rating,
 
     tickets,
 
@@ -4174,7 +4731,7 @@ function savePrediction(analysis){
 
     predictionMeta,
 
-    learningSnapshot:{
+    learningSnapshot: {
 
       model:
         MODEL_NAME,
@@ -4184,7 +4741,7 @@ function savePrediction(analysis){
           .toISOString(),
 
       rating:
-        analysis.rating,
+        a.rating,
 
       grade:'S',
 
@@ -4224,13 +4781,21 @@ function savePrediction(analysis){
 
 }
 
+/*
+==========================================
+ここまでが「後半①」です。
+
+この最後の直後に
+「後半②」をそのまま続けて貼れば完成です。
+==========================================
+*//* ==========================================
+   払戻データ
+========================================== */
 
 function payouts(r){
 
   const t =
-    r?.result
-      ?.payouts
-      ?.trifecta;
+    r?.result?.payouts?.trifecta;
 
   return Array.isArray(t)
     ? t
@@ -4238,6 +4803,9 @@ function payouts(r){
 
 }
 
+/* ==========================================
+   結果確定処理
+========================================== */
 
 function settle(races){
 
@@ -4247,9 +4815,13 @@ function settle(races){
   let changed =
     false;
 
-  for(const rec of rs){
+  for(
+    const rec of rs
+  ){
 
-    if(rec.done){
+    if(
+      rec.done
+    ){
       continue;
     }
 
@@ -4260,32 +4832,37 @@ function settle(races){
           rec.key
       );
 
-    if(!r){
+    if(
+      !r
+    ){
       continue;
     }
 
     const p =
       payouts(r);
 
-    if(!p.length){
+    if(
+      !p.length
+    ){
       continue;
     }
 
-    const winner =
+    const w =
       p[0];
 
     const combo =
       String(
-        winner.combination ||
-        ''
+        w.combination || ''
       );
 
     const pay =
       num(
-        winner.amount
+        w.amount
       );
 
-    if(!combo){
+    if(
+      !combo
+    ){
       continue;
     }
 
@@ -4303,25 +4880,23 @@ function settle(races){
         ? pay / 100
         : 0;
 
-    const hitTicket =
+    const ht =
       rec.tickets?.find(
         t =>
           t.combo === combo
       );
 
     rec.hit =
-      !!hitTicket;
+      !!ht;
 
     rec.hitGroup =
-      hitTicket?.group ||
-      '';
+      ht?.group || '';
 
     rec.returnAmount =
-      hitTicket
+      ht
         ? Math.round(
-            pay /
-            100 *
-            hitTicket.money
+            pay / 100 *
+            ht.money
           )
         : 0;
 
@@ -4340,7 +4915,9 @@ function settle(races){
 
   }
 
-  if(changed){
+  if(
+    changed
+  ){
 
     save(rs);
 
@@ -4348,19 +4925,23 @@ function settle(races){
 
 }
 
+/* ==========================================
+   買い目行
+========================================== */
 
 function ticketRows(
   arr,
-  group
+  g
 ){
 
   return arr
     .filter(
       x =>
-        x.group === group
+        x.group === g
     )
     .map(
       x => `
+
         <div class="ticket">
 
           <span class="combo">
@@ -4374,35 +4955,42 @@ function ticketRows(
 
           <div class="ticket-sub">
 
-            AI推定
+            展開補正AI推定
             ${(x.probability*100).toFixed(1)}%
 
             ${
               x.special
-                ? '<br>展開予測連動★'
+                ? ' ／ 展開予測連動の特殊穴'
                 : ''
             }
 
           </div>
 
         </div>
+
       `
     )
     .join('');
 
 }
 
+/* ==========================================
+   展開予測HTML
+========================================== */
 
-function scenarioHTML(analysis){
+function scenarioHTML(a){
 
   const s =
-    analysis.scenario;
+    a.scenario;
 
-  if(!s?.top){
+  if(
+    !s?.top
+  ){
     return '';
   }
 
   return `
+
     <div class="scenario-box">
 
       <div class="scenario-title">
@@ -4428,6 +5016,7 @@ function scenarioHTML(analysis){
           .slice(1,5)
           .map(
             x => `
+
               <div class="scenario-row">
 
                 <span>
@@ -4440,6 +5029,7 @@ function scenarioHTML(analysis){
                 </b>
 
               </div>
+
             `
           )
           .join('')}
@@ -4448,52 +5038,51 @@ function scenarioHTML(analysis){
 
       <div class="scenario-note">
 
-        展示ST・展示タイム・選手能力・
-        モーター・進入コース・風速・波高から
-        1マークの展開を推定しています。
+        展示ST・展示タイム・選手能力・モーター・進入コース・
+        風速・波高から1マークの展開を推定しています。
 
       </div>
 
     </div>
+
   `;
 
 }
 
+/* ==========================================
+   S評価レースHTML
+========================================== */
 
 function raceHTML(
-  analysis,
-  index
+  a,
+  i
 ){
 
   const r =
-    analysis.race;
+    a.race;
 
-  const ticketSet =
-    makeTickets(
-      analysis
-    );
-
-  const tickets =
+  const t =
     allocate(
-      ticketSet,
+      makeTickets(a),
       EVALUATION_STAKE,
-      analysis
+      a
     );
 
   const id =
-    'race_detail_' + index;
+    'r' + i;
 
   const total =
-    tickets.reduce(
+    t.reduce(
       (s,x) =>
         s + x.money,
       0
     );
 
   const w =
-    analysis.weather;
+    a.weather;
 
   return `
+
     <article class="race">
 
       <div class="race-head">
@@ -4505,7 +5094,8 @@ function raceHTML(
             ${
               STADIUMS[
                 r.stadium_number
-              ] || '会場'
+              ] ||
+              '会場'
             }
 
             ${r.race_number}R
@@ -4531,7 +5121,6 @@ function raceHTML(
 
       </div>
 
-
       <div class="ai-box">
 
         <div class="ai-top">
@@ -4541,18 +5130,18 @@ function raceHTML(
           </b>
 
           <span class="ai-score">
-            ${analysis.rating}
+            ${a.rating}
           </span>
 
         </div>
 
-
         <div class="candidate-grid">
 
-          ${analysis.boats
+          ${a.boats
             .slice(0,3)
             .map(
               (x,j) => `
+
                 <div class="candidate">
 
                   <small>
@@ -4564,86 +5153,62 @@ function raceHTML(
                   </b>
 
                 </div>
+
               `
             )
             .join('')}
 
         </div>
 
-
         <div class="weather-grid">
 
           <div class="weather-item">
-
             <small>天候</small>
-
             <b>
-              ${
-                WEATHER_NAMES[
-                  w.weather
-                ] || '-'
-              }
+              ${WEATHER_NAMES[w.weather] || '-'}
             </b>
-
           </div>
 
           <div class="weather-item">
-
             <small>風速</small>
-
             <b>
               ${w.windSpeed}m
             </b>
-
           </div>
 
           <div class="weather-item">
-
             <small>波高</small>
-
             <b>
               ${w.wave}cm
             </b>
-
           </div>
 
           <div class="weather-item">
-
             <small>気温</small>
-
             <b>
               ${w.air}℃
             </b>
-
           </div>
 
           <div class="weather-item">
-
             <small>水温</small>
-
             <b>
               ${w.water}℃
             </b>
-
           </div>
 
           <div class="weather-item">
-
             <small>風向番号</small>
-
             <b>
               ${w.windDirection || '-'}
             </b>
-
           </div>
 
         </div>
 
-
-        ${scenarioHTML(analysis)}
+        ${scenarioHTML(a)}
 
       </div>
-
 
       <button
         class="gold-btn"
@@ -4651,7 +5216,6 @@ function raceHTML(
       >
         買い目を見る ▼
       </button>
-
 
       <div
         class="detail"
@@ -4663,16 +5227,15 @@ function raceHTML(
           <div class="bet-col main-col">
 
             <div class="bet-head main">
-              🎯 本線 3点
+              本線 3点
             </div>
 
             ${ticketRows(
-              tickets,
+              t,
               'main'
             )}
 
           </div>
-
 
           <div class="bet-col cover-col">
 
@@ -4681,28 +5244,26 @@ function raceHTML(
             </div>
 
             ${ticketRows(
-              tickets,
+              t,
               'cover'
             )}
 
           </div>
 
-
           <div class="bet-col hole-col">
 
             <div class="bet-head hole">
-              ★ 穴 3点
+              穴 3点
             </div>
 
             ${ticketRows(
-              tickets,
+              t,
               'hole'
             )}
 
           </div>
 
         </div>
-
 
         <div class="total">
 
@@ -4716,7 +5277,6 @@ function raceHTML(
 
         </div>
 
-
         <div class="reason">
 
           <b>
@@ -4725,14 +5285,14 @@ function raceHTML(
 
           <br>
 
-          ${analysis.reasons
+          ${a.reasons
             .map(
-              x => '・' + x
+              x =>
+                '・' + x
             )
             .join('<br>')}
 
         </div>
-
 
         <div class="logic">
 
@@ -4743,24 +5303,33 @@ function raceHTML(
           <br><br>
 
           本線3点はAI推定確率上位、
-          狙い4点は展開・攻め役・
-          人気本命からのズレを加味して
-          期待値寄りに選定します。
 
-          <br><br>
+          狙い4点は
+          展開・攻め役・人気本命からのズレを加味して
+          期待値寄りに選定、
 
-          穴3点は高配当展開を重視し、
+          穴3点は高配当展開を重視します。
+
+          3連単120通りへ展開補正を反映し、
           ★は攻め役連動の特殊穴です。
+
+          水面が荒れている・進入変化が大きい・
+          展開予測が分散している場合は
+          S評価から外して見送ります。
 
         </div>
 
       </div>
 
     </article>
+
   `;
 
 }
 
+/* ==========================================
+   S評価表示
+========================================== */
 
 function display(){
 
@@ -4772,27 +5341,28 @@ function display(){
 
   $('results').innerHTML =
     s.length
-
       ? s
           .map(
             raceHTML
           )
           .join('')
-
       : `
+
         <div class="empty">
 
-          現在表示できる
-          S評価レースはありません。
+          現在表示できるS評価レースはありません。
 
           <br>
 
           <small>
-            展示・水面・展開条件が
-            整うまでAIは見送ります。
+
+            展示・水面・展開条件が整うまで
+            AIは見送ります。
+
           </small>
 
         </div>
+
       `;
 
   document
@@ -4800,26 +5370,26 @@ function display(){
       '[data-detail]'
     )
     .forEach(
-      btn => {
+      b => {
 
-        btn.onclick =
+        b.onclick =
           () => {
 
-            const detail =
+            const d =
               $(
-                btn.dataset.detail
+                b.dataset.detail
               );
 
             const open =
-              detail.style.display ===
+              d.style.display ===
               'block';
 
-            detail.style.display =
+            d.style.display =
               open
                 ? 'none'
                 : 'block';
 
-            btn.textContent =
+            b.textContent =
               open
                 ? '買い目を見る ▼'
                 : '買い目を閉じる ▲';
@@ -4831,8 +5401,13 @@ function display(){
 
 }
 
+/* ==========================================
+   データ変化判定
+========================================== */
 
-function dataSignature(races){
+function dataSignature(
+  races
+){
 
   return JSON.stringify(
 
@@ -4899,14 +5474,21 @@ function dataSignature(races){
 
 }
 
+/* ==========================================
+   レース解析
+========================================== */
 
-function analyzeRaces(races){
+function analyzeRaces(
+  races
+){
 
   settle(races);
 
   const arr = [];
 
-  for(const r of races){
+  for(
+    const r of races
+  ){
 
     if(
       !upcoming(r) ||
@@ -4915,20 +5497,16 @@ function analyzeRaces(races){
       continue;
     }
 
-    const analysis =
+    const a =
       evaluate(r);
 
     if(
-      analysis?.grade === 'S'
+      a?.grade === 'S'
     ){
 
-      arr.push(
-        analysis
-      );
+      arr.push(a);
 
-      savePrediction(
-        analysis
-      );
+      savePrediction(a);
 
     }
 
@@ -4951,12 +5529,17 @@ function analyzeRaces(races){
 
 }
 
+/* ==========================================
+   自動更新
+========================================== */
 
 async function autoRefresh(
   force=false
 ){
 
-  if(autoUpdateBusy){
+  if(
+    autoUpdateBusy
+  ){
     return;
   }
 
@@ -4984,77 +5567,54 @@ async function autoRefresh(
     const races =
       flatten(data);
 
-    const signature =
-      dataSignature(
-        races
+    if(
+      !races.length
+    ){
+
+      throw new Error(
+        'レースデータが0件です'
       );
+
+    }
+
+    const sig =
+      dataSignature(races);
 
     settle(races);
 
     if(
       force ||
-      signature !==
+      sig !==
       lastDataSignature
     ){
 
       lastDataSignature =
-        signature;
+        sig;
 
       const arr =
         analyzeRaces(
           races
         );
 
-      const previewCount =
-        races.filter(
-          previewReady
-        ).length;
-
       st.innerHTML =
-        `
-        ✅ 自動更新完了
-        <br>
 
-        取得レース：
-        ${races.length}R
+        `自動更新完了　🔥 S評価：${arr.length}レース` +
 
-        ／
+        `<br>` +
 
-        展示分析可能：
-        ${previewCount}R
-
-        <br>
-
-        🔥 S評価：
-        ${arr.length}レース
-
-        <br>
-
-        展示・水面・進入・展開を
-        Ver.3 AIが自動分析しました。
-        `;
+        `展示・水面・進入・展開をVer.3 AIが自動分析しました。`;
 
     }else{
 
       renderStats();
 
       st.innerHTML =
-        `
-        ✅ 自動確認済み
-        <br>
 
-        取得レース：
-        ${races.length}R
+        `自動確認済み　🔥 S評価：${analyses.length}レース` +
 
-        <br>
+        `<br>` +
 
-        🔥 S評価：
-        ${analyses.length}レース
-
-        <br>
-
-        最新データに変化はありません。
-        `;
+        `最新データに変化はありません。`;
 
     }
 
@@ -5062,8 +5622,26 @@ async function autoRefresh(
 
     console.error(e);
 
-    st.textContent =
-      '自動更新に失敗しました。通信が戻ると次回の自動更新で再試行します。';
+    const msg =
+      e?.name ===
+      'AbortError'
+        ? '通信タイムアウト'
+        : (
+            e?.message ||
+            '通信エラー'
+          );
+
+    st.innerHTML =
+
+      `⚠️ 自動更新に失敗しました。` +
+
+      `<br>` +
+
+      `原因：${msg}` +
+
+      `<br>` +
+
+      `既存の成績・学習データは保持したまま、1分後に再試行します。`;
 
   }finally{
 
@@ -5074,19 +5652,24 @@ async function autoRefresh(
 
 }
 
+/* ==========================================
+   成績期間
+========================================== */
 
 function filterRecords(){
 
   const all =
     records();
 
-  if(period === 'all'){
-
+  if(
+    period === 'all'
+  ){
     return all;
-
   }
 
-  if(period === 'day'){
+  if(
+    period === 'day'
+  ){
 
     return all.filter(
       x =>
@@ -5096,20 +5679,144 @@ function filterRecords(){
 
   }
 
-  const from =
+  const f =
     $('fromDate').value;
 
-  const to =
+  const t =
     $('toDate').value;
 
   return all.filter(
     x =>
-      (!from || x.date >= from) &&
-      (!to || x.date <= to)
+      (
+        !f ||
+        x.date >= f
+      ) &&
+      (
+        !t ||
+        x.date <= t
+      )
   );
 
 }
 
+/* ==========================================
+   成績計算
+========================================== */
+
+function calc(rs){
+
+  const done =
+    rs.filter(
+      x => x.done
+    );
+
+  const stake =
+    done.reduce(
+      (s,x) =>
+        s +
+        num(
+          x.stake
+        ),
+      0
+    );
+
+  const ret =
+    done.reduce(
+      (s,x) =>
+        s +
+        num(
+          x.returnAmount
+        ),
+      0
+    );
+
+  const hits =
+    done.filter(
+      x => x.hit
+    ).length;
+
+  const each =
+    done.map(
+      x => ({
+
+        ...x,
+
+        raceRoi:
+          num(
+            x.stake
+          ) > 0
+            ? num(
+                x.returnAmount
+              ) /
+              num(
+                x.stake
+              ) *
+              100
+            : 0
+
+      })
+    );
+
+  return {
+
+    done,
+
+    races:
+      done.length,
+
+    hits,
+
+    stake,
+
+    ret,
+
+    hitRate:
+      done.length
+        ? hits /
+          done.length *
+          100
+        : 0,
+
+    roi:
+      stake
+        ? ret /
+          stake *
+          100
+        : 0,
+
+    profit:
+      ret -
+      stake,
+
+    maxPayout:
+      each.length
+        ? Math.max(
+            ...each.map(
+              x =>
+                num(
+                  x.returnAmount
+                )
+            )
+          )
+        : 0,
+
+    maxRoi:
+      each.length
+        ? Math.max(
+            ...each.map(
+              x =>
+                x.raceRoi
+            )
+          )
+        : 0
+
+  };
+
+}
+
+/* ==========================================
+   成績表示
+========================================== */
 
 function renderStats(){
 
@@ -5119,13 +5826,13 @@ function renderStats(){
   const s =
     calc(rs);
 
-  const profitClass =
+  const pc =
     s.profit >= 0
       ? 'green'
       : 'red';
 
-  $('stats').innerHTML =
-    `
+  $('stats').innerHTML = `
+
     <div class="stats-grid">
 
       <div class="stat">
@@ -5144,53 +5851,53 @@ function renderStats(){
       </div>
 
       <div class="stat">
-
         <small>回収率</small>
-
-        <b
-          class="${
-            s.roi >= 100
-              ? 'green'
-              : ''
-          }"
-        >
+        <b class="${
+          s.roi >= 100
+            ? 'green'
+            : ''
+        }">
           ${s.roi.toFixed(1)}%
         </b>
-
       </div>
 
       <div class="stat">
-        <small>検証投資額</small>
-        <b>${s.stake.toLocaleString()}円</b>
+        <small>投資額</small>
+        <b>
+          ${s.stake.toLocaleString()}円
+        </b>
       </div>
 
       <div class="stat">
         <small>払戻金</small>
-        <b>${s.ret.toLocaleString()}円</b>
+        <b>
+          ${s.ret.toLocaleString()}円
+        </b>
       </div>
 
       <div class="stat">
         <small>最高払戻</small>
-        <b>${s.maxPayout.toLocaleString()}円</b>
+        <b>
+          ${s.maxPayout.toLocaleString()}円
+        </b>
       </div>
 
       <div class="stat">
         <small>最高回収率</small>
-        <b>${s.maxRoi.toFixed(1)}%</b>
+        <b>
+          ${s.maxRoi.toFixed(1)}%
+        </b>
       </div>
 
     </div>
 
-
     <div class="profit">
 
       <span>
-        検証収支
+        収支
       </span>
 
-      <strong
-        class="${profitClass}"
-      >
+      <strong class="${pc}">
 
         ${
           s.profit >= 0
@@ -5203,7 +5910,8 @@ function renderStats(){
       </strong>
 
     </div>
-    `;
+
+  `;
 
   renderLearningStats(rs);
 
@@ -5215,6 +5923,9 @@ function renderStats(){
 
 }
 
+/* ==========================================
+   AI展開文字
+========================================== */
 
 function topScenarioText(x){
 
@@ -5229,8 +5940,13 @@ function topScenarioText(x){
 
 }
 
+/* ==========================================
+   履歴表示
+========================================== */
 
-function renderHistory(rs){
+function renderHistory(
+  rs
+){
 
   const allDone =
     rs
@@ -5254,14 +5970,12 @@ function renderHistory(rs){
           )
       );
 
-  if(!allDone.length){
+  if(
+    !allDone.length
+  ){
 
     $('history').innerHTML =
-      `
-      <div class="empty">
-        確定済みレースはありません。
-      </div>
-      `;
+      '<div class="empty">確定済みレースはありません。</div>';
 
     return;
 
@@ -5294,7 +6008,8 @@ function renderHistory(rs){
     venueBase;
 
   if(
-    historyResult === 'hit'
+    historyResult ===
+    'hit'
   ){
 
     shown =
@@ -5305,7 +6020,8 @@ function renderHistory(rs){
   }
 
   if(
-    historyResult === 'miss'
+    historyResult ===
+    'miss'
   ){
 
     shown =
@@ -5315,8 +6031,8 @@ function renderHistory(rs){
 
   }
 
-  const venueTabs =
-    `
+  const venueTabs = `
+
     <div class="venue-tabs">
 
       <button
@@ -5332,26 +6048,29 @@ function renderHistory(rs){
 
       ${venueNames
         .map(
-          venue => `
+          v => `
+
             <button
               class="venue-chip ${
-                historyVenue === venue
+                historyVenue === v
                   ? 'active'
                   : ''
               }"
-              data-hvenue="${venue}"
+              data-hvenue="${v}"
             >
-              ${venue}
+              ${v}
             </button>
+
           `
         )
         .join('')}
 
     </div>
-    `;
 
-  const resultTabs =
-    `
+  `;
+
+  const resultTabs = `
+
     <div class="result-tabs">
 
       <button
@@ -5362,8 +6081,7 @@ function renderHistory(rs){
         }"
         data-hresult="all"
       >
-        すべて
-        (${venueBase.length}R)
+        すべて (${venueBase.length}R)
       </button>
 
       <button
@@ -5374,8 +6092,7 @@ function renderHistory(rs){
         }"
         data-hresult="hit"
       >
-        ● 的中のみ
-        (${hits}R)
+        ● 的中のみ (${hits}R)
       </button>
 
       <button
@@ -5386,17 +6103,17 @@ function renderHistory(rs){
         }"
         data-hresult="miss"
       >
-        ● 不的中のみ
-        (${misses}R)
+        ● 不的中のみ (${misses}R)
       </button>
 
     </div>
-    `;
+
+  `;
 
   const body =
     shown.length
-
       ? `
+
         <div class="history-scroll">
 
           <table class="history-table">
@@ -5423,171 +6140,167 @@ function renderHistory(rs){
 
             <tbody>
 
-              ${shown.map(
-                x => {
+              ${shown
+                .map(
+                  x => {
 
-                  const roi =
-                    num(x.stake) > 0
-                      ? num(
-                          x.returnAmount
-                        ) /
-                        num(
-                          x.stake
-                        ) *
-                        100
-                      : 0;
-
-                  const odds =
-                    num(
-                      x.resultOdds,
+                    const rr =
                       num(
-                        x.payout
-                      ) / 100
-                    );
+                        x.stake
+                      ) > 0
+                        ? num(
+                            x.returnAmount
+                          ) /
+                          num(
+                            x.stake
+                          ) *
+                          100
+                        : 0;
 
-                  const group =
-                    x.hitGroup === 'main'
-                      ? '本線'
-                      : x.hitGroup === 'cover'
-                      ? '狙い'
-                      : x.hitGroup === 'hole'
-                      ? '穴'
-                      : '-';
+                    const od =
+                      num(
+                        x.resultOdds,
+                        num(
+                          x.payout
+                        ) /
+                        100
+                      );
 
-                  return `
-                    <tr>
+                    const group =
+                      x.hitGroup === 'main'
+                        ? '本線'
+                        : x.hitGroup === 'cover'
+                        ? '狙い'
+                        : x.hitGroup === 'hole'
+                        ? '穴'
+                        : '-';
 
-                      <td>
-                        ${x.date?.slice(5) || '-'}
-                      </td>
+                    return `
 
-                      <td>
-                        ${x.venue || '-'}
-                      </td>
+                      <tr>
 
-                      <td>
-                        ${x.raceNumber}R
-                      </td>
+                        <td>
+                          ${x.date?.slice(5) || '-'}
+                        </td>
 
-                      <td class="scenario-mini">
-                        ${topScenarioText(x)}
-                      </td>
+                        <td>
+                          ${x.venue || '-'}
+                        </td>
 
-                      <td>
-                        <b>
-                          ${x.result || '-'}
-                        </b>
-                      </td>
+                        <td>
+                          ${x.raceNumber}R
+                        </td>
 
-                      <td class="odds">
+                        <td class="scenario-mini">
+                          ${topScenarioText(x)}
+                        </td>
 
-                        ${
-                          odds
-                            ? odds.toFixed(1)+'倍'
-                            : '-'
-                        }
+                        <td>
+                          <b>
+                            ${x.result || '-'}
+                          </b>
+                        </td>
 
-                      </td>
+                        <td class="odds">
 
-                      <td
-                        class="${
+                          ${
+                            od
+                              ? od.toFixed(1) +
+                                '倍'
+                              : '-'
+                          }
+
+                        </td>
+
+                        <td class="${
                           x.hit
                             ? 'hit'
                             : 'miss'
-                        }"
-                      >
+                        }">
 
-                        ${
-                          x.hit
-                            ? '◎ 的中'
-                            : '× 不的中'
-                        }
-
-                      </td>
-
-                      <td
-                        class="
-                          proximity
                           ${
-                            proximityClass(
-                              x.proximity
-                            )
+                            x.hit
+                              ? '◎ 的中'
+                              : '× 不的中'
                           }
-                        "
-                      >
 
-                        ${
-                          x.proximity
-                            ?.label ||
-                          '-'
-                        }
+                        </td>
 
-                        ${
-                          x.proximity?.combo
+                        <td class="proximity ${proximityClass(x.proximity)}">
 
-                            ? `
-                              <br>
-                              <small>
+                          ${x.proximity?.label || '-'}
 
-                                ${x.proximity.combo}
+                          ${
+                            x.proximity?.bestCombo
+                              ? `
 
-                                /
+                                <br>
 
-                                ${
-                                  groupLabel(
-                                    x.proximity.group
-                                  )
-                                }
+                                <small>
 
-                              </small>
-                            `
+                                  ${x.proximity.bestCombo}
 
-                            : ''
-                        }
+                                  /
 
-                      </td>
+                                  ${groupLabel(
+                                    x.proximity.bestGroup
+                                  )}
 
-                      <td>
-                        ${group}
-                      </td>
+                                </small>
 
-                      <td>
-                        ${num(
-                          x.returnAmount
-                        ).toLocaleString()}円
-                      </td>
+                              `
+                              : ''
+                          }
 
-                      <td
-                        class="${
-                          roi >= 100
+                        </td>
+
+                        <td>
+                          ${group}
+                        </td>
+
+                        <td>
+                          ${num(
+                            x.returnAmount
+                          ).toLocaleString()}円
+                        </td>
+
+                        <td class="${
+                          rr >= 100
                             ? 'roi'
                             : ''
-                        }"
-                      >
-                        ${roi.toFixed(1)}%
-                      </td>
+                        }">
 
-                    </tr>
-                  `;
+                          ${rr.toFixed(1)}%
 
-                }
-              ).join('')}
+                        </td>
+
+                      </tr>
+
+                    `;
+
+                  }
+                )
+                .join('')}
 
             </tbody>
 
           </table>
 
         </div>
-      `
 
+      `
       : `
+
         <div class="empty">
+
           この条件の確定レースはありません。
+
         </div>
+
       `;
 
-  $('history').innerHTML =
-    `
+  $('history').innerHTML = `
+
     <div class="history-controls">
 
       ${venueTabs}
@@ -5619,23 +6332,24 @@ function renderHistory(rs){
     <div class="notice">
 
       会場タブは横にスライドできます。
-      オッズは3連単確定払戻額÷100です。
+      オッズ表示は3連単確定払戻額÷100です。
 
     </div>
-    `;
+
+  `;
 
   document
     .querySelectorAll(
       '[data-hvenue]'
     )
     .forEach(
-      btn => {
+      b => {
 
-        btn.onclick =
+        b.onclick =
           () => {
 
             historyVenue =
-              btn.dataset.hvenue;
+              b.dataset.hvenue;
 
             historyResult =
               'all';
@@ -5652,13 +6366,13 @@ function renderHistory(rs){
       '[data-hresult]'
     )
     .forEach(
-      btn => {
+      b => {
 
-        btn.onclick =
+        b.onclick =
           () => {
 
             historyResult =
-              btn.dataset.hresult;
+              b.dataset.hresult;
 
             renderHistory(rs);
 
@@ -5669,70 +6383,77 @@ function renderHistory(rs){
 
 }
 
+/* ==========================================
+   会場別成績
+========================================== */
 
-function renderVenue(rs){
+function renderVenue(
+  rs
+){
 
   const done =
     rs.filter(
       x => x.done
     );
 
-  const map =
+  const m =
     new Map();
 
-  for(const x of done){
+  for(
+    const x of done
+  ){
 
     if(
-      !map.has(
+      !m.has(
         x.venue
       )
     ){
 
-      map.set(
+      m.set(
         x.venue,
         []
       );
 
     }
 
-    map
-      .get(x.venue)
-      .push(x);
+    m.get(
+      x.venue
+    ).push(x);
 
   }
 
-  if(!map.size){
+  if(
+    !m.size
+  ){
 
     $('venueStats').innerHTML =
-      `
-      <div class="empty">
-        会場別成績はまだありません。
-      </div>
-      `;
+      '<div class="empty">会場別成績はまだありません。</div>';
 
     return;
 
   }
 
   const rows =
-    [...map.entries()]
-      .map(
-        ([venue,a]) => ({
+    [
+      ...m.entries()
+    ]
+    .map(
+      ([venue,a]) => ({
 
-          venue,
+        venue,
 
-          ...calc(a)
+        ...calc(a)
 
-        })
-      )
-      .sort(
-        (a,b) =>
-          b.roi -
-          a.roi
-      );
+      })
+    )
+    .sort(
+      (a,b) =>
+        b.roi -
+        a.roi
+    );
 
-  $('venueStats').innerHTML =
-    `
+  $('venueStats').innerHTML = `
+
     <div class="venue-row">
 
       <b>会場</b>
@@ -5743,54 +6464,60 @@ function renderVenue(rs){
 
     </div>
 
-    ${rows.map(
-      x => `
-        <div class="venue-row">
+    ${rows
+      .map(
+        x => `
 
-          <span>
-            ${x.venue}
-          </span>
+          <div class="venue-row">
 
-          <span>
-            ${x.races}
-          </span>
+            <span>
+              ${x.venue}
+            </span>
 
-          <span>
-            ${x.hitRate.toFixed(1)}%
-          </span>
+            <span>
+              ${x.races}
+            </span>
 
-          <span
-            class="${
+            <span>
+              ${x.hitRate.toFixed(1)}%
+            </span>
+
+            <span class="${
               x.roi >= 100
                 ? 'green'
                 : ''
-            }"
-          >
-            ${x.roi.toFixed(1)}%
-          </span>
+            }">
+              ${x.roi.toFixed(1)}%
+            </span>
 
-          <span
-            class="${
+            <span class="${
               x.races >= 100
                 ? 'learn-ready'
                 : x.races >= 50
                 ? 'learn-mid'
                 : 'learn-low'
-            }"
-          >
-            ${Math.min(
-              x.races,
-              100
-            )}/100R
-          </span>
+            }">
 
-        </div>
-      `
-    ).join('')}
-    `;
+              ${Math.min(
+                x.races,
+                100
+              )}/100R
+
+            </span>
+
+          </div>
+
+        `
+      )
+      .join('')}
+
+  `;
 
 }
 
+/* ==========================================
+   成績画面表示
+========================================== */
 
 function showStats(
   openHistory=false,
@@ -5798,17 +6525,17 @@ function showStats(
 ){
 
   $('statsSection')
-    .style
-    .display =
+    .style.display =
       'block';
 
   renderStats();
 
-  if(openHistory){
+  if(
+    openHistory
+  ){
 
     $('historyWrap')
-      .style
-      .display =
+      .style.display =
         'block';
 
     $('historyToggle')
@@ -5817,11 +6544,12 @@ function showStats(
 
   }
 
-  if(openVenue){
+  if(
+    openVenue
+  ){
 
     $('venueWrap')
-      .style
-      .display =
+      .style.display =
         'block';
 
     $('venueToggle')
@@ -5832,24 +6560,19 @@ function showStats(
 
   $('statsSection')
     .scrollIntoView({
-
       behavior:'smooth',
-
       block:'start'
-
     });
 
 }
 
-
-/* =========================
-   操作ボタン
-========================= */
+/* ==========================================
+   ボタン処理
+========================================== */
 
 $('statsOpen').onclick =
   () =>
     showStats();
-
 
 $('historyOpen').onclick =
   () =>
@@ -5858,7 +6581,6 @@ $('historyOpen').onclick =
       false
     );
 
-
 $('venueOpen').onclick =
   () =>
     showStats(
@@ -5866,82 +6588,75 @@ $('venueOpen').onclick =
       true
     );
 
-
 $('qStats').onclick =
   () =>
     showStats();
-
 
 $('qTop').onclick =
   () =>
     $('top')
       .scrollIntoView({
-
         behavior:'smooth'
-
       });
-
 
 $('historyToggle').onclick =
   () => {
 
-    const wrap =
+    const w =
       $('historyWrap');
 
-    const open =
-      wrap.style.display ===
+    const o =
+      w.style.display ===
       'block';
 
-    wrap.style.display =
-      open
+    w.style.display =
+      o
         ? 'none'
         : 'block';
 
     $('historyToggle')
       .textContent =
-        open
+        o
           ? '一覧を表示'
           : '一覧を隠す';
 
   };
 
-
 $('venueToggle').onclick =
   () => {
 
-    const wrap =
+    const w =
       $('venueWrap');
 
-    const open =
-      wrap.style.display ===
+    const o =
+      w.style.display ===
       'block';
 
-    wrap.style.display =
-      open
+    w.style.display =
+      o
         ? 'none'
         : 'block';
 
     $('venueToggle')
       .textContent =
-        open
+        o
           ? '会場別成績を表示'
           : '会場別成績を隠す';
 
   };
-
 
 document
   .querySelectorAll(
     '.tab'
   )
   .forEach(
-    btn => {
+    b => {
 
-      btn.onclick =
+      b.onclick =
         () => {
 
           period =
-            btn.dataset.period;
+            b.dataset.period;
 
           document
             .querySelectorAll(
@@ -5951,13 +6666,12 @@ document
               x =>
                 x.classList.toggle(
                   'active',
-                  x === btn
+                  x === b
                 )
             );
 
           $('rangeBox')
-            .classList
-            .toggle(
+            .classList.toggle(
               'show',
               period === 'custom'
             );
@@ -5969,34 +6683,34 @@ document
     }
   );
 
-
 $('fromDate').onchange =
   renderStats;
-
 
 $('toDate').onchange =
   renderStats;
 
-
-/* =========================
-   起動処理
-========================= */
+/* ==========================================
+   起動
+========================================== */
 
 backfillLearningRecords();
 
-initAccordions();
+initLearningAccordions();
 
 renderStats();
 
+/* 最初に自動取得 */
+
 autoRefresh(true);
 
-
-/* 60秒ごとに自動更新 */
+/* 1分ごとに自動更新 */
 
 setInterval(
   () => {
 
-    if(!document.hidden){
+    if(
+      !document.hidden
+    ){
 
       autoRefresh(false);
 
@@ -6006,8 +6720,7 @@ setInterval(
   60000
 );
 
-
-/* アプリに戻った時も更新 */
+/* アプリに戻った時 */
 
 window.addEventListener(
   'focus',
@@ -6015,12 +6728,15 @@ window.addEventListener(
     autoRefresh(true)
 );
 
+/* タブ復帰 */
 
 document.addEventListener(
   'visibilitychange',
   () => {
 
-    if(!document.hidden){
+    if(
+      !document.hidden
+    ){
 
       autoRefresh(true);
 
