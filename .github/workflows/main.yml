@@ -4,8 +4,8 @@ on:
   workflow_dispatch:
 
   schedule:
-    # 10分ごとに自動実行
-    - cron: "*/10 * * * *"
+    # 5分ごとに自動実行
+    - cron: "*/5 * * * *"
 
 permissions:
   contents: write
