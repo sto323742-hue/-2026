@@ -1,49 +1,1163 @@
-name: BOATRACE LINE Notification
+name: BOATRACE AI LINE Notification
 
 on:
   workflow_dispatch:
+
   schedule:
+    # 10分ごとに自動実行
     - cron: "*/10 * * * *"
 
+permissions:
+  contents: write
+
+concurrency:
+  group: boatrace-ai
+  cancel-in-progress: false
+
 jobs:
-  send-line:
+  boatrace-ai:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Send BOATRACE AI notification
+      # =========================================================
+      # 1. リポジトリ取得
+      # =========================================================
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # =========================================================
+      # 2. Python
+      # =========================================================
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      # =========================================================
+      # 3. 必要ライブラリ
+      # =========================================================
+      - name: Install packages
+        run: |
+          python -m pip install --upgrade pip
+          pip install requests beautifulsoup4 lxml
+
+      # =========================================================
+      # 4. BOATRACE AI本体
+      # =========================================================
+      - name: Run BOATRACE AI
         env:
           LINE_CHANNEL_ACCESS_TOKEN: ${{ secrets.BOATAI }}
           LINE_USER_ID: ${{ secrets.LINE_USER_ID }}
+
         run: |
-          MESSAGE=$(cat <<'EOF'
-          🚤 BOATRACE AI
+          cat > boatrace_ai.py <<'PY'
+          import os
+          import re
+          import json
+          import time
+          import requests
 
-          【徳山 7R】
+          from bs4 import BeautifulSoup
+          from datetime import datetime, timedelta, timezone
+          from pathlib import Path
 
-          🔥 勝負度：S
 
-          ◎ 本命：1-2-3
-          ○ 対抗：1-3-2
-          ☆ 穴　：2-1-4
+          # ======================================================
+          # 基本設定
+          # ======================================================
 
-          🤖 AI信頼度：82%
+          JST = timezone(timedelta(hours=9))
 
-          10分ごとに自動チェック中
-          EOF
+          NOW = datetime.now(JST)
+
+          TODAY = NOW.strftime("%Y%m%d")
+
+
+          # ------------------------------------------------------
+          # 勝負度Sと判定する最低AIスコア
+          # ------------------------------------------------------
+
+          S_THRESHOLD = 82
+
+
+          # ------------------------------------------------------
+          # 締切何分前からチェックするか
+          #
+          # GitHub Actionsのcronは多少遅れる場合があるため
+          # 5～25分前を対象にする
+          # ------------------------------------------------------
+
+          MIN_MINUTES_BEFORE = 5
+
+          MAX_MINUTES_BEFORE = 25
+
+
+          # ------------------------------------------------------
+          # 通知対象
+          #
+          # None = 全国24場
+          #
+          # 徳山だけなら
+          # TARGET_JCDS = {"18"}
+          #
+          # ------------------------------------------------------
+
+          TARGET_JCDS = None
+
+
+          # ======================================================
+          # BOAT RACE場コード
+          # ======================================================
+
+          STADIUMS = {
+              "01": "桐生",
+              "02": "戸田",
+              "03": "江戸川",
+              "04": "平和島",
+              "05": "多摩川",
+              "06": "浜名湖",
+              "07": "蒲郡",
+              "08": "常滑",
+              "09": "津",
+              "10": "三国",
+              "11": "びわこ",
+              "12": "住之江",
+              "13": "尼崎",
+              "14": "鳴門",
+              "15": "丸亀",
+              "16": "児島",
+              "17": "宮島",
+              "18": "徳山",
+              "19": "下関",
+              "20": "若松",
+              "21": "芦屋",
+              "22": "福岡",
+              "23": "唐津",
+              "24": "大村",
+          }
+
+
+          # ======================================================
+          # URL
+          # ======================================================
+
+          BASE = "https://www.boatrace.jp"
+
+          TODAY_URL = (
+              f"{BASE}/owpc/pc/race/index"
+              f"?hd={TODAY}"
           )
 
-          curl -sS -X POST https://api.line.me/v2/bot/message/push \
-            -H "Content-Type: application/json" \
-            -H "Authorization: Bearer ${LINE_CHANNEL_ACCESS_TOKEN}" \
-            -d "$(jq -n \
-              --arg to "${LINE_USER_ID}" \
-              --arg message "${MESSAGE}" \
-              '{
-                to: $to,
-                messages: [
-                  {
-                    type: "text",
-                    text: $message
+
+          # ======================================================
+          # HTTP設定
+          # ======================================================
+
+          SESSION = requests.Session()
+
+          SESSION.headers.update({
+              "User-Agent": (
+                  "Mozilla/5.0 "
+                  "(iPhone; CPU iPhone OS 18_0 like Mac OS X) "
+                  "AppleWebKit/605.1.15 "
+                  "Version/18.0 Mobile/15E148 Safari/604.1"
+              ),
+              "Accept-Language": "ja-JP,ja;q=0.9",
+          })
+
+
+          # ======================================================
+          # 保存済み通知
+          # ======================================================
+
+          STATE_FILE = Path(".boatrace_notified.json")
+
+
+          def load_state():
+
+              if not STATE_FILE.exists():
+                  return {}
+
+              try:
+                  with open(
+                      STATE_FILE,
+                      "r",
+                      encoding="utf-8"
+                  ) as f:
+
+                      data = json.load(f)
+
+                      if isinstance(data, dict):
+                          return data
+
+              except Exception:
+                  pass
+
+              return {}
+
+
+          def save_state(state):
+
+              # 3日より古い通知履歴は削除
+              limit = NOW - timedelta(days=3)
+
+              new_state = {}
+
+              for key, value in state.items():
+
+                  try:
+                      dt = datetime.fromisoformat(value)
+
+                      if dt.tzinfo is None:
+                          dt = dt.replace(tzinfo=JST)
+
+                      if dt >= limit:
+                          new_state[key] = value
+
+                  except Exception:
+                      continue
+
+              with open(
+                  STATE_FILE,
+                  "w",
+                  encoding="utf-8"
+              ) as f:
+
+                  json.dump(
+                      new_state,
+                      f,
+                      ensure_ascii=False,
+                      indent=2
+                  )
+
+
+          # ======================================================
+          # HTML取得
+          # ======================================================
+
+          def get_html(url):
+
+              response = SESSION.get(
+                  url,
+                  timeout=20
+              )
+
+              response.raise_for_status()
+
+              return response.text
+
+
+          # ======================================================
+          # 本日開催中のレース場取得
+          # ======================================================
+
+          def get_active_stadiums():
+
+              html = get_html(TODAY_URL)
+
+              found = set(
+                  re.findall(
+                      r'jcd=(\d{2})',
+                      html
+                  )
+              )
+
+              # URLエンコード対策
+              found.update(
+                  re.findall(
+                      r'jcd%3D(\d{2})',
+                      html
+                  )
+              )
+
+              found = {
+                  x
+                  for x in found
+                  if x in STADIUMS
+              }
+
+              if TARGET_JCDS is not None:
+                  found &= TARGET_JCDS
+
+              return sorted(found)
+
+
+          # ======================================================
+          # 会場の12Rと締切時間を取得
+          # ======================================================
+
+          def get_races(jcd):
+
+              url = (
+                  f"{BASE}/owpc/pc/race/raceindex"
+                  f"?jcd={jcd}"
+                  f"&hd={TODAY}"
+              )
+
+              html = get_html(url)
+
+              soup = BeautifulSoup(
+                  html,
+                  "lxml"
+              )
+
+              races = []
+
+
+              # --------------------------------------------------
+              # HTML表から取得
+              # --------------------------------------------------
+
+              for tr in soup.find_all("tr"):
+
+                  text = " ".join(
+                      tr.stripped_strings
+                  )
+
+                  race_match = re.search(
+                      r'\b(1[0-2]|[1-9])R\b',
+                      text
+                  )
+
+                  time_match = re.search(
+                      r'\b([0-2]\d:[0-5]\d)\b',
+                      text
+                  )
+
+                  if not race_match or not time_match:
+                      continue
+
+                  race_no = int(
+                      race_match.group(1)
+                  )
+
+                  cutoff = time_match.group(1)
+
+                  # 級別を艇番順に取得
+                  classes = re.findall(
+                      r'\b(A1|A2|B1|B2)\b',
+                      text
+                  )
+
+                  races.append({
+                      "race_no": race_no,
+                      "cutoff": cutoff,
+                      "classes": classes[:6],
+                      "row_text": text,
+                  })
+
+
+              # --------------------------------------------------
+              # 重複除去
+              # --------------------------------------------------
+
+              unique = {}
+
+              for race in races:
+
+                  no = race["race_no"]
+
+                  if no not in unique:
+                      unique[no] = race
+
+              return list(
+                  unique.values()
+              )
+
+
+          # ======================================================
+          # 締切まで何分か
+          # ======================================================
+
+          def minutes_until(cutoff):
+
+              hour, minute = map(
+                  int,
+                  cutoff.split(":")
+              )
+
+              target = NOW.replace(
+                  hour=hour,
+                  minute=minute,
+                  second=0,
+                  microsecond=0
+              )
+
+              diff = (
+                  target - NOW
+              ).total_seconds() / 60
+
+              return diff
+
+
+          # ======================================================
+          # 公式コンピューター予想取得
+          # ======================================================
+
+          def get_computer_prediction(
+              jcd,
+              race_no
+          ):
+
+              url = (
+                  f"{BASE}/owpc/pc/race/pcexpect"
+                  f"?rno={race_no}"
+                  f"&jcd={jcd}"
+                  f"&hd={TODAY}"
+              )
+
+              html = get_html(url)
+
+              soup = BeautifulSoup(
+                  html,
+                  "lxml"
+              )
+
+              text = soup.get_text(
+                  "\n",
+                  strip=True
+              )
+
+
+              # --------------------------------------------------
+              # 「予想フォーカス」部分だけ抜き出す
+              # --------------------------------------------------
+
+              if "予想フォーカス" in text:
+
+                  text = text.split(
+                      "予想フォーカス",
+                      1
+                  )[1]
+
+
+              if "進入予想" in text:
+
+                  text = text.split(
+                      "進入予想",
+                      1
+                  )[0]
+
+
+              # --------------------------------------------------
+              # 3連単形式だけ抽出
+              #
+              # 例
+              # 1 = 2 - 3
+              # 1 - 2 - 4
+              # --------------------------------------------------
+
+              triples = []
+
+              pattern = re.compile(
+                  r'([1-6])\s*[-=]\s*'
+                  r'([1-6])\s*[-=]\s*'
+                  r'([1-6])'
+              )
+
+              for match in pattern.finditer(text):
+
+                  combo = (
+                      int(match.group(1)),
+                      int(match.group(2)),
+                      int(match.group(3))
+                  )
+
+                  # 同じ艇が重複するものは除外
+                  if len(set(combo)) != 3:
+                      continue
+
+                  if combo not in triples:
+                      triples.append(combo)
+
+
+              return triples
+
+
+          # ======================================================
+          # AIスコアリング
+          # ======================================================
+
+          def ai_score(
+              triples,
+              classes
+          ):
+
+              if not triples:
+                  return {
+                      "score": 0,
+                      "grade": "D",
+                      "main": None,
+                      "sub": None,
+                      "hole": None,
+                      "winner": None,
+                      "reason": [],
                   }
-                ]
-              }')"
+
+
+              # --------------------------------------------------
+              # 1着候補一致率
+              # --------------------------------------------------
+
+              first_counts = {}
+
+              for combo in triples:
+
+                  first = combo[0]
+
+                  first_counts[first] = (
+                      first_counts.get(first, 0)
+                      + 1
+                  )
+
+
+              winner = max(
+                  first_counts,
+                  key=first_counts.get
+              )
+
+              winner_count = (
+                  first_counts[winner]
+              )
+
+              total = len(triples)
+
+              winner_ratio = (
+                  winner_count / total
+              )
+
+
+              # --------------------------------------------------
+              # 基礎点
+              # --------------------------------------------------
+
+              score = 45
+
+              reasons = []
+
+
+              # --------------------------------------------------
+              # 公式予想の1着集中度
+              # --------------------------------------------------
+
+              if winner_ratio >= 0.80:
+
+                  score += 28
+
+                  reasons.append(
+                      "1着候補が非常に集中"
+                  )
+
+              elif winner_ratio >= 0.60:
+
+                  score += 22
+
+                  reasons.append(
+                      "1着候補が集中"
+                  )
+
+              elif winner_ratio >= 0.40:
+
+                  score += 14
+
+                  reasons.append(
+                      "1着候補に優位性"
+                  )
+
+              else:
+
+                  score += 5
+
+
+              # --------------------------------------------------
+              # 1コース補正
+              # --------------------------------------------------
+
+              if winner == 1:
+
+                  score += 7
+
+                  reasons.append(
+                      "1コース優勢"
+                  )
+
+
+              # --------------------------------------------------
+              # 選手級別
+              # --------------------------------------------------
+
+              if (
+                  classes
+                  and len(classes) >= winner
+              ):
+
+                  winner_class = (
+                      classes[winner - 1]
+                  )
+
+                  if winner_class == "A1":
+
+                      score += 10
+
+                      reasons.append(
+                          "1着候補A1"
+                      )
+
+                  elif winner_class == "A2":
+
+                      score += 6
+
+                      reasons.append(
+                          "1着候補A2"
+                      )
+
+                  elif winner_class == "B1":
+
+                      score += 2
+
+
+              # --------------------------------------------------
+              # 上位予想の一致度
+              # --------------------------------------------------
+
+              top = triples[:4]
+
+              if len(top) >= 3:
+
+                  top_winners = [
+                      x[0]
+                      for x in top
+                  ]
+
+                  if (
+                      top_winners.count(winner)
+                      >= 3
+                  ):
+
+                      score += 7
+
+                      reasons.append(
+                          "上位買い目の軸一致"
+                      )
+
+
+              # --------------------------------------------------
+              # 100点上限
+              # --------------------------------------------------
+
+              score = min(
+                  100,
+                  score
+              )
+
+
+              # --------------------------------------------------
+              # 勝負度
+              # --------------------------------------------------
+
+              if score >= S_THRESHOLD:
+
+                  grade = "S"
+
+              elif score >= 75:
+
+                  grade = "A"
+
+              elif score >= 65:
+
+                  grade = "B"
+
+              elif score >= 55:
+
+                  grade = "C"
+
+              else:
+
+                  grade = "D"
+
+
+              # --------------------------------------------------
+              # 買い目
+              # --------------------------------------------------
+
+              main = (
+                  triples[0]
+                  if len(triples) >= 1
+                  else None
+              )
+
+              sub = (
+                  triples[1]
+                  if len(triples) >= 2
+                  else None
+              )
+
+              hole = (
+                  triples[2]
+                  if len(triples) >= 3
+                  else None
+              )
+
+
+              return {
+                  "score": score,
+                  "grade": grade,
+                  "main": main,
+                  "sub": sub,
+                  "hole": hole,
+                  "winner": winner,
+                  "reason": reasons,
+              }
+
+
+          # ======================================================
+          # 買い目文字変換
+          # ======================================================
+
+          def combo_text(combo):
+
+              if combo is None:
+                  return "-"
+
+              return (
+                  f"{combo[0]}-"
+                  f"{combo[1]}-"
+                  f"{combo[2]}"
+              )
+
+
+          # ======================================================
+          # LINE送信
+          # ======================================================
+
+          def send_line(message):
+
+              token = os.environ.get(
+                  "LINE_CHANNEL_ACCESS_TOKEN",
+                  ""
+              )
+
+              user_id = os.environ.get(
+                  "LINE_USER_ID",
+                  ""
+              )
+
+              if not token:
+                  raise RuntimeError(
+                      "BOATAI Secretがありません"
+                  )
+
+              if not user_id:
+                  raise RuntimeError(
+                      "LINE_USER_ID Secretがありません"
+                  )
+
+
+              url = (
+                  "https://api.line.me/"
+                  "v2/bot/message/push"
+              )
+
+
+              headers = {
+                  "Content-Type":
+                      "application/json",
+
+                  "Authorization":
+                      f"Bearer {token}",
+              }
+
+
+              payload = {
+                  "to": user_id,
+
+                  "messages": [
+                      {
+                          "type": "text",
+                          "text": message,
+                      }
+                  ],
+              }
+
+
+              response = requests.post(
+                  url,
+                  headers=headers,
+                  json=payload,
+                  timeout=20
+              )
+
+
+              if response.status_code >= 300:
+
+                  raise RuntimeError(
+                      "LINE送信エラー "
+                      f"{response.status_code}: "
+                      f"{response.text}"
+                  )
+
+
+              print(
+                  "LINE送信成功"
+              )
+
+
+          # ======================================================
+          # メイン処理
+          # ======================================================
+
+          def main():
+
+              print("=" * 60)
+
+              print(
+                  "BOATRACE AI START"
+              )
+
+              print(
+                  "現在時刻:",
+                  NOW.strftime(
+                      "%Y-%m-%d %H:%M:%S"
+                  )
+              )
+
+              print("=" * 60)
+
+
+              state = load_state()
+
+              active = (
+                  get_active_stadiums()
+              )
+
+
+              print(
+                  "本日開催場:",
+                  [
+                      STADIUMS.get(x, x)
+                      for x in active
+                  ]
+              )
+
+
+              if not active:
+
+                  print(
+                      "開催場が取得できませんでした"
+                  )
+
+                  save_state(state)
+
+                  return
+
+
+              notifications = 0
+
+
+              # --------------------------------------------------
+              # 各会場を確認
+              # --------------------------------------------------
+
+              for jcd in active:
+
+                  stadium = STADIUMS.get(
+                      jcd,
+                      jcd
+                  )
+
+
+                  print()
+
+                  print(
+                      f"チェック中: {stadium}"
+                  )
+
+
+                  try:
+
+                      races = get_races(
+                          jcd
+                      )
+
+                  except Exception as e:
+
+                      print(
+                          f"{stadium} "
+                          f"レース取得失敗: {e}"
+                      )
+
+                      continue
+
+
+                  # ----------------------------------------------
+                  # 各レース
+                  # ----------------------------------------------
+
+                  for race in races:
+
+                      race_no = (
+                          race["race_no"]
+                      )
+
+                      cutoff = (
+                          race["cutoff"]
+                      )
+
+                      remaining = (
+                          minutes_until(
+                              cutoff
+                          )
+                      )
+
+
+                      # ------------------------------------------
+                      # 締切が近いレースだけ
+                      # ------------------------------------------
+
+                      if not (
+                          MIN_MINUTES_BEFORE
+                          <= remaining
+                          <= MAX_MINUTES_BEFORE
+                      ):
+                          continue
+
+
+                      key = (
+                          f"{TODAY}-"
+                          f"{jcd}-"
+                          f"{race_no}"
+                      )
+
+
+                      # ------------------------------------------
+                      # 通知済みはスキップ
+                      # ------------------------------------------
+
+                      if key in state:
+
+                          print(
+                              f"{stadium}{race_no}R "
+                              "通知済み"
+                          )
+
+                          continue
+
+
+                      print(
+                          f"{stadium}{race_no}R "
+                          f"締切 {cutoff} "
+                          f"残り約{remaining:.0f}分"
+                      )
+
+
+                      # ------------------------------------------
+                      # 公式予想取得
+                      # ------------------------------------------
+
+                      try:
+
+                          triples = (
+                              get_computer_prediction(
+                                  jcd,
+                                  race_no
+                              )
+                          )
+
+                      except Exception as e:
+
+                          print(
+                              "予想取得失敗:",
+                              e
+                          )
+
+                          continue
+
+
+                      if not triples:
+
+                          print(
+                              "3連単予想データなし"
+                          )
+
+                          continue
+
+
+                      # ------------------------------------------
+                      # AI判定
+                      # ------------------------------------------
+
+                      result = ai_score(
+                          triples,
+                          race.get(
+                              "classes",
+                              []
+                          )
+                      )
+
+
+                      print(
+                          "AIスコア:",
+                          result["score"]
+                      )
+
+                      print(
+                          "勝負度:",
+                          result["grade"]
+                      )
+
+
+                      # ------------------------------------------
+                      # S以外は送信しない
+                      # ------------------------------------------
+
+                      if result["grade"] != "S":
+
+                          print(
+                              "勝負度S未満 → "
+                              "LINE通知なし"
+                          )
+
+                          continue
+
+
+                      reasons = (
+                          "・".join(
+                              result["reason"]
+                          )
+                          if result["reason"]
+                          else "総合判定"
+                      )
+
+
+                      # ------------------------------------------
+                      # LINE本文
+                      # ------------------------------------------
+
+                      message = (
+                          "🚤 BOATRACE AI\n"
+                          "\n"
+                          f"【{stadium} "
+                          f"{race_no}R】\n"
+                          "\n"
+                          "🔥 勝負度：S\n"
+                          f"🤖 AIスコア："
+                          f"{result['score']}点\n"
+                          "\n"
+                          f"◎ 本命："
+                          f"{combo_text(result['main'])}\n"
+                          f"○ 対抗："
+                          f"{combo_text(result['sub'])}\n"
+                          f"☆ 穴　："
+                          f"{combo_text(result['hole'])}\n"
+                          "\n"
+                          f"🎯 軸候補："
+                          f"{result['winner']}号艇\n"
+                          "\n"
+                          f"📊 判定理由："
+                          f"{reasons}\n"
+                          "\n"
+                          f"⏰ 締切予定："
+                          f"{cutoff}\n"
+                          f"残り約"
+                          f"{max(0, int(remaining))}分\n"
+                          "\n"
+                          "※データからの自動判定です。"
+                      )
+
+
+                      # ------------------------------------------
+                      # LINE送信
+                      # ------------------------------------------
+
+                      try:
+
+                          send_line(
+                              message
+                          )
+
+                      except Exception as e:
+
+                          print(
+                              "LINE送信失敗:",
+                              e
+                          )
+
+                          continue
+
+
+                      # ------------------------------------------
+                      # 通知済みに登録
+                      # ------------------------------------------
+
+                      state[key] = (
+                          NOW.isoformat()
+                      )
+
+                      notifications += 1
+
+
+                      # サイト負荷軽減
+                      time.sleep(1)
+
+
+                  time.sleep(0.5)
+
+
+              # --------------------------------------------------
+              # 状態保存
+              # --------------------------------------------------
+
+              save_state(state)
+
+
+              print()
+
+              print("=" * 60)
+
+              print(
+                  "今回のLINE通知数:",
+                  notifications
+              )
+
+              print(
+                  "BOATRACE AI END"
+              )
+
+              print("=" * 60)
+
+
+          if __name__ == "__main__":
+              main()
+
+          PY
+
+          python boatrace_ai.py
+
+
+      # =========================================================
+      # 5. 通知履歴をGitHubへ保存
+      #
+      # 同じレースを何度も通知しないため
+      # =========================================================
+      - name: Save notification state
+        run: |
+          if [ -f .boatrace_notified.json ]; then
+
+            git config user.name "boatrace-ai"
+            git config user.email "boatrace-ai@users.noreply.github.com"
+
+            git add .boatrace_notified.json
+
+            if ! git diff --cached --quiet; then
+
+              git commit -m "Update BOATRACE notification state [skip ci]"
+
+              git push
+
+            else
+
+              echo "通知履歴の変更なし"
+
+            fi
+
+          fi
