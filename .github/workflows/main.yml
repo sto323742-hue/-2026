@@ -1,0 +1,34 @@
+name: BOAT RACE LINE Notification
+
+on:
+  workflow_dispatch:
+
+  schedule:
+    - cron: "*/10 * * * *"
+
+jobs:
+  send-line:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Send LINE test message
+        env:
+          LINE_CHANNEL_ACCESS_TOKEN: ${{ secrets.LINE_CHANNEL_ACCESS_TOKEN }}
+          LINE_USER_ID: ${{ secrets.LINE_USER_ID }}
+
+        run: |
+          curl -X POST https://api.line.me/v2/bot/message/push \
+          -H "Content-Type: application/json" \
+          -H "Authorization: Bearer ${LINE_CHANNEL_ACCESS_TOKEN}" \
+          -d "{
+            \"to\": \"${LINE_USER_ID}\",
+            \"messages\": [
+              {
+                \"type\": \"text\",
+                \"text\": \"🚤 BOAT RACE AI予想\nLINE通知テスト成功です😆✨\"
+              }
+            ]
+          }"
