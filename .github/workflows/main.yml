@@ -1,13 +1,12 @@
-name: BOAT RACE LINE Notification
+name: BOATRACE LINE Notification
 
 on:
   workflow_dispatch:
-
   schedule:
     - cron: "*/10 * * * *"
 
 jobs:
-  send-line:
+  line:
     runs-on: ubuntu-latest
 
     steps:
@@ -15,9 +14,8 @@ jobs:
         env:
           LINE_CHANNEL_ACCESS_TOKEN: ${{ secrets.LINE_CHANNEL_ACCESS_TOKEN }}
           LINE_USER_ID: ${{ secrets.LINE_USER_ID }}
-
         run: |
           curl -sS -X POST https://api.line.me/v2/bot/message/push \
             -H "Content-Type: application/json" \
             -H "Authorization: Bearer ${LINE_CHANNEL_ACCESS_TOKEN}" \
-            -d "{\"to\":\"${LINE_USER_ID}\",\"messages\":[{\"type\":\"text\",\"text\":\"🚤 BOAT RACE AI予想 LINE通知テスト成功！\"}]}"
+            -d "{\"to\":\"${LINE_USER_ID}\",\"messages\":[{\"type\":\"text\",\"text\":\"BOATRACE AI test message\"}]}"
