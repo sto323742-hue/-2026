@@ -6,16 +6,44 @@ on:
     - cron: "*/10 * * * *"
 
 jobs:
-  line:
+  send-line:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Send LINE test message
+      - name: Send BOATRACE AI notification
         env:
           LINE_CHANNEL_ACCESS_TOKEN: ${{ secrets.BOATAI }}
           LINE_USER_ID: ${{ secrets.LINE_USER_ID }}
         run: |
+          MESSAGE=$(cat <<'EOF'
+          🚤 BOATRACE AI
+
+          【徳山 7R】
+
+          🔥 勝負度：S
+
+          ◎ 本命：1-2-3
+          ○ 対抗：1-3-2
+          ☆ 穴　：2-1-4
+
+          🤖 AI信頼度：82%
+
+          10分ごとに自動チェック中
+          EOF
+          )
+
           curl -sS -X POST https://api.line.me/v2/bot/message/push \
             -H "Content-Type: application/json" \
             -H "Authorization: Bearer ${LINE_CHANNEL_ACCESS_TOKEN}" \
-            -d "{\"to\":\"${LINE_USER_ID}\",\"messages\":[{\"type\":\"text\",\"text\":\"BOATRACE AI test message\"}]}"
+            -d "$(jq -n \
+              --arg to "${LINE_USER_ID}" \
+              --arg message "${MESSAGE}" \
+              '{
+                to: $to,
+                messages: [
+                  {
+                    type: "text",
+                    text: $message
+                  }
+                ]
+              }')"
