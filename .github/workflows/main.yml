@@ -2,6 +2,7 @@ name: BOATRACE AI LINE Notification
 
 on:
   workflow_dispatch:
+
   schedule:
     - cron: "*/5 * * * *"
 
@@ -17,20 +18,32 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      # =========================================================
+      # 1. Repository
+      # =========================================================
       - name: Checkout
         uses: actions/checkout@v4
 
+      # =========================================================
+      # 2. Python
+      # =========================================================
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
 
+      # =========================================================
+      # 3. Packages
+      # =========================================================
       - name: Install packages
         run: |
           python -m pip install --upgrade pip
           pip install requests playwright
           python -m playwright install --with-deps chromium
 
+      # =========================================================
+      # 4. BOATRACE AI → LINE
+      # =========================================================
       - name: BOATRACE AI LINE
         env:
           LINE_CHANNEL_ACCESS_TOKEN: ${{ secrets.BOATAI }}
@@ -52,24 +65,32 @@ jobs:
 
 
           # =====================================================
-          # 設定
+          # 基本設定
           # =====================================================
 
           JST = timezone(timedelta(hours=9))
-          NOW = datetime.now(JST)
 
-          TOOL_URL = "https://sto323742-hue.github.io/-2026/"
+          TOOL_URL = (
+              "https://sto323742-hue.github.io/-2026/"
+          )
+
+          STATE_FILE = Path(
+              ".boatrace_line_notified.json"
+          )
 
 
           # =====================================================
           # LINE通知設定
           # =====================================================
 
-          # 締切1分前以降は送らない
+          # 締切1分前以降は通知しない
           MIN_BEFORE = 1
 
-          # False = ツールに予想が完成した時点で通知
-          # True  = 指定時間帯だけ通知
+          # False:
+          # 予想完成後、通知可能ならすぐ通知
+          #
+          # True:
+          # 指定した残り時間内だけ通知
           USE_NOTIFICATION_WINDOW = False
 
           WINDOW_MIN_BEFORE = 10
@@ -77,24 +98,28 @@ jobs:
 
 
           # =====================================================
-          # Web予想完成待ち設定
+          # Web予想完成待ち
           # =====================================================
 
-          # 最大60秒待つ
           PREDICTION_WAIT_SECONDS = 60
 
-          # 1秒ごとに確認
           PREDICTION_CHECK_INTERVAL_MS = 1000
+
+
+          # =====================================================
+          # 現在時刻
+          # =====================================================
+
+          def now_jst():
+
+              return datetime.now(
+                  JST
+              )
 
 
           # =====================================================
           # 通知履歴
           # =====================================================
-
-          STATE_FILE = Path(
-              ".boatrace_line_notified.json"
-          )
-
 
           def load_state():
 
@@ -109,7 +134,9 @@ jobs:
                       encoding="utf-8"
                   ) as f:
 
-                      data = json.load(f)
+                      data = json.load(
+                          f
+                      )
 
                       if isinstance(
                           data,
@@ -130,7 +157,7 @@ jobs:
           def save_state(state):
 
               limit = (
-                  NOW
+                  now_jst()
                   -
                   timedelta(days=3)
               )
@@ -199,11 +226,10 @@ jobs:
                   str(text)
               )
 
-              return (
-                  m.group(1)
-                  if m
-                  else ""
-              )
+              if not m:
+                  return ""
+
+              return m.group(1)
 
 
           def unique_combos(values):
@@ -235,22 +261,8 @@ jobs:
 
 
           # =====================================================
-          # 締切時間
+          # 残り時間
           # =====================================================
-
-          def get_cutoff(meta):
-
-              m = re.search(
-                  r"締切\s*(?:予定)?\s*(\d{1,2}:\d{2})",
-                  meta or ""
-              )
-
-              return (
-                  m.group(1)
-                  if m
-                  else None
-              )
-
 
           def remaining_minutes(cutoff):
 
@@ -261,29 +273,38 @@ jobs:
                       cutoff.split(":")
                   )
 
-                  target = NOW.replace(
+                  now = now_jst()
+
+                  target = now.replace(
                       hour=h,
                       minute=m,
                       second=0,
                       microsecond=0
                   )
 
+                  seconds = (
+                      target
+                      -
+                      now
+                  ).total_seconds()
+
                   return int(
-                      (
-                          target
-                          -
-                          NOW
-                      ).total_seconds()
-                      //
-                      60
+                      seconds // 60
                   )
 
-              except Exception:
+              except Exception as e:
+
+                  print(
+                      "残り時間計算エラー:",
+                      cutoff,
+                      e
+                  )
+
                   return None
 
 
           # =====================================================
-          # BOX判定
+          # BOX
           # =====================================================
 
           def make_box(boats):
@@ -330,7 +351,7 @@ jobs:
 
 
           # =====================================================
-          # フォーメーション判定
+          # フォーメーション
           # =====================================================
 
           def formation_combos(
@@ -413,8 +434,6 @@ jobs:
                   )
               )
 
-              best = None
-
 
               def subsets(values):
 
@@ -434,6 +453,8 @@ jobs:
 
                   return out
 
+
+              best = None
 
               for first in subsets(
                   first_pool
@@ -464,13 +485,23 @@ jobs:
                               continue
 
                           candidate = {
-                              "first": first,
-                              "second": second,
-                              "third": third,
-                              "combos": generated,
-                              "score": len(
-                                  generated
-                              )
+
+                              "first":
+                                  first,
+
+                              "second":
+                                  second,
+
+                              "third":
+                                  third,
+
+                              "combos":
+                                  generated,
+
+                              "score":
+                                  len(
+                                      generated
+                                  )
                           }
 
                           if (
@@ -552,6 +583,7 @@ jobs:
 
 
               return {
+
                   "normal":
                       sorted(
                           remaining
@@ -563,10 +595,11 @@ jobs:
                   "box":
                       boxes
               }
-                        # =====================================================
-          # Webツールから買い目を取得
-          # 本命3 / 狙い4 / 穴3
-          # をそのままLINEへ使用
+
+
+          # =====================================================
+          # Webツールから
+          # 本命3 / 狙い4 / 穴3 取得
           # =====================================================
 
           def extract_bet_sections(card):
@@ -590,55 +623,74 @@ jobs:
                     for (const node of nodes) {
 
                       if (
-                        node.classList.contains('bet-head')
+                        node.classList.contains(
+                          'bet-head'
+                        )
                       ) {
 
                         if (
-                          node.classList.contains('main')
+                          node.classList.contains(
+                            'main'
+                          )
                         ) {
+
                           current = 'main';
-                        }
 
-                        else if (
-                          node.classList.contains('cover')
+                        } else if (
+                          node.classList.contains(
+                            'cover'
+                          )
                         ) {
+
                           current = 'cover';
-                        }
 
-                        else if (
-                          node.classList.contains('hole')
+                        } else if (
+                          node.classList.contains(
+                            'hole'
+                          )
                         ) {
-                          current = 'hole';
-                        }
 
-                        else {
+                          current = 'hole';
+
+                        } else {
+
                           current = null;
+
                         }
 
                         continue;
                       }
 
+
                       if (
-                        !node.classList.contains('ticket')
+                        !node.classList.contains(
+                          'ticket'
+                        )
                         ||
                         !current
                       ) {
+
                         continue;
                       }
 
+
                       const comboNode =
-                        node.querySelector('.combo');
+                        node.querySelector(
+                          '.combo'
+                        );
 
                       if (!comboNode) {
                         continue;
                       }
 
+
                       const text =
                         comboNode.textContent || '';
 
-                      const match = text.match(
-                        /([1-6]-[1-6]-[1-6])/
-                      );
+                      const match =
+                        text.match(
+                          /([1-6]-[1-6]-[1-6])/
+                        );
 
                       if (!match) {
                         continue;
@@ -684,7 +736,7 @@ jobs:
 
 
           # =====================================================
-          # 本命3・狙い4・穴3が完成するまで待機
+          # 3 + 4 + 3 完成待ち
           # =====================================================
 
           def wait_for_complete_bets(
@@ -699,11 +751,12 @@ jobs:
                   PREDICTION_WAIT_SECONDS
               )
 
-
               last_bets = {
+
                   "main": [],
                   "cover": [],
                   "hole": []
+
               }
 
 
@@ -721,9 +774,18 @@ jobs:
 
                       last_bets = bets
 
-                      main = bets["main"]
-                      cover = bets["cover"]
-                      hole = bets["hole"]
+
+                      main = bets[
+                          "main"
+                      ]
+
+                      cover = bets[
+                          "cover"
+                      ]
+
+                      hole = bets[
+                          "hole"
+                      ]
 
 
                       all_combos = (
@@ -744,10 +806,6 @@ jobs:
                       )
 
 
-                      # -----------------------------------------
-                      # 本命3・狙い4・穴3 完成
-                      # -----------------------------------------
-
                       if (
                           len(main) == 3
                           and
@@ -755,10 +813,6 @@ jobs:
                           and
                           len(hole) == 3
                       ):
-
-                          # -------------------------------------
-                          # カテゴリ間重複チェック
-                          # -------------------------------------
 
                           if (
                               len(all_combos)
@@ -794,7 +848,6 @@ jobs:
 
 
                           print(
-                              "予想完成待ち・"
                               "買い目重複あり:",
                               race_name
                           )
@@ -814,10 +867,6 @@ jobs:
                   )
 
 
-              # =================================================
-              # 60秒待っても完成しなかった場合
-              # =================================================
-
               print(
                   "❌ 予想完成タイムアウト:",
                   race_name,
@@ -826,12 +875,11 @@ jobs:
                   f"穴{len(last_bets['hole'])}"
               )
 
-
               return last_bets
 
 
           # =====================================================
-          # Webツール画面取得
+          # Webツール取得
           # =====================================================
 
           def get_predictions():
@@ -847,10 +895,14 @@ jobs:
 
 
                   page = browser.new_page(
+
                       viewport={
+
                           "width": 390,
                           "height": 844
+
                       }
+
                   )
 
 
@@ -861,14 +913,19 @@ jobs:
 
 
                   page.goto(
+
                       TOOL_URL,
-                      wait_until="domcontentloaded",
+
+                      wait_until=
+                          "domcontentloaded",
+
                       timeout=60000
+
                   )
 
 
                   # ---------------------------------------------
-                  # レースカード表示待ち
+                  # レースカード待機
                   # ---------------------------------------------
 
                   try:
@@ -885,14 +942,8 @@ jobs:
                       )
 
 
-                  # ---------------------------------------------
-                  # ページ初期描画だけ少し待つ
-                  # 各レースの予想完成は
-                  # wait_for_complete_bets() で確認
-                  # ---------------------------------------------
-
                   page.wait_for_timeout(
-                      3000
+                      5000
                   )
 
 
@@ -910,6 +961,17 @@ jobs:
                   )
 
 
+                  # ---------------------------------------------
+                  # レースが0件
+                  # ---------------------------------------------
+
+                  if count == 0:
+
+                      print(
+                          "現在S評価レースがありません"
+                      )
+
+
                   # =================================================
                   # 各レース
                   # =================================================
@@ -924,7 +986,7 @@ jobs:
 
 
                       # ---------------------------------------------
-                      # 会場・R
+                      # 会場・レース番号
                       # ---------------------------------------------
 
                       try:
@@ -937,47 +999,116 @@ jobs:
                               .inner_text()
                           )
 
-                      except Exception:
+                      except Exception as e:
+
+                          print(
+                              "レース名取得失敗:",
+                              i,
+                              e
+                          )
 
                           race_name = ""
 
 
                       if not race_name:
-
-                          print(
-                              "レース名取得失敗:",
-                              i
-                          )
-
                           continue
 
 
-                      # ---------------------------------------------
-                      # メタ情報
-                      # ---------------------------------------------
+                      print(
+                          "================================"
+                      )
 
-                      try:
-
-                          meta = clean(
-                              card.locator(
-                                  ".race-meta"
-                              )
-                              .first
-                              .inner_text()
-                          )
-
-                      except Exception:
-
-                          meta = ""
-
-
-                      cutoff = get_cutoff(
-                          meta
+                      print(
+                          "Webレース:",
+                          race_name
                       )
 
 
                       # ---------------------------------------------
-                      # 本命3・狙い4・穴3が完成するまで待機
+                      # ★ 締切時間取得
+                      # 現在のindex.html対応
+                      #
+                      # .race-metaではなく
+                      # .time-box を使用
+                      # ---------------------------------------------
+
+                      cutoff = None
+                      meta = ""
+
+
+                      try:
+
+                          time_boxes = (
+                              card.locator(
+                                  ".time-box"
+                              )
+                          )
+
+
+                          print(
+                              "time-box数:",
+                              time_boxes.count()
+                          )
+
+
+                          if (
+                              time_boxes.count()
+                              >
+                              0
+                          ):
+
+                              cutoff_text = clean(
+                                  time_boxes
+                                  .nth(0)
+                                  .locator("b")
+                                  .first
+                                  .inner_text()
+                              )
+
+
+                              print(
+                                  "締切表示:",
+                                  cutoff_text
+                              )
+
+
+                              match = re.search(
+                                  r"(\d{1,2}:\d{2})",
+                                  cutoff_text
+                              )
+
+
+                              if match:
+
+                                  cutoff = (
+                                      match.group(
+                                          1
+                                      )
+                                  )
+
+                                  meta = (
+                                      f"締切予定 {cutoff}"
+                                  )
+
+
+                      except Exception as e:
+
+                          print(
+                              "締切時間取得エラー:",
+                              race_name,
+                              e
+                          )
+
+
+                      print(
+                          "締切取得:",
+                          race_name,
+                          cutoff
+                      )
+
+
+                      # ---------------------------------------------
+                      # 本命3・狙い4・穴3
                       # ---------------------------------------------
 
                       try:
@@ -997,24 +1128,26 @@ jobs:
                           )
 
                           bets = {
+
                               "main": [],
                               "cover": [],
                               "hole": []
+
                           }
 
 
-                      main = bets["main"]
-                      cover = bets["cover"]
-                      hole = bets["hole"]
+                      main = bets[
+                          "main"
+                      ]
 
+                      cover = bets[
+                          "cover"
+                      ]
 
-                      print(
-                          "------------------------------"
-                      )
+                      hole = bets[
+                          "hole"
+                      ]
 
-                      print(
-                          race_name
-                      )
 
                       print(
                           "本命:",
@@ -1033,8 +1166,7 @@ jobs:
 
 
                       # ---------------------------------------------
-                      # 同一買い目が複数カテゴリに
-                      # 入っていないか安全確認
+                      # 重複チェック
                       # ---------------------------------------------
 
                       all_combos = (
@@ -1057,7 +1189,7 @@ jobs:
                       ):
 
                           print(
-                              "重複買い目を検出:",
+                              "❌ 重複買い目:",
                               race_name
                           )
 
@@ -1091,6 +1223,7 @@ jobs:
                                   .first
                                   .inner_text()
                               )
+
 
                       except Exception as e:
 
@@ -1145,13 +1278,11 @@ jobs:
 
 
                                   if (
-                                      "今回のAI判断根拠"
-                                      in line
-                                      or
-                                      "判断基準"
-                                      ==
                                       line
+                                      ==
+                                      "判断基準"
                                   ):
+
                                       continue
 
 
@@ -1171,6 +1302,7 @@ jobs:
                                           line
                                       )
 
+
                       except Exception as e:
 
                           print(
@@ -1181,27 +1313,29 @@ jobs:
 
 
                       # ---------------------------------------------
-                      # 3 + 4 + 3 完全一致確認
+                      # 3 + 4 + 3
                       # ---------------------------------------------
 
                       valid_343 = (
+
                           len(main) == 3
+
                           and
+
                           len(cover) == 4
+
                           and
+
                           len(hole) == 3
+
                       )
 
 
                       if not valid_343:
 
                           print(
-                              "❌ Web買い目が"
-                              "3+4+3ではありません:",
-                              race_name,
-                              len(main),
-                              len(cover),
-                              len(hole)
+                              "❌ Web買い目が3+4+3ではありません:",
+                              race_name
                           )
 
 
@@ -1237,6 +1371,7 @@ jobs:
 
                           "valid_343":
                               valid_343
+
                       })
 
 
@@ -1247,7 +1382,7 @@ jobs:
 
 
           # =====================================================
-          # LINE Flex用 共通テキスト
+          # LINE Flex 共通テキスト
           # =====================================================
 
           def text_component(
@@ -1260,18 +1395,32 @@ jobs:
           ):
 
               return {
+
                   "type": "text",
-                  "text": str(text),
-                  "size": size,
-                  "weight": weight,
-                  "color": color,
-                  "align": align,
-                  "wrap": wrap
+
+                  "text":
+                      str(text),
+
+                  "size":
+                      size,
+
+                  "weight":
+                      weight,
+
+                  "color":
+                      color,
+
+                  "align":
+                      align,
+
+                  "wrap":
+                      wrap
+
               }
 
 
           # =====================================================
-          # 本命 / 狙い / 穴 表示
+          # 本命 / 狙い / 穴
           # =====================================================
 
           def bet_column(
@@ -1283,11 +1432,17 @@ jobs:
               body = [
 
                   {
+
                       "type": "box",
-                      "layout": "vertical",
+
+                      "layout":
+                          "vertical",
+
                       "backgroundColor":
                           header_color,
-                      "paddingAll": "7px",
+
+                      "paddingAll":
+                          "7px",
 
                       "contents": [
 
@@ -1297,44 +1452,65 @@ jobs:
                               weight="bold",
                               align="center"
                           )
+
                       ]
+
                   }
+
               ]
 
 
               for combo in combos:
 
-                  body.append(
+                  body.append({
 
-                      {
-                          "type": "box",
-                          "layout": "vertical",
-                          "paddingTop": "7px",
-                          "paddingBottom": "3px",
+                      "type": "box",
 
-                          "contents": [
+                      "layout":
+                          "vertical",
 
-                              text_component(
-                                  combo,
-                                  size="md",
-                                  weight="bold",
-                                  align="center"
-                              )
-                          ]
-                      }
-                  )
+                      "paddingTop":
+                          "7px",
+
+                      "paddingBottom":
+                          "3px",
+
+                      "contents": [
+
+                          text_component(
+                              combo,
+                              size="md",
+                              weight="bold",
+                              align="center"
+                          )
+
+                      ]
+
+                  })
 
 
               return {
 
                   "type": "box",
-                  "layout": "vertical",
-                  "flex": 1,
-                  "margin": "xs",
+
+                  "layout":
+                      "vertical",
+
+                  "flex":
+                      1,
+
+                  "margin":
+                      "xs",
+
                   "backgroundColor":
                       "#FFFFFF",
-                  "cornerRadius": "md",
-                  "contents": body
+
+                  "cornerRadius":
+                      "md",
+
+                  "contents":
+                      body
+
               }
 
 
@@ -1351,11 +1527,17 @@ jobs:
               contents = [
 
                   {
+
                       "type": "box",
-                      "layout": "vertical",
+
+                      "layout":
+                          "vertical",
+
                       "backgroundColor":
                           color,
-                      "paddingAll": "6px",
+
+                      "paddingAll":
+                          "6px",
 
                       "contents": [
 
@@ -1366,8 +1548,11 @@ jobs:
                               color="#FFFFFF",
                               align="center"
                           )
+
                       ]
+
                   }
+
               ]
 
 
@@ -1375,72 +1560,102 @@ jobs:
 
                   for value in values:
 
-                      contents.append(
+                      contents.append({
 
-                          {
-                              "type": "box",
-                              "layout": "vertical",
-                              "paddingAll": "6px",
-
-                              "contents": [
-
-                                  text_component(
-                                      value,
-                                      size="xs",
-                                      weight="bold",
-                                      align="center"
-                                  )
-                              ]
-                          }
-                      )
-
-
-              else:
-
-                  contents.append(
-
-                      {
                           "type": "box",
-                          "layout": "vertical",
-                          "paddingAll": "6px",
+
+                          "layout":
+                              "vertical",
+
+                          "paddingAll":
+                              "6px",
 
                           "contents": [
 
                               text_component(
-                                  "－",
+                                  value,
                                   size="xs",
-                                  align="center",
-                                  color="#999999"
+                                  weight="bold",
+                                  align="center"
                               )
+
                           ]
-                      }
-                  )
+
+                      })
+
+
+              else:
+
+                  contents.append({
+
+                      "type": "box",
+
+                      "layout":
+                          "vertical",
+
+                      "paddingAll":
+                          "6px",
+
+                      "contents": [
+
+                          text_component(
+                              "－",
+                              size="xs",
+                              align="center",
+                              color="#999999"
+                          )
+
+                      ]
+
+                  })
 
 
               return {
 
                   "type": "box",
-                  "layout": "vertical",
-                  "flex": 1,
-                  "margin": "xs",
-                  "cornerRadius": "md",
+
+                  "layout":
+                      "vertical",
+
+                  "flex":
+                      1,
+
+                  "margin":
+                      "xs",
+
+                  "cornerRadius":
+                      "md",
+
                   "backgroundColor":
                       "#FFFFFF",
+
                   "contents":
                       contents
+
               }
-                        # =====================================================
-          # LINE Flex作成
+
+
+          # =====================================================
+          # LINE Flex
           # =====================================================
 
-          def build_flex(race, remain):
+          def build_flex(
+              race,
+              remain
+          ):
 
               all_combos = (
+
                   race["main"]
+
                   +
+
                   race["cover"]
+
                   +
+
                   race["hole"]
+
               )
 
 
@@ -1466,8 +1681,13 @@ jobs:
 
 
               body.append({
-                  "type": "separator",
-                  "margin": "md"
+
+                  "type":
+                      "separator",
+
+                  "margin":
+                      "md"
+
               })
 
 
@@ -1475,137 +1695,167 @@ jobs:
               # 会場・R
               # -----------------------------------------------
 
-              body.append(
-                  {
-                      "type": "box",
-                      "layout": "vertical",
-                      "margin": "md",
+              body.append({
 
-                      "contents": [
+                  "type":
+                      "box",
 
-                          text_component(
-                              race["race"],
-                              size="xl",
-                              weight="bold"
-                          )
-                      ]
-                  }
-              )
+                  "layout":
+                      "vertical",
 
+                  "margin":
+                      "md",
 
-              # -----------------------------------------------
-              # 締切予定 / 残り時間
-              # -----------------------------------------------
+                  "contents": [
 
-              body.append(
-                  {
-                      "type": "box",
-                      "layout": "horizontal",
-                      "margin": "md",
+                      text_component(
+                          race["race"],
+                          size="xl",
+                          weight="bold"
+                      )
 
-                      "contents": [
+                  ]
 
-                          text_component(
-                              f"⏰ 締切予定 {race['cutoff']}",
-                              size="sm",
-                              weight="bold"
-                          ),
-
-                          text_component(
-                              f"残り {remain}分",
-                              size="sm",
-                              weight="bold",
-                              align="end"
-                          )
-                      ]
-                  }
-              )
+              })
 
 
               # -----------------------------------------------
-              # 本命3 / 狙い4 / 穴3
+              # 締切予定 / 残り
               # -----------------------------------------------
 
-              body.append(
-                  {
-                      "type": "box",
-                      "layout": "horizontal",
-                      "margin": "lg",
+              body.append({
 
-                      "contents": [
+                  "type":
+                      "box",
 
-                          bet_column(
-                              "本命🚤",
-                              race["main"],
-                              "#FFE5E8"
-                          ),
+                  "layout":
+                      "horizontal",
 
-                          bet_column(
-                              "狙い🚤",
-                              race["cover"],
-                              "#E3F2FF"
-                          ),
+                  "margin":
+                      "md",
 
-                          bet_column(
-                              "穴🚤",
-                              race["hole"],
-                              "#E4F8E9"
-                          )
-                      ]
-                  }
-              )
+                  "contents": [
+
+                      text_component(
+                          f"⏰ 締切予定 {race['cutoff']}",
+                          size="sm",
+                          weight="bold"
+                      ),
+
+                      text_component(
+                          f"残り {remain}分",
+                          size="sm",
+                          weight="bold",
+                          align="end"
+                      )
+
+                  ]
+
+              })
+
+
+              # -----------------------------------------------
+              # 本命・狙い・穴
+              # -----------------------------------------------
+
+              body.append({
+
+                  "type":
+                      "box",
+
+                  "layout":
+                      "horizontal",
+
+                  "margin":
+                      "lg",
+
+                  "contents": [
+
+                      bet_column(
+                          "本命🚤",
+                          race["main"],
+                          "#FFE5E8"
+                      ),
+
+                      bet_column(
+                          "狙い🚤",
+                          race["cover"],
+                          "#E3F2FF"
+                      ),
+
+                      bet_column(
+                          "穴🚤",
+                          race["hole"],
+                          "#E4F8E9"
+                      )
+
+                  ]
+
+              })
 
 
               # -----------------------------------------------
               # 投票
               # -----------------------------------------------
 
-              body.append(
-                  {
-                      "type": "box",
-                      "layout": "vertical",
-                      "margin": "lg",
+              body.append({
 
-                      "contents": [
+                  "type":
+                      "box",
 
-                          text_component(
-                              "🎫 投票",
-                              size="md",
-                              weight="bold"
-                          )
-                      ]
-                  }
-              )
+                  "layout":
+                      "vertical",
+
+                  "margin":
+                      "lg",
+
+                  "contents": [
+
+                      text_component(
+                          "🎫 投票",
+                          size="md",
+                          weight="bold"
+                      )
+
+                  ]
+
+              })
 
 
-              body.append(
-                  {
-                      "type": "box",
-                      "layout": "horizontal",
-                      "margin": "sm",
+              body.append({
 
-                      "contents": [
+                  "type":
+                      "box",
 
-                          purchase_column(
-                              "通常",
-                              classified["normal"],
-                              "#718096"
-                          ),
+                  "layout":
+                      "horizontal",
 
-                          purchase_column(
-                              "フォーメーション",
-                              classified["formation"],
-                              "#1976D2"
-                          ),
+                  "margin":
+                      "sm",
 
-                          purchase_column(
-                              "BOX",
-                              classified["box"],
-                              "#079447"
-                          )
-                      ]
-                  }
-              )
+                  "contents": [
+
+                      purchase_column(
+                          "通常",
+                          classified["normal"],
+                          "#718096"
+                      ),
+
+                      purchase_column(
+                          "フォーメーション",
+                          classified["formation"],
+                          "#1976D2"
+                      ),
+
+                      purchase_column(
+                          "BOX",
+                          classified["box"],
+                          "#079447"
+                      )
+
+                  ]
+
+              })
 
 
               # -----------------------------------------------
@@ -1614,33 +1864,46 @@ jobs:
 
               if race["scenario"]:
 
-                  body.append(
-                      {
-                          "type": "box",
-                          "layout": "vertical",
-                          "margin": "lg",
-                          "backgroundColor":
-                              "#F5F7FA",
-                          "cornerRadius": "md",
-                          "paddingAll": "10px",
+                  body.append({
 
-                          "contents": [
+                      "type":
+                          "box",
 
-                              text_component(
-                                  "🧠 展開予測",
-                                  size="md",
-                                  weight="bold",
-                                  color="#1261A0"
-                              ),
+                      "layout":
+                          "vertical",
 
-                              text_component(
-                                  race["scenario"],
-                                  size="sm",
-                                  weight="bold"
-                              )
-                          ]
-                      }
-                  )
+                      "margin":
+                          "lg",
+
+                      "backgroundColor":
+                          "#F5F7FA",
+
+                      "cornerRadius":
+                          "md",
+
+                      "paddingAll":
+                          "10px",
+
+                      "contents": [
+
+                          text_component(
+                              "🧠 展開予測",
+                              size="md",
+                              weight="bold",
+                              color="#1261A0"
+                          ),
+
+                          text_component(
+                              race[
+                                  "scenario"
+                              ],
+                              size="sm",
+                              weight="bold"
+                          )
+
+                      ]
+
+                  })
 
 
               # -----------------------------------------------
@@ -1657,13 +1920,15 @@ jobs:
                           weight="bold",
                           color="#1261A0"
                       )
+
                   ]
 
 
-                  for reason in race["reasons"]:
+                  for reason in race[
+                      "reasons"
+                  ]:
 
                       reason_contents.append(
-
                           text_component(
                               f"・{reason}",
                               size="xs"
@@ -1671,46 +1936,66 @@ jobs:
                       )
 
 
-                  body.append(
-                      {
-                          "type": "box",
-                          "layout": "vertical",
-                          "margin": "md",
-                          "backgroundColor":
-                              "#F5F7FA",
-                          "cornerRadius": "md",
-                          "paddingAll": "10px",
+                  body.append({
 
-                          "contents":
-                              reason_contents
-                      }
-                  )
+                      "type":
+                          "box",
 
+                      "layout":
+                          "vertical",
 
-              # -----------------------------------------------
-              # 最終Flex
-              # -----------------------------------------------
+                      "margin":
+                          "md",
+
+                      "backgroundColor":
+                          "#F5F7FA",
+
+                      "cornerRadius":
+                          "md",
+
+                      "paddingAll":
+                          "10px",
+
+                      "contents":
+                          reason_contents
+
+                  })
+
 
               return {
 
-                  "type": "flex",
+                  "type":
+                      "flex",
 
                   "altText":
                       f"{race['race']} BOATRACE AI予想",
 
                   "contents": {
 
-                      "type": "bubble",
-                      "size": "mega",
+                      "type":
+                          "bubble",
+
+                      "size":
+                          "mega",
 
                       "body": {
 
-                          "type": "box",
-                          "layout": "vertical",
-                          "paddingAll": "14px",
-                          "contents": body
+                          "type":
+                              "box",
+
+                          "layout":
+                              "vertical",
+
+                          "paddingAll":
+                              "14px",
+
+                          "contents":
+                              body
+
                       }
+
                   }
+
               }
 
 
@@ -1718,7 +2003,9 @@ jobs:
           # LINE送信
           # =====================================================
 
-          def send_line(flex):
+          def send_line(
+              flex
+          ):
 
               token = os.environ.get(
                   "LINE_CHANNEL_ACCESS_TOKEN"
@@ -1754,6 +2041,7 @@ jobs:
 
                       "Content-Type":
                           "application/json"
+
                   },
 
                   json={
@@ -1764,33 +2052,52 @@ jobs:
                       "messages": [
                           flex
                       ]
+
                   },
 
                   timeout=30
+
               )
 
 
               print(
-                  "LINE:",
+                  "LINE HTTP:",
                   response.status_code
               )
 
 
-              if response.status_code >= 400:
+              print(
+                  "LINE RESPONSE:",
+                  response.text
+              )
 
-                  print(
-                      "LINEレスポンス:",
-                      response.text
-                  )
 
-                  response.raise_for_status()
+              response.raise_for_status()
 
 
           # =====================================================
-          # メイン処理
+          # メイン
           # =====================================================
 
           def main():
+
+              print(
+                  "================================"
+              )
+
+              print(
+                  "BOATRACE AI LINE START"
+              )
+
+              print(
+                  "現在時刻:",
+                  now_jst().isoformat()
+              )
+
+              print(
+                  "================================"
+              )
+
 
               state = load_state()
 
@@ -1800,7 +2107,9 @@ jobs:
 
               print(
                   "取得レース数:",
-                  len(predictions)
+                  len(
+                      predictions
+                  )
               )
 
 
@@ -1821,7 +2130,7 @@ jobs:
 
 
                   # -------------------------------------------
-                  # Web側が3 + 4 + 3であることを確認
+                  # 3 + 4 + 3
                   # -------------------------------------------
 
                   if not race.get(
@@ -1839,15 +2148,25 @@ jobs:
 
 
                   # -------------------------------------------
-                  # 念のため再チェック
+                  # 再チェック
                   # -------------------------------------------
 
                   if (
-                      len(race["main"]) != 3
+                      len(
+                          race["main"]
+                      ) != 3
+
                       or
-                      len(race["cover"]) != 4
+
+                      len(
+                          race["cover"]
+                      ) != 4
+
                       or
-                      len(race["hole"]) != 3
+
+                      len(
+                          race["hole"]
+                      ) != 3
                   ):
 
                       print(
@@ -1860,15 +2179,21 @@ jobs:
 
 
                   # -------------------------------------------
-                  # 買い目重複チェック
+                  # 重複
                   # -------------------------------------------
 
                   all_combos = (
+
                       race["main"]
+
                       +
+
                       race["cover"]
+
                       +
+
                       race["hole"]
+
                   )
 
 
@@ -1885,14 +2210,14 @@ jobs:
                       print(
                           "❌ LINE未送信:",
                           race["race"],
-                          "理由: カテゴリ間で買い目重複"
+                          "理由: 買い目重複"
                       )
 
                       continue
 
 
                   # -------------------------------------------
-                  # 締切取得
+                  # 締切
                   # -------------------------------------------
 
                   cutoff = race.get(
@@ -1905,7 +2230,7 @@ jobs:
                       print(
                           "❌ LINE未送信:",
                           race["race"],
-                          "理由: 締切時間を取得できない"
+                          "理由: 締切時間取得失敗"
                       )
 
                       continue
@@ -1942,7 +2267,7 @@ jobs:
 
 
                   # -------------------------------------------
-                  # 締切直前・締切済みは通知しない
+                  # 締切済み
                   # -------------------------------------------
 
                   if remain < MIN_BEFORE:
@@ -1958,7 +2283,7 @@ jobs:
 
 
                   # -------------------------------------------
-                  # 任意の通知時間帯制限
+                  # 通知時間帯
                   # -------------------------------------------
 
                   if USE_NOTIFICATION_WINDOW:
@@ -1967,7 +2292,9 @@ jobs:
                           remain
                           <
                           WINDOW_MIN_BEFORE
+
                           or
+
                           remain
                           >
                           WINDOW_MAX_BEFORE
@@ -1984,13 +2311,16 @@ jobs:
 
 
                   # -------------------------------------------
-                  # 重複通知防止
+                  # 通知履歴
                   # -------------------------------------------
 
+                  today = now_jst().strftime(
+                      "%Y-%m-%d"
+                  )
+
+
                   key = (
-                      NOW.strftime(
-                          "%Y-%m-%d"
-                      )
+                      today
                       +
                       "|"
                       +
@@ -2003,14 +2333,14 @@ jobs:
                       print(
                           "❌ LINE未送信:",
                           race["race"],
-                          "理由: 本日すでに通知済み"
+                          "理由: 本日通知済み"
                       )
 
                       continue
 
 
                   # -------------------------------------------
-                  # 通知対象ログ
+                  # 通知対象
                   # -------------------------------------------
 
                   print(
@@ -2018,18 +2348,15 @@ jobs:
                       race["race"]
                   )
 
-
                   print(
                       "本命🚤:",
                       race["main"]
                   )
 
-
                   print(
                       "狙い🚤:",
                       race["cover"]
                   )
-
 
                   print(
                       "穴🚤:",
@@ -2038,13 +2365,25 @@ jobs:
 
 
                   # -------------------------------------------
-                  # Flex作成
+                  # Flex
                   # -------------------------------------------
 
-                  flex = build_flex(
-                      race,
-                      remain
-                  )
+                  try:
+
+                      flex = build_flex(
+                          race,
+                          remain
+                      )
+
+                  except Exception as e:
+
+                      print(
+                          "❌ Flex作成失敗:",
+                          race["race"],
+                          e
+                      )
+
+                      continue
 
 
                   # -------------------------------------------
@@ -2069,11 +2408,12 @@ jobs:
 
 
                   # -------------------------------------------
-                  # 通知済み保存
+                  # 通知済み
                   # -------------------------------------------
 
                   state[key] = (
-                      NOW.isoformat()
+                      now_jst()
+                      .isoformat()
                   )
 
 
@@ -2081,13 +2421,13 @@ jobs:
 
 
                   print(
-                      "✅ 送信完了:",
+                      "✅ LINE送信完了:",
                       race["race"]
                   )
 
 
               # -----------------------------------------------
-              # 通知履歴保存
+              # 履歴保存
               # -----------------------------------------------
 
               save_state(
@@ -2099,17 +2439,23 @@ jobs:
                   "================================"
               )
 
-
               print(
-                  "今回通知:",
+                  "今回LINE通知:",
                   sent,
                   "件"
               )
-                        # =====================================================
+
+              print(
+                  "================================"
+              )
+
+
+          # =====================================================
           # 実行
           # =====================================================
 
           if __name__ == "__main__":
+
               main()
 
           PY
@@ -2118,17 +2464,19 @@ jobs:
 
 
       # =========================================================
-      # 通知済み履歴保存
+      # 5. 通知履歴保存
       # =========================================================
-
       - name: Save notification history
         run: |
 
           if [ -f .boatrace_line_notified.json ]; then
 
-            git config user.name "github-actions[bot]"
+            git config \
+              user.name \
+              "github-actions[bot]"
 
-            git config user.email \
+            git config \
+              user.email \
               "41898282+github-actions[bot]@users.noreply.github.com"
 
 
@@ -2138,7 +2486,7 @@ jobs:
 
             if git diff --cached --quiet; then
 
-              echo "変更なし"
+              echo "通知履歴の変更なし"
 
             else
 
