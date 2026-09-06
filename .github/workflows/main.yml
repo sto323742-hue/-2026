@@ -2,9 +2,7 @@ name: BOATRACE AI LINE Notification
 
 on:
   workflow_dispatch:
-
   schedule:
-    # 5分ごとに確認
     - cron: "*/5 * * * *"
 
 permissions:
@@ -15,37 +13,25 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  boatrace-line:
+  notify:
     runs-on: ubuntu-latest
 
     steps:
-      # =========================================================
-      # 1. リポジトリ取得
-      # =========================================================
       - name: Checkout
         uses: actions/checkout@v4
 
-      # =========================================================
-      # 2. Python
-      # =========================================================
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
 
-      # =========================================================
-      # 3. 必要ライブラリ
-      # =========================================================
       - name: Install packages
         run: |
           python -m pip install --upgrade pip
           pip install requests playwright
           python -m playwright install --with-deps chromium
 
-      # =========================================================
-      # 4. ツール表示内容 → LINE通知
-      # =========================================================
-      - name: Run LINE Notification
+      - name: BOATRACE AI LINE
         env:
           LINE_CHANNEL_ACCESS_TOKEN: ${{ secrets.BOATAI }}
           LINE_USER_ID: ${{ secrets.LINE_USER_ID }}
@@ -55,6 +41,7 @@ jobs:
           import os
           import re
           import json
+          import itertools
           import requests
 
           from pathlib import Path
@@ -63,33 +50,23 @@ jobs:
 
 
           # =====================================================
-          # 基本設定
+          # 設定
           # =====================================================
 
           JST = timezone(timedelta(hours=9))
           NOW = datetime.now(JST)
 
-          # -----------------------------------------------------
-          # GitHub Pages のツールURL
-          # -----------------------------------------------------
           TOOL_URL = "https://sto323742-hue.github.io/-2026/"
 
-          # -----------------------------------------------------
-          # 通知する時間帯
-          #
-          # 締切10～30分前
-          # -----------------------------------------------------
-          MIN_MINUTES_BEFORE = 10
-          MAX_MINUTES_BEFORE = 30
+          # 締切何分前から通知するか
+          MIN_BEFORE = 10
+          MAX_BEFORE = 30
 
-          # -----------------------------------------------------
-          # 通知済み保存ファイル
-          # -----------------------------------------------------
           STATE_FILE = Path(".boatrace_line_notified.json")
 
 
           # =====================================================
-          # 通知済みデータ
+          # 通知履歴
           # =====================================================
 
           def load_state():
@@ -98,7 +75,6 @@ jobs:
                   return {}
 
               try:
-
                   with open(
                       STATE_FILE,
                       "r",
@@ -110,30 +86,28 @@ jobs:
                       if isinstance(data, dict):
                           return data
 
-              except Exception:
-                  pass
+              except Exception as e:
+                  print("履歴読込エラー:", e)
 
               return {}
 
 
           def save_state(state):
 
-              # 3日以上前の履歴を削除
               limit = NOW - timedelta(days=3)
 
-              new_state = {}
+              cleaned = {}
 
               for key, value in state.items():
 
                   try:
-
                       dt = datetime.fromisoformat(value)
 
                       if dt.tzinfo is None:
                           dt = dt.replace(tzinfo=JST)
 
                       if dt >= limit:
-                          new_state[key] = value
+                          cleaned[key] = value
 
                   except Exception:
                       pass
@@ -145,7 +119,7 @@ jobs:
               ) as f:
 
                   json.dump(
-                      new_state,
+                      cleaned,
                       f,
                       ensure_ascii=False,
                       indent=2
@@ -153,23 +127,49 @@ jobs:
 
 
           # =====================================================
-          # 締切時刻
+          # テキスト整理
           # =====================================================
 
-          def extract_cutoff(meta):
+          def clean(text):
 
-              match = re.search(
+              if text is None:
+                  return ""
+
+              return re.sub(
+                  r"\s+",
+                  " ",
+                  text
+              ).strip()
+
+
+          def combo_only(text):
+
+              if not text:
+                  return ""
+
+              m = re.search(
+                  r"([1-6]-[1-6]-[1-6])",
+                  text
+              )
+
+              return m.group(1) if m else ""
+
+
+          # =====================================================
+          # 締切
+          # =====================================================
+
+          def get_cutoff(meta):
+
+              m = re.search(
                   r"締切\s*(\d{1,2}:\d{2})",
                   meta
               )
 
-              if not match:
-                  return None
-
-              return match.group(1)
+              return m.group(1) if m else None
 
 
-          def minutes_until(cutoff):
+          def remaining_minutes(cutoff):
 
               try:
 
@@ -185,123 +185,271 @@ jobs:
                       microsecond=0
                   )
 
-                  diff = (
-                      target - NOW
-                  ).total_seconds() / 60
-
-                  return int(round(diff))
+                  return int(
+                      (target - NOW).total_seconds()
+                      // 60
+                  )
 
               except Exception:
                   return None
 
 
           # =====================================================
-          # LINE送信
+          # BOX判定
           # =====================================================
 
-          def send_line(message):
+          def make_box(boats):
 
-              token = os.environ.get(
-                  "LINE_CHANNEL_ACCESS_TOKEN"
-              )
+              result = set()
 
-              user_id = os.environ.get(
-                  "LINE_USER_ID"
-              )
-
-              if not token:
-                  raise RuntimeError(
-                      "LINE_CHANNEL_ACCESS_TOKEN がありません"
+              for p in itertools.permutations(
+                  boats,
+                  3
+              ):
+                  result.add(
+                      f"{p[0]}-{p[1]}-{p[2]}"
                   )
-
-              if not user_id:
-                  raise RuntimeError(
-                      "LINE_USER_ID がありません"
-                  )
-
-              url = (
-                  "https://api.line.me/v2/bot/message/push"
-              )
-
-              headers = {
-                  "Authorization":
-                      f"Bearer {token}",
-                  "Content-Type":
-                      "application/json",
-              }
-
-              payload = {
-                  "to": user_id,
-                  "messages": [
-                      {
-                          "type": "text",
-                          "text": message
-                      }
-                  ]
-              }
-
-              response = requests.post(
-                  url,
-                  headers=headers,
-                  json=payload,
-                  timeout=30
-              )
-
-              if response.status_code >= 400:
-
-                  print(
-                      "LINE ERROR:",
-                      response.status_code,
-                      response.text
-                  )
-
-                  response.raise_for_status()
-
-              print("LINE送信成功")
-
-
-          # =====================================================
-          # テキスト整理
-          # =====================================================
-
-          def clean_text(text):
-
-              if text is None:
-                  return ""
-
-              return re.sub(
-                  r"\s+",
-                  " ",
-                  text
-              ).strip()
-
-
-          def combo_list(card, selector):
-
-              items = card.locator(
-                  selector
-              ).all_inner_texts()
-
-              result = []
-
-              for x in items:
-
-                  text = clean_text(x)
-
-                  # ★はそのまま残す
-                  if text:
-                      result.append(text)
 
               return result
 
 
+          def find_box(combos):
+
+              combo_set = set(combos)
+
+              # 3艇BOX = 6点
+              for boats in itertools.combinations(
+                  range(1, 7),
+                  3
+              ):
+
+                  box = make_box(boats)
+
+                  if box.issubset(combo_set):
+
+                      return {
+                          "boats": boats,
+                          "combos": box
+                      }
+
+              return None
+
+
           # =====================================================
-          # ツール画面から予想取得
+          # フォーメーション判定
+          # =====================================================
+
+          def formation_combos(
+              first,
+              second,
+              third
+          ):
+
+              result = set()
+
+              for a in first:
+                  for b in second:
+                      for c in third:
+
+                          if len({
+                              a,
+                              b,
+                              c
+                          }) != 3:
+                              continue
+
+                          result.add(
+                              f"{a}-{b}-{c}"
+                          )
+
+              return result
+
+
+          def format_numbers(nums):
+
+              return ",".join(
+                  str(x)
+                  for x in sorted(nums)
+              )
+
+
+          def find_best_formation(combos):
+
+              combo_set = set(combos)
+
+              if len(combo_set) < 2:
+                  return None
+
+              parsed = [
+                  tuple(
+                      map(
+                          int,
+                          c.split("-")
+                      )
+                  )
+                  for c in combo_set
+              ]
+
+              first_pool = sorted(
+                  set(x[0] for x in parsed)
+              )
+
+              second_pool = sorted(
+                  set(x[1] for x in parsed)
+              )
+
+              third_pool = sorted(
+                  set(x[2] for x in parsed)
+              )
+
+              best = None
+
+              # 全部分集合を試す
+              def subsets(values):
+
+                  out = []
+
+                  for size in range(
+                      1,
+                      len(values) + 1
+                  ):
+
+                      out.extend(
+                          itertools.combinations(
+                              values,
+                              size
+                          )
+                      )
+
+                  return out
+
+              for first in subsets(first_pool):
+
+                  for second in subsets(second_pool):
+
+                      for third in subsets(third_pool):
+
+                          generated = formation_combos(
+                              first,
+                              second,
+                              third
+                          )
+
+                          # 2点以上まとめられるものだけ
+                          if len(generated) < 2:
+                              continue
+
+                          # 元の買い目以外を絶対に増やさない
+                          if not generated.issubset(
+                              combo_set
+                          ):
+                              continue
+
+                          score = len(generated)
+
+                          candidate = {
+                              "first": first,
+                              "second": second,
+                              "third": third,
+                              "combos": generated,
+                              "score": score
+                          }
+
+                          if (
+                              best is None
+                              or
+                              candidate["score"]
+                              >
+                              best["score"]
+                          ):
+                              best = candidate
+
+              return best
+
+
+          # =====================================================
+          # 10点を
+          # 通常 / フォーメーション / BOX
+          # に自動整理
+          # =====================================================
+
+          def classify_bets(combos):
+
+              remaining = set(combos)
+
+              normal = []
+              formations = []
+              boxes = []
+
+              # -----------------------------------------------
+              # BOXを先に探す
+              # -----------------------------------------------
+
+              while True:
+
+                  found = find_box(
+                      list(remaining)
+                  )
+
+                  if not found:
+                      break
+
+                  boats = found["boats"]
+
+                  boxes.append(
+                      "・".join(
+                          str(x)
+                          for x in boats
+                      )
+                  )
+
+                  remaining -= found["combos"]
+
+              # -----------------------------------------------
+              # 次にフォーメーション
+              # -----------------------------------------------
+
+              while len(remaining) >= 2:
+
+                  found = find_best_formation(
+                      list(remaining)
+                  )
+
+                  if not found:
+                      break
+
+                  formations.append(
+                      f"{format_numbers(found['first'])}"
+                      f" - "
+                      f"{format_numbers(found['second'])}"
+                      f" - "
+                      f"{format_numbers(found['third'])}"
+                  )
+
+                  remaining -= found["combos"]
+
+              # -----------------------------------------------
+              # 残りは通常
+              # -----------------------------------------------
+
+              normal = sorted(
+                  remaining
+              )
+
+              return {
+                  "normal": normal,
+                  "formation": formations,
+                  "box": boxes
+              }
+
+
+          # =====================================================
+          # ツール画面取得
           # =====================================================
 
           def get_predictions():
 
-              predictions = []
+              results = []
 
               with sync_playwright() as p:
 
@@ -316,10 +464,7 @@ jobs:
                       }
                   )
 
-                  print(
-                      "ツールを開きます:",
-                      TOOL_URL
-                  )
+                  print("OPEN:", TOOL_URL)
 
                   page.goto(
                       TOOL_URL,
@@ -327,17 +472,15 @@ jobs:
                       timeout=60000
                   )
 
-                  # ツールの自動取得・AI分析を待つ
-                  page.wait_for_timeout(12000)
+                  # ツールのAI解析待ち
+                  page.wait_for_timeout(15000)
 
-                  cards = page.locator(
-                      ".race"
-                  )
+                  cards = page.locator(".race")
 
                   count = cards.count()
 
                   print(
-                      "表示S評価レース:",
+                      "S評価表示数:",
                       count
                   )
 
@@ -345,211 +488,620 @@ jobs:
 
                       card = cards.nth(i)
 
-                      race_name = clean_text(
+                      race_name = clean(
                           card.locator(
                               ".race-name"
                           ).inner_text()
                       )
 
-                      meta = clean_text(
+                      meta = clean(
                           card.locator(
                               ".race-meta"
                           ).inner_text()
                       )
 
-                      score = clean_text(
+                      cutoff = get_cutoff(meta)
+
+                      # ---------------------------------------
+                      # 本命3
+                      # ---------------------------------------
+
+                      main_raw = (
                           card.locator(
-                              ".ai-score"
-                          ).inner_text()
+                              ".main-col .combo"
+                          ).all_inner_texts()
                       )
 
-                      main = combo_list(
-                          card,
-                          ".main-col .combo"
+                      main = [
+                          combo_only(x)
+                          for x in main_raw
+                      ]
+
+                      main = [
+                          x for x in main
+                          if x
+                      ][:3]
+
+                      # ---------------------------------------
+                      # 狙い4
+                      # ---------------------------------------
+
+                      cover_raw = (
+                          card.locator(
+                              ".cover-col .combo"
+                          ).all_inner_texts()
                       )
 
-                      target = combo_list(
-                          card,
-                          ".cover-col .combo"
+                      cover = [
+                          combo_only(x)
+                          for x in cover_raw
+                      ]
+
+                      cover = [
+                          x for x in cover
+                          if x
+                      ][:4]
+
+                      # ---------------------------------------
+                      # 穴3
+                      # ---------------------------------------
+
+                      hole_raw = (
+                          card.locator(
+                              ".hole-col .combo"
+                          ).all_inner_texts()
                       )
 
-                      hole = combo_list(
-                          card,
-                          ".hole-col .combo"
-                      )
+                      hole = [
+                          combo_only(x)
+                          for x in hole_raw
+                      ]
 
-                      # -----------------------------------------
+                      hole = [
+                          x for x in hole
+                          if x
+                      ][:3]
+
+                      # ---------------------------------------
                       # 展開予測
-                      # -----------------------------------------
+                      # ---------------------------------------
 
                       scenario = ""
 
                       try:
 
-                          scenario = clean_text(
+                          scenario = clean(
                               card.locator(
                                   ".scenario-main"
                               ).inner_text()
                           )
 
                       except Exception:
-                          scenario = ""
+                          pass
 
-                      # -----------------------------------------
+                      # ---------------------------------------
                       # 判断基準
-                      # -----------------------------------------
+                      # ---------------------------------------
 
-                      judgment = []
+                      reasons = []
 
                       try:
 
-                          reason_text = (
+                          reason = (
                               card.locator(
                                   ".reason"
                               ).inner_text()
                           )
 
-                          lines = [
-                              clean_text(x)
-                              for x in
-                              reason_text.splitlines()
-                              if clean_text(x)
-                          ]
+                          for line in (
+                              reason.splitlines()
+                          ):
 
-                          judgment = [
-                              x for x in lines
+                              line = clean(line)
+
+                              if not line:
+                                  continue
+
                               if (
                                   "今回のAI判断根拠"
-                                  not in x
+                                  in line
+                              ):
+                                  continue
+
+                              line = (
+                                  line
+                                  .replace("・", "")
+                                  .strip()
                               )
-                          ]
+
+                              if line:
+                                  reasons.append(line)
 
                       except Exception:
-                          judgment = []
+                          pass
 
-                      cutoff = extract_cutoff(
-                          meta
-                      )
-
-                      predictions.append({
-                          "race_name":
+                      results.append({
+                          "race":
                               race_name,
 
-                          "meta":
-                              meta,
-
-                          "score":
-                              score,
+                          "cutoff":
+                              cutoff,
 
                           "main":
-                              main[:3],
+                              main,
 
-                          "target":
-                              target[:4],
+                          "cover":
+                              cover,
 
                           "hole":
-                              hole[:3],
+                              hole,
 
                           "scenario":
                               scenario,
 
-                          "judgment":
-                              judgment,
-
-                          "cutoff":
-                              cutoff,
+                          "reasons":
+                              reasons
                       })
 
                   browser.close()
 
-              return predictions
+              return results
 
 
           # =====================================================
-          # LINE本文
+          # Flex Message用
           # =====================================================
 
-          def build_message(
-              race,
-              remain
+          def text_component(
+              text,
+              size="sm",
+              weight="regular",
+              color="#222222",
+              align="start",
+              wrap=True
           ):
 
-              main_text = (
-                  "\n".join(
-                      f"・{x}"
-                      for x in race["main"]
+              return {
+                  "type": "text",
+                  "text": text,
+                  "size": size,
+                  "weight": weight,
+                  "color": color,
+                  "align": align,
+                  "wrap": wrap
+              }
+
+
+          def bet_column(
+              title,
+              combos,
+              header_color
+          ):
+
+              body = [
+                  {
+                      "type": "box",
+                      "layout": "vertical",
+                      "backgroundColor":
+                          header_color,
+                      "paddingAll": "7px",
+                      "contents": [
+                          text_component(
+                              title,
+                              size="sm",
+                              weight="bold",
+                              align="center"
+                          )
+                      ]
+                  }
+              ]
+
+              for combo in combos:
+
+                  body.append(
+                      {
+                          "type": "box",
+                          "layout": "vertical",
+                          "paddingTop": "7px",
+                          "contents": [
+                              text_component(
+                                  combo,
+                                  size="md",
+                                  weight="bold",
+                                  align="center"
+                              )
+                          ]
+                      }
                   )
-                  if race["main"]
-                  else "・なし"
-              )
 
-              target_text = (
-                  "\n".join(
-                      f"・{x}"
-                      for x in race["target"]
-                  )
-                  if race["target"]
-                  else "・なし"
-              )
+              return {
+                  "type": "box",
+                  "layout": "vertical",
+                  "flex": 1,
+                  "margin": "xs",
+                  "backgroundColor": "#FFFFFF",
+                  "cornerRadius": "md",
+                  "contents": body
+              }
 
-              hole_text = (
-                  "\n".join(
-                      f"・{x}"
-                      for x in race["hole"]
-                  )
-                  if race["hole"]
-                  else "・なし"
-              )
 
-              judgment_text = ""
+          def purchase_column(
+              title,
+              values,
+              color
+          ):
 
-              if race["judgment"]:
+              contents = [
+                  {
+                      "type": "box",
+                      "layout": "vertical",
+                      "backgroundColor": color,
+                      "paddingAll": "6px",
+                      "contents": [
+                          text_component(
+                              title,
+                              size="xs",
+                              weight="bold",
+                              color="#FFFFFF",
+                              align="center"
+                          )
+                      ]
+                  }
+              ]
 
-                  judgment_text = (
-                      "\n\n📊 判断基準\n"
-                      +
-                      "\n".join(
-                          f"・{x}"
-                          for x in race["judgment"]
+              if values:
+
+                  for value in values:
+
+                      contents.append(
+                          {
+                              "type": "box",
+                              "layout": "vertical",
+                              "paddingAll": "6px",
+                              "contents": [
+                                  text_component(
+                                      value,
+                                      size="xs",
+                                      weight="bold",
+                                      align="center"
+                                  )
+                              ]
+                          }
                       )
+
+              else:
+
+                  contents.append(
+                      {
+                          "type": "box",
+                          "layout": "vertical",
+                          "paddingAll": "6px",
+                          "contents": [
+                              text_component(
+                                  "－",
+                                  size="xs",
+                                  align="center",
+                                  color="#999999"
+                              )
+                          ]
+                      }
                   )
 
-              scenario_text = ""
+              return {
+                  "type": "box",
+                  "layout": "vertical",
+                  "flex": 1,
+                  "margin": "xs",
+                  "cornerRadius": "md",
+                  "backgroundColor": "#FFFFFF",
+                  "contents": contents
+              }
+
+
+          # =====================================================
+          # LINE Flex作成
+          # =====================================================
+
+          def build_flex(race, remain):
+
+              all_combos = (
+                  race["main"]
+                  +
+                  race["cover"]
+                  +
+                  race["hole"]
+              )
+
+              classified = classify_bets(
+                  all_combos
+              )
+
+              body = []
+
+              # -----------------------------------------------
+              # 会場・R
+              # -----------------------------------------------
+
+              body.append(
+                  text_component(
+                      "🚤 BOATRACE AI予想",
+                      size="lg",
+                      weight="bold"
+                  )
+              )
+
+              body.append({
+                  "type": "separator",
+                  "margin": "md"
+              })
+
+              body.append(
+                  {
+                      "type": "box",
+                      "layout": "vertical",
+                      "margin": "md",
+                      "contents": [
+                          text_component(
+                              race["race"],
+                              size="xl",
+                              weight="bold"
+                          )
+                      ]
+                  }
+              )
+
+              # -----------------------------------------------
+              # 締切・残り
+              # -----------------------------------------------
+
+              body.append(
+                  {
+                      "type": "box",
+                      "layout": "horizontal",
+                      "margin": "md",
+                      "contents": [
+                          text_component(
+                              f"⏰ 締切 {race['cutoff']}",
+                              size="sm",
+                              weight="bold"
+                          ),
+                          text_component(
+                              f"残り {remain}分",
+                              size="sm",
+                              weight="bold",
+                              align="end"
+                          )
+                      ]
+                  }
+              )
+
+              # -----------------------------------------------
+              # 本命 / 狙い / 穴
+              # -----------------------------------------------
+
+              body.append(
+                  {
+                      "type": "box",
+                      "layout": "horizontal",
+                      "margin": "lg",
+                      "contents": [
+
+                          bet_column(
+                              "本命🚤",
+                              race["main"],
+                              "#FFE5E8"
+                          ),
+
+                          bet_column(
+                              "狙い🚤",
+                              race["cover"],
+                              "#E3F2FF"
+                          ),
+
+                          bet_column(
+                              "穴🚤",
+                              race["hole"],
+                              "#E4F8E9"
+                          )
+                      ]
+                  }
+              )
+
+              # -----------------------------------------------
+              # 買い目
+              # -----------------------------------------------
+
+              body.append(
+                  {
+                      "type": "box",
+                      "layout": "vertical",
+                      "margin": "lg",
+                      "contents": [
+                          text_component(
+                              "🎫 買い目",
+                              size="md",
+                              weight="bold"
+                          )
+                      ]
+                  }
+              )
+
+              body.append(
+                  {
+                      "type": "box",
+                      "layout": "horizontal",
+                      "margin": "sm",
+                      "contents": [
+
+                          purchase_column(
+                              "通常",
+                              classified["normal"],
+                              "#718096"
+                          ),
+
+                          purchase_column(
+                              "フォーメーション",
+                              classified["formation"],
+                              "#1976D2"
+                          ),
+
+                          purchase_column(
+                              "BOX",
+                              classified["box"],
+                              "#079447"
+                          )
+                      ]
+                  }
+              )
+
+              # -----------------------------------------------
+              # 展開予測
+              # -----------------------------------------------
 
               if race["scenario"]:
 
-                  scenario_text = (
-                      "\n\n🧠 展開予測\n"
-                      f"{race['scenario']}"
+                  body.append(
+                      {
+                          "type": "box",
+                          "layout": "vertical",
+                          "margin": "lg",
+                          "backgroundColor": "#F5F7FA",
+                          "cornerRadius": "md",
+                          "paddingAll": "10px",
+                          "contents": [
+                              text_component(
+                                  "🧠 展開予測",
+                                  size="md",
+                                  weight="bold",
+                                  color="#1261A0"
+                              ),
+                              text_component(
+                                  race["scenario"],
+                                  size="sm",
+                                  weight="bold"
+                              )
+                          ]
+                      }
                   )
 
-              message = (
-                  "🚤 BOATRACE AI予想\n"
-                  "━━━━━━━━━━━━━━\n"
-                  f"🏁 {race['race_name']}\n"
-                  f"🔥 勝負度：S\n"
-                  f"🤖 AI信頼スコア："
-                  f"{race['score']}\n"
-                  "\n"
-                  f"⏰ 締切予定 {race['cutoff']}"
-                  f"　｜　残り {remain}分\n"
-                  "\n"
-                  "本命🚤\n"
-                  f"{main_text}\n"
-                  "\n"
-                  "狙い🚤\n"
-                  f"{target_text}\n"
-                  "\n"
-                  "穴　🚤\n"
-                  f"{hole_text}"
-                  f"{scenario_text}"
-                  f"{judgment_text}"
-                  "\n\n"
-                  "━━━━━━━━━━━━━━\n"
-                  "📱ツール表示と同一買い目"
+              # -----------------------------------------------
+              # 判断基準
+              # -----------------------------------------------
+
+              if race["reasons"]:
+
+                  reason_contents = [
+                      text_component(
+                          "📊 判断基準",
+                          size="md",
+                          weight="bold",
+                          color="#1261A0"
+                      )
+                  ]
+
+                  for reason in race["reasons"]:
+
+                      reason_contents.append(
+                          text_component(
+                              f"・{reason}",
+                              size="xs"
+                          )
+                      )
+
+                  body.append(
+                      {
+                          "type": "box",
+                          "layout": "vertical",
+                          "margin": "md",
+                          "backgroundColor": "#F5F7FA",
+                          "cornerRadius": "md",
+                          "paddingAll": "10px",
+                          "contents":
+                              reason_contents
+                      }
+                  )
+
+              # -----------------------------------------------
+              # 最終Flex
+              # -----------------------------------------------
+
+              return {
+                  "type": "flex",
+                  "altText":
+                      f"{race['race']} BOATRACE AI予想",
+
+                  "contents": {
+                      "type": "bubble",
+                      "size": "mega",
+
+                      "body": {
+                          "type": "box",
+                          "layout": "vertical",
+                          "paddingAll": "14px",
+                          "contents": body
+                      }
+                  }
+              }
+
+
+          # =====================================================
+          # LINE送信
+          # =====================================================
+
+          def send_line(flex):
+
+              token = os.environ.get(
+                  "LINE_CHANNEL_ACCESS_TOKEN"
               )
 
-              return message
+              user_id = os.environ.get(
+                  "LINE_USER_ID"
+              )
+
+              if not token:
+                  raise RuntimeError(
+                      "BOATAI が設定されていません"
+                  )
+
+              if not user_id:
+                  raise RuntimeError(
+                      "LINE_USER_ID が設定されていません"
+                  )
+
+              response = requests.post(
+
+                  "https://api.line.me/v2/bot/message/push",
+
+                  headers={
+                      "Authorization":
+                          f"Bearer {token}",
+
+                      "Content-Type":
+                          "application/json"
+                  },
+
+                  json={
+                      "to": user_id,
+                      "messages": [
+                          flex
+                      ]
+                  },
+
+                  timeout=30
+              )
+
+              print(
+                  "LINE:",
+                  response.status_code
+              )
+
+              if response.status_code >= 400:
+
+                  print(
+                      response.text
+                  )
+
+                  response.raise_for_status()
 
 
           # =====================================================
@@ -560,37 +1112,45 @@ jobs:
 
               state = load_state()
 
-              predictions = (
-                  get_predictions()
+              predictions = get_predictions()
+
+              print(
+                  "取得レース数:",
+                  len(predictions)
               )
-
-              if not predictions:
-
-                  print(
-                      "現在S評価レースはありません"
-                  )
-
-                  save_state(state)
-                  return
 
               sent = 0
 
               for race in predictions:
 
-                  cutoff = race.get(
-                      "cutoff"
-                  )
+                  # -------------------------------------------
+                  # 必ず3+4+3
+                  # -------------------------------------------
 
-                  if not cutoff:
+                  if (
+                      len(race["main"]) != 3
+                      or
+                      len(race["cover"]) != 4
+                      or
+                      len(race["hole"]) != 3
+                  ):
 
                       print(
-                          "締切取得失敗:",
-                          race["race_name"]
+                          "買い目不一致のためスキップ:",
+                          race["race"],
+                          len(race["main"]),
+                          len(race["cover"]),
+                          len(race["hole"])
                       )
 
                       continue
 
-                  remain = minutes_until(
+                  cutoff = race["cutoff"]
+
+                  if not cutoff:
+                      continue
+
+                  remain = remaining_minutes(
                       cutoff
                   )
 
@@ -598,100 +1158,74 @@ jobs:
                       continue
 
                   print(
-                      race["race_name"],
-                      "締切:",
-                      cutoff,
-                      "残り:",
-                      remain
+                      race["race"],
+                      "残り",
+                      remain,
+                      "分"
                   )
 
-                  # ---------------------------------------------
-                  # 締切10～30分前だけ通知
-                  # ---------------------------------------------
+                  # -------------------------------------------
+                  # 締切10～30分前
+                  # -------------------------------------------
 
                   if (
-                      remain <
-                      MIN_MINUTES_BEFORE
+                      remain < MIN_BEFORE
                       or
-                      remain >
-                      MAX_MINUTES_BEFORE
+                      remain > MAX_BEFORE
                   ):
-
                       continue
 
-                  # ---------------------------------------------
-                  # 買い目数チェック
-                  # ---------------------------------------------
-
-                  if (
-                      len(race["main"]) != 3
-                      or
-                      len(race["target"]) != 4
-                      or
-                      len(race["hole"]) != 3
-                  ):
-
-                      print(
-                          "買い目数が不正なので通知しません:",
-                          race["race_name"],
-                          "本命",
-                          len(race["main"]),
-                          "狙い",
-                          len(race["target"]),
-                          "穴",
-                          len(race["hole"])
-                      )
-
-                      continue
-
-                  # ---------------------------------------------
-                  # 日付＋会場Rで重複防止
-                  # ---------------------------------------------
-
-                  today = NOW.strftime(
-                      "%Y-%m-%d"
-                  )
+                  # -------------------------------------------
+                  # 重複防止
+                  # -------------------------------------------
 
                   key = (
-                      f"{today}|"
-                      f"{race['race_name']}"
+                      NOW.strftime("%Y-%m-%d")
+                      +
+                      "|"
+                      +
+                      race["race"]
                   )
 
                   if key in state:
 
                       print(
                           "通知済み:",
-                          race["race_name"]
+                          race["race"]
                       )
 
                       continue
 
-                  # ---------------------------------------------
-                  # LINE本文
-                  # ---------------------------------------------
+                  # -------------------------------------------
+                  # Flex作成
+                  # -------------------------------------------
 
-                  message = build_message(
+                  flex = build_flex(
                       race,
                       remain
                   )
 
-                  print(message)
+                  # -------------------------------------------
+                  # LINE
+                  # -------------------------------------------
 
-                  send_line(
-                      message
-                  )
+                  send_line(flex)
 
-                  state[key] = (
-                      NOW.isoformat()
-                  )
+                  state[key] = NOW.isoformat()
 
                   sent += 1
+
+                  print(
+                      "送信完了:",
+                      race["race"]
+                  )
 
               save_state(state)
 
               print(
-                  "今回のLINE通知数:",
-                  sent
+                  "今回通知:",
+                  sent,
+                  "件"
               )
 
 
@@ -703,9 +1237,9 @@ jobs:
           python line_notify.py
 
       # =========================================================
-      # 5. 通知済み履歴をGitHubへ保存
+      # 通知済み履歴保存
       # =========================================================
-      - name: Save notification state
+      - name: Save notification history
         run: |
           if [ -f .boatrace_line_notified.json ]; then
 
@@ -715,9 +1249,9 @@ jobs:
             git add .boatrace_line_notified.json
 
             if git diff --cached --quiet; then
-              echo "通知履歴の変更なし"
+              echo "変更なし"
             else
-              git commit -m "Update BOATRACE LINE notification state"
+              git commit -m "Update BOATRACE LINE notification history"
               git pull --rebase origin "${GITHUB_REF_NAME}"
               git push origin HEAD:"${GITHUB_REF_NAME}"
             fi
