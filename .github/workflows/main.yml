@@ -38,9 +38,11 @@ jobs:
 
         run: |
           cat > line_notify.py <<'PY'
+
           import os
           import re
           import json
+          import time
           import itertools
           import requests
 
@@ -58,16 +60,41 @@ jobs:
 
           TOOL_URL = "https://sto323742-hue.github.io/-2026/"
 
-          # 締切10～30分前だけ通知
-          MIN_BEFORE = 10
-          MAX_BEFORE = 30
 
-          STATE_FILE = Path(".boatrace_line_notified.json")
+          # =====================================================
+          # LINE通知設定
+          # =====================================================
+
+          # 締切1分前以降は送らない
+          MIN_BEFORE = 1
+
+          # False = ツールに予想が完成した時点で通知
+          # True  = 指定時間帯だけ通知
+          USE_NOTIFICATION_WINDOW = False
+
+          WINDOW_MIN_BEFORE = 10
+          WINDOW_MAX_BEFORE = 30
+
+
+          # =====================================================
+          # Web予想完成待ち設定
+          # =====================================================
+
+          # 最大60秒待つ
+          PREDICTION_WAIT_SECONDS = 60
+
+          # 1秒ごとに確認
+          PREDICTION_CHECK_INTERVAL_MS = 1000
 
 
           # =====================================================
           # 通知履歴
           # =====================================================
+
+          STATE_FILE = Path(
+              ".boatrace_line_notified.json"
+          )
+
 
           def load_state():
 
@@ -75,6 +102,7 @@ jobs:
                   return {}
 
               try:
+
                   with open(
                       STATE_FILE,
                       "r",
@@ -83,34 +111,53 @@ jobs:
 
                       data = json.load(f)
 
-                      if isinstance(data, dict):
+                      if isinstance(
+                          data,
+                          dict
+                      ):
                           return data
 
               except Exception as e:
-                  print("履歴読込エラー:", e)
+
+                  print(
+                      "履歴読込エラー:",
+                      e
+                  )
 
               return {}
 
 
           def save_state(state):
 
-              limit = NOW - timedelta(days=3)
+              limit = (
+                  NOW
+                  -
+                  timedelta(days=3)
+              )
 
               cleaned = {}
 
               for key, value in state.items():
 
                   try:
-                      dt = datetime.fromisoformat(value)
+
+                      dt = datetime.fromisoformat(
+                          value
+                      )
 
                       if dt.tzinfo is None:
-                          dt = dt.replace(tzinfo=JST)
+
+                          dt = dt.replace(
+                              tzinfo=JST
+                          )
 
                       if dt >= limit:
+
                           cleaned[key] = value
 
                   except Exception:
                       pass
+
 
               with open(
                   STATE_FILE,
@@ -152,18 +199,23 @@ jobs:
                   str(text)
               )
 
-              return m.group(1) if m else ""
+              return (
+                  m.group(1)
+                  if m
+                  else ""
+              )
 
 
           def unique_combos(values):
 
               result = []
-
               seen = set()
 
               for value in values:
 
-                  combo = combo_only(value)
+                  combo = combo_only(
+                      value
+                  )
 
                   if not combo:
                       continue
@@ -171,8 +223,13 @@ jobs:
                   if combo in seen:
                       continue
 
-                  seen.add(combo)
-                  result.append(combo)
+                  seen.add(
+                      combo
+                  )
+
+                  result.append(
+                      combo
+                  )
 
               return result
 
@@ -188,7 +245,11 @@ jobs:
                   meta or ""
               )
 
-              return m.group(1) if m else None
+              return (
+                  m.group(1)
+                  if m
+                  else None
+              )
 
 
           def remaining_minutes(cutoff):
@@ -208,8 +269,13 @@ jobs:
                   )
 
                   return int(
-                      (target - NOW).total_seconds()
-                      // 60
+                      (
+                          target
+                          -
+                          NOW
+                      ).total_seconds()
+                      //
+                      60
                   )
 
               except Exception:
@@ -238,17 +304,22 @@ jobs:
 
           def find_box(combos):
 
-              combo_set = set(combos)
+              combo_set = set(
+                  combos
+              )
 
-              # 3艇BOX = 6点
               for boats in itertools.combinations(
                   range(1, 7),
                   3
               ):
 
-                  box = make_box(boats)
+                  box = make_box(
+                      boats
+                  )
 
-                  if box.issubset(combo_set):
+                  if box.issubset(
+                      combo_set
+                  ):
 
                       return {
                           "boats": boats,
@@ -294,13 +365,19 @@ jobs:
 
               return ",".join(
                   str(x)
-                  for x in sorted(nums)
+                  for x in sorted(
+                      nums
+                  )
               )
 
 
-          def find_best_formation(combos):
+          def find_best_formation(
+              combos
+          ):
 
-              combo_set = set(combos)
+              combo_set = set(
+                  combos
+              )
 
               if len(combo_set) < 2:
                   return None
@@ -316,15 +393,24 @@ jobs:
               ]
 
               first_pool = sorted(
-                  set(x[0] for x in parsed)
+                  set(
+                      x[0]
+                      for x in parsed
+                  )
               )
 
               second_pool = sorted(
-                  set(x[1] for x in parsed)
+                  set(
+                      x[1]
+                      for x in parsed
+                  )
               )
 
               third_pool = sorted(
-                  set(x[2] for x in parsed)
+                  set(
+                      x[2]
+                      for x in parsed
+                  )
               )
 
               best = None
@@ -349,11 +435,17 @@ jobs:
                   return out
 
 
-              for first in subsets(first_pool):
+              for first in subsets(
+                  first_pool
+              ):
 
-                  for second in subsets(second_pool):
+                  for second in subsets(
+                      second_pool
+                  ):
 
-                      for third in subsets(third_pool):
+                      for third in subsets(
+                          third_pool
+                      ):
 
                           generated = formation_combos(
                               first,
@@ -361,10 +453,11 @@ jobs:
                               third
                           )
 
-                          if len(generated) < 2:
+                          if len(
+                              generated
+                          ) < 2:
                               continue
 
-                          # 元の買い目以外は増やさない
                           if not generated.issubset(
                               combo_set
                           ):
@@ -375,7 +468,9 @@ jobs:
                               "second": second,
                               "third": third,
                               "combos": generated,
-                              "score": len(generated)
+                              "score": len(
+                                  generated
+                              )
                           }
 
                           if (
@@ -385,6 +480,7 @@ jobs:
                               >
                               best["score"]
                           ):
+
                               best = candidate
 
               return best
@@ -394,18 +490,24 @@ jobs:
           # 通常 / フォーメーション / BOX
           # =====================================================
 
-          def classify_bets(combos):
+          def classify_bets(
+              combos
+          ):
 
-              remaining = set(combos)
+              remaining = set(
+                  combos
+              )
 
               formations = []
               boxes = []
 
-              # BOXを先に探す
+
               while True:
 
                   found = find_box(
-                      list(remaining)
+                      list(
+                          remaining
+                      )
                   )
 
                   if not found:
@@ -418,14 +520,19 @@ jobs:
                       )
                   )
 
-                  remaining -= found["combos"]
+                  remaining -= (
+                      found["combos"]
+                  )
 
 
-              # 次にフォーメーション
-              while len(remaining) >= 2:
+              while len(
+                  remaining
+              ) >= 2:
 
                   found = find_best_formation(
-                      list(remaining)
+                      list(
+                          remaining
+                      )
                   )
 
                   if not found:
@@ -439,24 +546,25 @@ jobs:
                       f"{format_numbers(found['third'])}"
                   )
 
-                  remaining -= found["combos"]
+                  remaining -= (
+                      found["combos"]
+                  )
 
 
               return {
-                  "normal": sorted(remaining),
-                  "formation": formations,
-                  "box": boxes
+                  "normal":
+                      sorted(
+                          remaining
+                      ),
+
+                  "formation":
+                      formations,
+
+                  "box":
+                      boxes
               }
-
-
-          # =====================================================
-          # ①ここまで
-          # 次はWebツールから
-          # 本命3・狙い4・穴3を完全一致で取得
-          # =====================================================
-                    # =====================================================
+                        # =====================================================
           # Webツールから買い目を取得
-          # Webで確定した
           # 本命3 / 狙い4 / 穴3
           # をそのままLINEへ使用
           # =====================================================
@@ -546,22 +654,180 @@ jobs:
                   """
               )
 
+
               return {
+
                   "main":
                       unique_combos(
-                          data.get("main", [])
+                          data.get(
+                              "main",
+                              []
+                          )
                       )[:3],
 
                   "cover":
                       unique_combos(
-                          data.get("cover", [])
+                          data.get(
+                              "cover",
+                              []
+                          )
                       )[:4],
 
                   "hole":
                       unique_combos(
-                          data.get("hole", [])
+                          data.get(
+                              "hole",
+                              []
+                          )
                       )[:3]
               }
+
+
+          # =====================================================
+          # 本命3・狙い4・穴3が完成するまで待機
+          # =====================================================
+
+          def wait_for_complete_bets(
+              page,
+              card,
+              race_name
+          ):
+
+              deadline = (
+                  time.monotonic()
+                  +
+                  PREDICTION_WAIT_SECONDS
+              )
+
+
+              last_bets = {
+                  "main": [],
+                  "cover": [],
+                  "hole": []
+              }
+
+
+              while (
+                  time.monotonic()
+                  <
+                  deadline
+              ):
+
+                  try:
+
+                      bets = extract_bet_sections(
+                          card
+                      )
+
+                      last_bets = bets
+
+                      main = bets["main"]
+                      cover = bets["cover"]
+                      hole = bets["hole"]
+
+
+                      all_combos = (
+                          main
+                          +
+                          cover
+                          +
+                          hole
+                      )
+
+
+                      print(
+                          "予想完成待ち:",
+                          race_name,
+                          f"本命{len(main)}",
+                          f"狙い{len(cover)}",
+                          f"穴{len(hole)}"
+                      )
+
+
+                      # -----------------------------------------
+                      # 本命3・狙い4・穴3 完成
+                      # -----------------------------------------
+
+                      if (
+                          len(main) == 3
+                          and
+                          len(cover) == 4
+                          and
+                          len(hole) == 3
+                      ):
+
+                          # -------------------------------------
+                          # カテゴリ間重複チェック
+                          # -------------------------------------
+
+                          if (
+                              len(all_combos)
+                              ==
+                              len(
+                                  set(
+                                      all_combos
+                                  )
+                              )
+                          ):
+
+                              print(
+                                  "✅ 予想完成:",
+                                  race_name
+                              )
+
+                              print(
+                                  "本命🚤:",
+                                  main
+                              )
+
+                              print(
+                                  "狙い🚤:",
+                                  cover
+                              )
+
+                              print(
+                                  "穴🚤:",
+                                  hole
+                              )
+
+                              return bets
+
+
+                          print(
+                              "予想完成待ち・"
+                              "買い目重複あり:",
+                              race_name
+                          )
+
+
+                  except Exception as e:
+
+                      print(
+                          "予想確認エラー:",
+                          race_name,
+                          e
+                      )
+
+
+                  page.wait_for_timeout(
+                      PREDICTION_CHECK_INTERVAL_MS
+                  )
+
+
+              # =================================================
+              # 60秒待っても完成しなかった場合
+              # =================================================
+
+              print(
+                  "❌ 予想完成タイムアウト:",
+                  race_name,
+                  f"本命{len(last_bets['main'])}",
+                  f"狙い{len(last_bets['cover'])}",
+                  f"穴{len(last_bets['hole'])}"
+              )
+
+
+              return last_bets
 
 
           # =====================================================
@@ -572,11 +838,13 @@ jobs:
 
               results = []
 
+
               with sync_playwright() as p:
 
                   browser = p.chromium.launch(
                       headless=True
                   )
+
 
                   page = browser.new_page(
                       viewport={
@@ -585,10 +853,12 @@ jobs:
                       }
                   )
 
+
                   print(
                       "OPEN:",
                       TOOL_URL
                   )
+
 
                   page.goto(
                       TOOL_URL,
@@ -598,7 +868,7 @@ jobs:
 
 
                   # ---------------------------------------------
-                  # JavaScript解析完了待ち
+                  # レースカード表示待ち
                   # ---------------------------------------------
 
                   try:
@@ -615,9 +885,14 @@ jobs:
                       )
 
 
-                  # オッズ取得・AI再計算を待つ
+                  # ---------------------------------------------
+                  # ページ初期描画だけ少し待つ
+                  # 各レースの予想完成は
+                  # wait_for_complete_bets() で確認
+                  # ---------------------------------------------
+
                   page.wait_for_timeout(
-                      15000
+                      3000
                   )
 
 
@@ -625,7 +900,9 @@ jobs:
                       ".race"
                   )
 
+
                   count = cards.count()
+
 
                   print(
                       "Web表示レース数:",
@@ -637,9 +914,13 @@ jobs:
                   # 各レース
                   # =================================================
 
-                  for i in range(count):
+                  for i in range(
+                      count
+                  ):
 
-                      card = cards.nth(i)
+                      card = cards.nth(
+                          i
+                      )
 
 
                       # ---------------------------------------------
@@ -651,7 +932,9 @@ jobs:
                           race_name = clean(
                               card.locator(
                                   ".race-name"
-                              ).first.inner_text()
+                              )
+                              .first
+                              .inner_text()
                           )
 
                       except Exception:
@@ -678,7 +961,9 @@ jobs:
                           meta = clean(
                               card.locator(
                                   ".race-meta"
-                              ).first.inner_text()
+                              )
+                              .first
+                              .inner_text()
                           )
 
                       except Exception:
@@ -692,13 +977,15 @@ jobs:
 
 
                       # ---------------------------------------------
-                      # Webツールの分類をそのまま取得
+                      # 本命3・狙い4・穴3が完成するまで待機
                       # ---------------------------------------------
 
                       try:
 
-                          bets = extract_bet_sections(
-                              card
+                          bets = wait_for_complete_bets(
+                              page,
+                              card,
+                              race_name
                           )
 
                       except Exception as e:
@@ -758,10 +1045,15 @@ jobs:
                           hole
                       )
 
+
                       if (
                           len(all_combos)
                           !=
-                          len(set(all_combos))
+                          len(
+                              set(
+                                  all_combos
+                              )
+                          )
                       ):
 
                           print(
@@ -778,6 +1070,7 @@ jobs:
 
                       scenario = ""
 
+
                       try:
 
                           scenario_node = (
@@ -786,9 +1079,11 @@ jobs:
                               )
                           )
 
+
                           if (
                               scenario_node.count()
-                              > 0
+                              >
+                              0
                           ):
 
                               scenario = clean(
@@ -812,6 +1107,7 @@ jobs:
 
                       reasons = []
 
+
                       try:
 
                           reason_node = (
@@ -820,9 +1116,11 @@ jobs:
                               )
                           )
 
+
                           if (
                               reason_node.count()
-                              > 0
+                              >
+                              0
                           ):
 
                               reason_text = (
@@ -830,6 +1128,7 @@ jobs:
                                   .first
                                   .inner_text()
                               )
+
 
                               for line in (
                                   reason_text
@@ -840,11 +1139,11 @@ jobs:
                                       line
                                   )
 
+
                                   if not line:
                                       continue
 
 
-                                  # 見出しはLINE側で付けるので除外
                                   if (
                                       "今回のAI判断根拠"
                                       in line
@@ -864,6 +1163,7 @@ jobs:
                                       )
                                       .strip()
                                   )
+
 
                                   if line:
 
@@ -896,7 +1196,8 @@ jobs:
                       if not valid_343:
 
                           print(
-                              "Web買い目が3+4+3ではありません:",
+                              "❌ Web買い目が"
+                              "3+4+3ではありません:",
                               race_name,
                               len(main),
                               len(cover),
@@ -980,13 +1281,16 @@ jobs:
           ):
 
               body = [
+
                   {
                       "type": "box",
                       "layout": "vertical",
                       "backgroundColor":
                           header_color,
                       "paddingAll": "7px",
+
                       "contents": [
+
                           text_component(
                               title,
                               size="sm",
@@ -1001,12 +1305,15 @@ jobs:
               for combo in combos:
 
                   body.append(
+
                       {
                           "type": "box",
                           "layout": "vertical",
                           "paddingTop": "7px",
                           "paddingBottom": "3px",
+
                           "contents": [
+
                               text_component(
                                   combo,
                                   size="md",
@@ -1019,6 +1326,7 @@ jobs:
 
 
               return {
+
                   "type": "box",
                   "layout": "vertical",
                   "flex": 1,
@@ -1041,13 +1349,16 @@ jobs:
           ):
 
               contents = [
+
                   {
                       "type": "box",
                       "layout": "vertical",
                       "backgroundColor":
                           color,
                       "paddingAll": "6px",
+
                       "contents": [
+
                           text_component(
                               title,
                               size="xs",
@@ -1065,11 +1376,14 @@ jobs:
                   for value in values:
 
                       contents.append(
+
                           {
                               "type": "box",
                               "layout": "vertical",
                               "paddingAll": "6px",
+
                               "contents": [
+
                                   text_component(
                                       value,
                                       size="xs",
@@ -1080,14 +1394,18 @@ jobs:
                           }
                       )
 
+
               else:
 
                   contents.append(
+
                       {
                           "type": "box",
                           "layout": "vertical",
                           "paddingAll": "6px",
+
                           "contents": [
+
                               text_component(
                                   "－",
                                   size="xs",
@@ -1100,6 +1418,7 @@ jobs:
 
 
               return {
+
                   "type": "box",
                   "layout": "vertical",
                   "flex": 1,
@@ -1110,12 +1429,7 @@ jobs:
                   "contents":
                       contents
               }
-
-
-          # =====================================================
-          # ②ここまで
-          # =====================================================
-                    # =====================================================
+                        # =====================================================
           # LINE Flex作成
           # =====================================================
 
@@ -1129,9 +1443,11 @@ jobs:
                   race["hole"]
               )
 
+
               classified = classify_bets(
                   all_combos
               )
+
 
               body = []
 
@@ -1164,7 +1480,9 @@ jobs:
                       "type": "box",
                       "layout": "vertical",
                       "margin": "md",
+
                       "contents": [
+
                           text_component(
                               race["race"],
                               size="xl",
@@ -1177,7 +1495,6 @@ jobs:
 
               # -----------------------------------------------
               # 締切予定 / 残り時間
-              # 横並び
               # -----------------------------------------------
 
               body.append(
@@ -1185,6 +1502,7 @@ jobs:
                       "type": "box",
                       "layout": "horizontal",
                       "margin": "md",
+
                       "contents": [
 
                           text_component(
@@ -1213,6 +1531,7 @@ jobs:
                       "type": "box",
                       "layout": "horizontal",
                       "margin": "lg",
+
                       "contents": [
 
                           bet_column(
@@ -1246,7 +1565,9 @@ jobs:
                       "type": "box",
                       "layout": "vertical",
                       "margin": "lg",
+
                       "contents": [
+
                           text_component(
                               "🎫 投票",
                               size="md",
@@ -1262,6 +1583,7 @@ jobs:
                       "type": "box",
                       "layout": "horizontal",
                       "margin": "sm",
+
                       "contents": [
 
                           purchase_column(
@@ -1297,9 +1619,11 @@ jobs:
                           "type": "box",
                           "layout": "vertical",
                           "margin": "lg",
-                          "backgroundColor": "#F5F7FA",
+                          "backgroundColor":
+                              "#F5F7FA",
                           "cornerRadius": "md",
                           "paddingAll": "10px",
+
                           "contents": [
 
                               text_component(
@@ -1326,6 +1650,7 @@ jobs:
               if race["reasons"]:
 
                   reason_contents = [
+
                       text_component(
                           "📊 判断基準",
                           size="md",
@@ -1338,6 +1663,7 @@ jobs:
                   for reason in race["reasons"]:
 
                       reason_contents.append(
+
                           text_component(
                               f"・{reason}",
                               size="xs"
@@ -1350,9 +1676,11 @@ jobs:
                           "type": "box",
                           "layout": "vertical",
                           "margin": "md",
-                          "backgroundColor": "#F5F7FA",
+                          "backgroundColor":
+                              "#F5F7FA",
                           "cornerRadius": "md",
                           "paddingAll": "10px",
+
                           "contents":
                               reason_contents
                       }
@@ -1364,16 +1692,19 @@ jobs:
               # -----------------------------------------------
 
               return {
+
                   "type": "flex",
 
                   "altText":
                       f"{race['race']} BOATRACE AI予想",
 
                   "contents": {
+
                       "type": "bubble",
                       "size": "mega",
 
                       "body": {
+
                           "type": "box",
                           "layout": "vertical",
                           "paddingAll": "14px",
@@ -1448,6 +1779,7 @@ jobs:
               if response.status_code >= 400:
 
                   print(
+                      "LINEレスポンス:",
                       response.text
                   )
 
@@ -1455,9 +1787,6 @@ jobs:
 
 
           # =====================================================
-          # ③ここまで
-          # =====================================================
-                    # =====================================================
           # メイン処理
           # =====================================================
 
@@ -1465,17 +1794,30 @@ jobs:
 
               state = load_state()
 
+
               predictions = get_predictions()
+
 
               print(
                   "取得レース数:",
                   len(predictions)
               )
 
+
               sent = 0
 
 
               for race in predictions:
+
+
+                  print(
+                      "================================"
+                  )
+
+                  print(
+                      "判定開始:",
+                      race["race"]
+                  )
 
 
                   # -------------------------------------------
@@ -1488,11 +1830,9 @@ jobs:
                   ):
 
                       print(
-                          "3+4+3不一致のためスキップ:",
+                          "❌ LINE未送信:",
                           race["race"],
-                          len(race["main"]),
-                          len(race["cover"]),
-                          len(race["hole"])
+                          "理由: 本命3・狙い4・穴3が未完成"
                       )
 
                       continue
@@ -1511,8 +1851,9 @@ jobs:
                   ):
 
                       print(
-                          "買い目数不一致:",
-                          race["race"]
+                          "❌ LINE未送信:",
+                          race["race"],
+                          "理由: 買い目数不一致"
                       )
 
                       continue
@@ -1530,15 +1871,21 @@ jobs:
                       race["hole"]
                   )
 
+
                   if (
                       len(all_combos)
                       !=
-                      len(set(all_combos))
+                      len(
+                          set(
+                              all_combos
+                          )
+                      )
                   ):
 
                       print(
-                          "カテゴリ間重複のためスキップ:",
-                          race["race"]
+                          "❌ LINE未送信:",
+                          race["race"],
+                          "理由: カテゴリ間で買い目重複"
                       )
 
                       continue
@@ -1552,11 +1899,13 @@ jobs:
                       "cutoff"
                   )
 
+
                   if not cutoff:
 
                       print(
-                          "締切取得失敗:",
-                          race["race"]
+                          "❌ LINE未送信:",
+                          race["race"],
+                          "理由: 締切時間を取得できない"
                       )
 
                       continue
@@ -1570,11 +1919,13 @@ jobs:
                       cutoff
                   )
 
+
                   if remain is None:
 
                       print(
-                          "残り時間計算失敗:",
-                          race["race"]
+                          "❌ LINE未送信:",
+                          race["race"],
+                          "理由: 残り時間計算失敗"
                       )
 
                       continue
@@ -1591,21 +1942,45 @@ jobs:
 
 
                   # -------------------------------------------
-                  # 締切10～30分前だけ通知
+                  # 締切直前・締切済みは通知しない
                   # -------------------------------------------
 
-                  if (
-                      remain < MIN_BEFORE
-                      or
-                      remain > MAX_BEFORE
-                  ):
+                  if remain < MIN_BEFORE:
 
                       print(
-                          "通知時間外:",
-                          race["race"]
+                          "❌ LINE未送信:",
+                          race["race"],
+                          "理由: 締切直前または締切済み",
+                          f"残り{remain}分"
                       )
 
                       continue
+
+
+                  # -------------------------------------------
+                  # 任意の通知時間帯制限
+                  # -------------------------------------------
+
+                  if USE_NOTIFICATION_WINDOW:
+
+                      if (
+                          remain
+                          <
+                          WINDOW_MIN_BEFORE
+                          or
+                          remain
+                          >
+                          WINDOW_MAX_BEFORE
+                      ):
+
+                          print(
+                              "❌ LINE未送信:",
+                              race["race"],
+                              "理由: 通知時間外",
+                              f"残り{remain}分"
+                          )
+
+                          continue
 
 
                   # -------------------------------------------
@@ -1626,31 +2001,35 @@ jobs:
                   if key in state:
 
                       print(
-                          "通知済み:",
-                          race["race"]
+                          "❌ LINE未送信:",
+                          race["race"],
+                          "理由: 本日すでに通知済み"
                       )
 
                       continue
 
 
                   # -------------------------------------------
-                  # Web表示内容をログへ出す
+                  # 通知対象ログ
                   # -------------------------------------------
 
                   print(
-                      "通知対象:",
+                      "✅ 通知対象:",
                       race["race"]
                   )
+
 
                   print(
                       "本命🚤:",
                       race["main"]
                   )
 
+
                   print(
                       "狙い🚤:",
                       race["cover"]
                   )
+
 
                   print(
                       "穴🚤:",
@@ -1681,7 +2060,7 @@ jobs:
                   except Exception as e:
 
                       print(
-                          "LINE送信失敗:",
+                          "❌ LINE送信失敗:",
                           race["race"],
                           e
                       )
@@ -1697,11 +2076,12 @@ jobs:
                       NOW.isoformat()
                   )
 
+
                   sent += 1
 
 
                   print(
-                      "送信完了:",
+                      "✅ 送信完了:",
                       race["race"]
                   )
 
@@ -1716,13 +2096,16 @@ jobs:
 
 
               print(
+                  "================================"
+              )
+
+
+              print(
                   "今回通知:",
                   sent,
                   "件"
               )
-
-
-          # =====================================================
+                        # =====================================================
           # 実行
           # =====================================================
 
