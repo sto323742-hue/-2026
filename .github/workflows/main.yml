@@ -337,22 +337,33 @@ jobs:
 
           def race_key(race):
 
-              date = (
+              date = str(
                   race.get("date")
+                  or race.get("race_date")
                   or today_jst()
-              )
+              ).strip()
 
-              stadium = int_num(
-                  race.get("stadium_number")
-              )
+              try:
+                  stadium = int(
+                      race.get("stadium_number")
+                      or race.get("stadium")
+                      or race.get("place_no")
+                      or 0
+                  )
+              except (TypeError, ValueError):
+                  stadium = 0
 
-              race_no = int_num(
-                  race.get("race_number")
-              )
+              try:
+                  race_no = int(
+                      race.get("race_number")
+                      or race.get("race_no")
+                      or race.get("race")
+                      or 0
+                  )
+              except (TypeError, ValueError):
+                  race_no = 0
 
-              return (
-                  f"{date}_{stadium}_{race_no}"
-              )
+              return f"{date}_{stadium}_{race_no}"
 
           def close_time_text(race):
 
@@ -438,6 +449,7 @@ jobs:
                   return "締切"
 
               hours = seconds // 3600
+
               minutes = (
                   seconds % 3600
               ) // 60
@@ -553,7 +565,8 @@ jobs:
                           )
                       ),
               }
-                        def find_race_odds_node(
+
+          def find_race_odds_node(
               obj,
               stadium,
               race_no
@@ -659,8 +672,7 @@ jobs:
                       (dict, list)
                   ):
                       continue
-
-                  if isinstance(
+                                        if isinstance(
                       sub,
                       dict
                   ):
@@ -1099,8 +1111,7 @@ jobs:
                   1,
                   7
               ):
-
-                  p = racers.get(
+                                p = racers.get(
                       str(boat),
                       {}
                   )
@@ -1697,8 +1708,8 @@ jobs:
 
               main_pool.sort(
                   key=lambda x: (
-                      x["probability"]
-                      +
+                      x["probability"],
+                                            +
                       x["ev"] * 0.002
                   ),
                   reverse=True
@@ -1791,7 +1802,8 @@ jobs:
                           len(hole_pool),
                   },
               }
-                        def allocate_tickets(
+
+          def allocate_tickets(
               ticket_set,
               budget=1000
           ):
