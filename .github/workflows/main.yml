@@ -48,10 +48,6 @@ jobs:
       # =========================================================
       - name: BOATRACE AI LINE
 
-        env:
-          LINE_CHANNEL_ACCESS_TOKEN: ${{ secrets.BOATAI }}
-          LINE_USER_ID: ${{ secrets.LINE_USER_ID }}
-
         run: |
           cat > line_notify.py <<'PY'
 
@@ -67,10 +63,6 @@ jobs:
           from pathlib import Path
           from datetime import datetime, timedelta, timezone
 
-          # =====================================================
-          # 基本設定
-          # =====================================================
-
           JST = timezone(timedelta(hours=9))
 
           API_BASE = (
@@ -82,9 +74,7 @@ jobs:
               "BoatraceOdds/v3"
           )
 
-          MODEL_NAME = (
-              "gold-v3-odds-band-15-80"
-          )
+          MODEL_NAME = "gold-v3-odds-band-15-80"
 
           LINE_CHANNEL_ACCESS_TOKEN = (
               os.getenv(
@@ -103,10 +93,6 @@ jobs:
           STATE_FILE = Path(
               "boatrace_line_state.json"
           )
-
-          # =====================================================
-          # 会場名
-          # =====================================================
 
           STADIUMS = {
               1: "桐生",
@@ -143,95 +129,34 @@ jobs:
               5: "霧",
           }
 
-          # =====================================================
-          # 共通関数
-          # =====================================================
-
           def now_jst():
               return datetime.now(JST)
 
           def today_jst():
-              return now_jst().strftime(
-                  "%Y-%m-%d"
-              )
+              return now_jst().strftime("%Y-%m-%d")
 
           def today_compact():
-              return now_jst().strftime(
-                  "%Y%m%d"
-              )
+              return now_jst().strftime("%Y%m%d")
 
           def today_year():
-              return now_jst().strftime(
-                  "%Y"
-              )
+              return now_jst().strftime("%Y")
 
-          def num(
-              value,
-              default=0.0
-          ):
+          def num(value, default=0.0):
               try:
                   return float(value)
-              except (
-                  TypeError,
-                  ValueError
-              ):
+              except (TypeError, ValueError):
                   return float(default)
 
-          def int_num(
-              value,
-              default=0
-          ):
+          def int_num(value, default=0):
               try:
-                  return int(
-                      float(value)
-                  )
-              except (
-                  TypeError,
-                  ValueError
-              ):
+                  return int(float(value))
+              except (TypeError, ValueError):
                   return int(default)
 
-          def clamp(
-              value,
-              low,
-              high
-          ):
-              return max(
-                  low,
-                  min(
-                      high,
-                      value
-                  )
-              )
-
-          def safe_get(
-              obj,
-              *keys,
-              default=None
-          ):
-              cur = obj
-
-              for key in keys:
-
-                  if not isinstance(
-                      cur,
-                      dict
-                  ):
-                      return default
-
-                  if key not in cur:
-                      return default
-
-                  cur = cur[key]
-
-              return cur
-
-          # =====================================================
-          # URL
-          # =====================================================
+          def clamp(value, low, high):
+              return max(low, min(high, value))
 
           def race_data_url():
-
               return (
                   f"{API_BASE}/"
                   f"{today_year()}/"
@@ -239,7 +164,6 @@ jobs:
               )
 
           def odds_date_url():
-
               return (
                   f"{ODDS_BASE}/"
                   f"{today_year()}/"
@@ -247,40 +171,24 @@ jobs:
               )
 
           def odds_today_url():
+              return f"{ODDS_BASE}/today.json"
 
-              return (
-                  f"{ODDS_BASE}/today.json"
-              )
-
-          # =====================================================
-          # HTTP GET
-          # =====================================================
-
-          def get_json(
-              url,
-              timeout=25
-          ):
+          def get_json(url, timeout=25):
 
               headers = {
-
                   "User-Agent":
-                      "Mozilla/5.0 "
-                      "(BOATRACE-AI-LINE)",
-
+                      "Mozilla/5.0 (BOATRACE-AI-LINE)",
                   "Accept":
                       "application/json,text/plain,*/*",
-
                   "Cache-Control":
                       "no-cache",
               }
 
               final_url = (
-                  f"{url}"
-                  f"?t={int(time.time())}"
+                  f"{url}?t={int(time.time())}"
               )
 
               try:
-
                   response = requests.get(
                       final_url,
                       headers=headers,
@@ -293,28 +201,18 @@ jobs:
                       response.status_code
                   )
 
-                  if (
-                      response.status_code
-                      !=
-                      200
-                  ):
+                  if response.status_code != 200:
                       return None
 
                   return response.json()
 
               except Exception as e:
-
                   print(
                       "GET ERROR",
                       url,
                       repr(e)
                   )
-
                   return None
-
-          # =====================================================
-          # BOATRACE当日データ取得
-          # =====================================================
 
           def fetch_race_data():
 
@@ -322,43 +220,27 @@ jobs:
                   race_data_url()
               )
 
-              if not isinstance(
-                  data,
-                  dict
-              ):
-
+              if not isinstance(data, dict):
                   raise RuntimeError(
-                      "BOATRACEデータを"
-                      "取得できませんでした"
+                      "BOATRACEデータを取得できませんでした"
                   )
 
               return data
 
-          # =====================================================
-          # 3連単オッズ取得
-          # ① 日付JSON
-          # ② today.json
-          # =====================================================
-
           def fetch_odds_data():
 
               urls = [
-
                   (
                       "日付JSON",
                       odds_date_url()
                   ),
-
                   (
                       "today.json",
                       odds_today_url()
                   ),
               ]
 
-              for (
-                  source_name,
-                  url
-              ) in urls:
+              for source_name, url in urls:
 
                   print(
                       "ODDS TRY:",
@@ -366,53 +248,32 @@ jobs:
                       url
                   )
 
-                  data = get_json(
-                      url
-                  )
+                  data = get_json(url)
 
                   if isinstance(
                       data,
                       (dict, list)
                   ):
-
                       print(
                           "ODDS SUCCESS:",
                           source_name
                       )
 
-                      return (
-                          data,
-                          source_name
-                      )
+                      return data, source_name
 
               print(
-                  "ODDS ERROR:"
-                  " 3連単オッズ取得失敗"
+                  "ODDS ERROR: 3連単オッズ取得失敗"
               )
 
-              return (
-                  None,
-                  "未取得"
-              )
-                        # =====================================================
-          # 当日レースを配列化
-          # =====================================================
+              return None, "未取得"
 
-          def flatten_races(
-              data
-          ):
+          def flatten_races(data):
 
               output = []
 
               programs = (
-                  data.get(
-                      "programs",
-                      {}
-                  )
-                  if isinstance(
-                      data,
-                      dict
-                  )
+                  data.get("programs", {})
+                  if isinstance(data, dict)
                   else {}
               )
 
@@ -427,10 +288,7 @@ jobs:
               ):
                   return output
 
-              for (
-                  stadium_key,
-                  stadium_data
-              ) in stadiums.items():
+              for stadium_key, stadium_data in stadiums.items():
 
                   if not isinstance(
                       stadium_data,
@@ -449,10 +307,7 @@ jobs:
                   ):
                       continue
 
-                  for (
-                      race_key_value,
-                      race
-                  ) in races.items():
+                  for race_key_value, race in races.items():
 
                       if not isinstance(
                           race,
@@ -462,69 +317,44 @@ jobs:
 
                       item = dict(race)
 
-                      item[
-                          "stadium_number"
-                      ] = int_num(
+                      item["stadium_number"] = int_num(
                           race.get(
                               "stadium_number",
                               stadium_key
                           )
                       )
 
-                      item[
-                          "race_number"
-                      ] = int_num(
+                      item["race_number"] = int_num(
                           race.get(
                               "race_number",
                               race_key_value
                           )
                       )
 
-                      output.append(
-                          item
-                      )
+                      output.append(item)
 
               return output
 
-          # =====================================================
-          # レースキー
-          # =====================================================
-
-          def race_key(
-              race
-          ):
+          def race_key(race):
 
               date = (
                   race.get("date")
-                  or
-                  today_jst()
+                  or today_jst()
               )
 
               stadium = int_num(
-                  race.get(
-                      "stadium_number"
-                  )
+                  race.get("stadium_number")
               )
 
               race_no = int_num(
-                  race.get(
-                      "race_number"
-                  )
+                  race.get("race_number")
               )
 
               return (
-                  f"{date}_"
-                  f"{stadium}_"
-                  f"{race_no}"
+                  f"{date}_{stadium}_{race_no}"
               )
 
-          # =====================================================
-          # 締切時刻
-          # =====================================================
-
-          def close_time_text(
-              race
-          ):
+          def close_time_text(race):
 
               value = str(
                   race.get(
@@ -546,9 +376,7 @@ jobs:
                   f"{match.group(2)}"
               )
 
-          def close_datetime(
-              race
-          ):
+          def close_datetime(race):
 
               value = str(
                   race.get(
@@ -570,7 +398,6 @@ jobs:
               for fmt in formats:
 
                   try:
-
                       dt = datetime.strptime(
                           value,
                           fmt
@@ -585,69 +412,45 @@ jobs:
 
               return None
 
-          def upcoming(
-              race
-          ):
+          def upcoming(race):
 
-              dt = close_datetime(
-                  race
-              )
+              dt = close_datetime(race)
 
               if dt is None:
                   return True
 
-              return (
-                  dt >
-                  now_jst()
-              )
+              return dt > now_jst()
 
-          def remaining_text(
-              race
-          ):
+          def remaining_text(race):
 
-              dt = close_datetime(
-                  race
-              )
+              dt = close_datetime(race)
 
               if dt is None:
                   return "--"
 
               seconds = int(
                   (
-                      dt -
-                      now_jst()
+                      dt - now_jst()
                   ).total_seconds()
               )
 
               if seconds <= 0:
                   return "締切"
 
-              hours = (
-                  seconds // 3600
-              )
-
+              hours = seconds // 3600
               minutes = (
                   seconds % 3600
               ) // 60
 
               if hours > 0:
-
                   return (
                       f"{hours}時間"
                       f"{minutes}分"
                   )
 
-              return (
-                  f"{minutes}分"
-              )
+              return f"{minutes}分"
 
-          # =====================================================
-          # 展示データ確認
-          # =====================================================
-
-          def preview_ready(
-              race
-          ):
+          def preview_ready(race):
 
               preview = race.get(
                   "preview",
@@ -671,10 +474,7 @@ jobs:
               ):
                   return False
 
-              for boat in range(
-                  1,
-                  7
-              ):
+              for boat in range(1, 7):
 
                   p = racers.get(
                       str(boat)
@@ -703,20 +503,12 @@ jobs:
                   if ex <= 0:
                       return False
 
-                  if not math.isfinite(
-                      st
-                  ):
+                  if not math.isfinite(st):
                       return False
 
               return True
 
-          # =====================================================
-          # 水面情報
-          # =====================================================
-
-          def weather_info(
-              race
-          ):
+          def weather_info(race):
 
               preview = race.get(
                   "preview",
@@ -724,42 +516,36 @@ jobs:
               )
 
               return {
-
                   "wind_speed":
                       num(
                           preview.get(
                               "wind_speed"
                           )
                       ),
-
                   "wind_direction":
                       int_num(
                           preview.get(
                               "wind_direction_number"
                           )
                       ),
-
                   "wave":
                       num(
                           preview.get(
                               "wave_height"
                           )
                       ),
-
                   "weather":
                       int_num(
                           preview.get(
                               "weather_number"
                           )
                       ),
-
                   "air":
                       num(
                           preview.get(
                               "air_temperature"
                           )
                       ),
-
                   "water":
                       num(
                           preview.get(
@@ -767,29 +553,20 @@ jobs:
                           )
                       ),
               }
-                        # =====================================================
-          # 3連単オッズ探索
-          # =====================================================
-
-          def find_race_odds_node(
+                        def find_race_odds_node(
               obj,
               stadium,
               race_no
           ):
 
-              if isinstance(
-                  obj,
-                  list
-              ):
+              if isinstance(obj, list):
 
                   for item in obj:
 
-                      found = (
-                          find_race_odds_node(
-                              item,
-                              stadium,
-                              race_no
-                          )
+                      found = find_race_odds_node(
+                          item,
+                          stadium,
+                          race_no
                       )
 
                       if found is not None:
@@ -839,27 +616,18 @@ jobs:
               ):
 
                   if isinstance(
-                      obj.get(
-                          "trifecta"
-                      ),
+                      obj.get("trifecta"),
                       (dict, list)
                   ):
                       return obj
 
-                  odds = obj.get(
-                      "odds"
-                  )
+                  odds = obj.get("odds")
 
                   if (
-                      isinstance(
-                          odds,
-                          dict
-                      )
+                      isinstance(odds, dict)
                       and
                       isinstance(
-                          odds.get(
-                              "trifecta"
-                          ),
+                          odds.get("trifecta"),
                           (dict, list)
                       )
                   ):
@@ -884,9 +652,7 @@ jobs:
                   if sk not in obj:
                       continue
 
-                  sub = obj.get(
-                      sk
-                  )
+                  sub = obj.get(sk)
 
                   if not isinstance(
                       sub,
@@ -904,27 +670,21 @@ jobs:
                           if rk not in sub:
                               continue
 
-                          candidate = sub.get(
-                              rk
-                          )
+                          candidate = sub.get(rk)
 
-                          found = (
-                              find_race_odds_node(
-                                  candidate,
-                                  stadium,
-                                  race_no
-                              )
+                          found = find_race_odds_node(
+                              candidate,
+                              stadium,
+                              race_no
                           )
 
                           if found is not None:
                               return found
 
-                  found = (
-                      find_race_odds_node(
-                          sub,
-                          stadium,
-                          race_no
-                      )
+                  found = find_race_odds_node(
+                      sub,
+                      stadium,
+                      race_no
                   )
 
                   if found is not None:
@@ -937,24 +697,16 @@ jobs:
                       (dict, list)
                   ):
 
-                      found = (
-                          find_race_odds_node(
-                              value,
-                              stadium,
-                              race_no
-                          )
+                      found = find_race_odds_node(
+                          value,
+                          stadium,
+                          race_no
                       )
 
                       if found is not None:
                           return found
 
               return None
-
-          # =====================================================
-          # 3連単オッズを
-          # "1-2-3": 12.3
-          # の形へ変換
-          # =====================================================
 
           def flatten_trifecta(
               trifecta
@@ -1006,10 +758,7 @@ jobs:
                           and
                           odds > 0
                       ):
-
-                          result[
-                              combo
-                          ] = odds
+                          result[combo] = odds
 
                   return result
 
@@ -1019,13 +768,9 @@ jobs:
               ):
                   return result
 
-              for key, value in (
-                  trifecta.items()
-              ):
+              for key, value in trifecta.items():
 
-                  combo = str(
-                      key
-                  )
+                  combo = str(key)
 
                   if re.fullmatch(
                       r"[1-6]-[1-6]-[1-6]",
@@ -1036,7 +781,6 @@ jobs:
                           value,
                           dict
                       ):
-
                           odds = num(
                               value.get(
                                   "odds",
@@ -1049,18 +793,11 @@ jobs:
                                   )
                               )
                           )
-
                       else:
-
-                          odds = num(
-                              value
-                          )
+                          odds = num(value)
 
                       if odds > 0:
-
-                          result[
-                              combo
-                          ] = odds
+                          result[combo] = odds
 
                       continue
 
@@ -1069,19 +806,12 @@ jobs:
                       and
                       1 <= int(key) <= 6
                       and
-                      isinstance(
-                          value,
-                          dict
-                      )
+                      isinstance(value, dict)
                   ):
 
-                      first = int(
-                          key
-                      )
+                      first = int(key)
 
-                      for key2, value2 in (
-                          value.items()
-                      ):
+                      for key2, value2 in value.items():
 
                           if (
                               not str(
@@ -1089,11 +819,7 @@ jobs:
                               ).isdigit()
                               or
                               not (
-                                  1
-                                  <=
-                                  int(key2)
-                                  <=
-                                  6
+                                  1 <= int(key2) <= 6
                               )
                               or
                               not isinstance(
@@ -1103,45 +829,30 @@ jobs:
                           ):
                               continue
 
-                          second = int(
-                              key2
-                          )
+                          second = int(key2)
 
-                          for key3, value3 in (
-                              value2.items()
-                          ):
+                          for key3, value3 in value2.items():
 
-                              if (
-                                  not str(
-                                      key3
-                                  ).isdigit()
-                              ):
+                              if not str(
+                                  key3
+                              ).isdigit():
                                   continue
 
-                              third = int(
-                                  key3
-                              )
+                              third = int(key3)
 
                               if not (
-                                  1
-                                  <=
-                                  third
-                                  <=
-                                  6
+                                  1 <= third <= 6
                               ):
                                   continue
 
-                              if len(
-                                  {
-                                      first,
-                                      second,
-                                      third
-                                  }
-                              ) != 3:
+                              if len({
+                                  first,
+                                  second,
+                                  third
+                              }) != 3:
                                   continue
 
                               odds = (
-
                                   num(
                                       value3.get(
                                           "odds",
@@ -1154,28 +865,21 @@ jobs:
                                           )
                                       )
                                   )
-
                                   if isinstance(
                                       value3,
                                       dict
                                   )
-
                                   else num(
                                       value3
                                   )
                               )
 
                               if odds > 0:
-
                                   result[
                                       f"{first}-{second}-{third}"
                                   ] = odds
 
               return result
-
-          # =====================================================
-          # 指定レースのオッズMAP
-          # =====================================================
 
           def get_odds_map(
               odds_data,
@@ -1186,12 +890,10 @@ jobs:
               if odds_data is None:
                   return {}
 
-              node = (
-                  find_race_odds_node(
-                      odds_data,
-                      stadium,
-                      race_no
-                  )
+              node = find_race_odds_node(
+                  odds_data,
+                  stadium,
+                  race_no
               )
 
               if not isinstance(
@@ -1206,50 +908,33 @@ jobs:
 
               if trifecta is None:
 
-                  odds = node.get(
-                      "odds"
-                  )
+                  odds = node.get("odds")
 
                   if isinstance(
                       odds,
                       dict
                   ):
-
-                      trifecta = (
-                          odds.get(
-                              "trifecta"
-                          )
+                      trifecta = odds.get(
+                          "trifecta"
                       )
 
-              return (
-                  flatten_trifecta(
-                      trifecta
-                  )
+              return flatten_trifecta(
+                  trifecta
               )
-
-          # =====================================================
-          # 人気順位
-          # =====================================================
 
           def odds_ranking(
               odds_map
           ):
 
               valid = [
-                  (
-                      combo,
-                      odds
-                  )
+                  (combo, odds)
                   for combo, odds
                   in odds_map.items()
-                  if num(
-                      odds
-                  ) > 0
+                  if num(odds) > 0
               ]
 
               valid.sort(
-                  key=lambda x:
-                      x[1]
+                  key=lambda x: x[1]
               )
 
               ranking = {}
@@ -1261,16 +946,9 @@ jobs:
                   valid,
                   start=1
               ):
-
-                  ranking[
-                      combo
-                  ] = index
+                  ranking[combo] = index
 
               return ranking
-
-          # =====================================================
-          # 選手・展示スコア
-          # =====================================================
 
           def score_boat(
               race,
@@ -1359,18 +1037,15 @@ jobs:
 
               if exhibition < 99:
                   score += (
-                      10.0 -
-                      exhibition
+                      10.0 - exhibition
                   ) * 22.0
 
               score += (
-                  0.25 -
-                  start
+                  0.25 - start
               ) * 42.0
 
               score += (
-                  7 -
-                  course
+                  7 - course
               ) * 3.8
 
               score += (
@@ -1390,31 +1065,19 @@ jobs:
               )
 
               return {
-                  "boat":
-                      boat,
-
-                  "score":
-                      score,
-
+                  "boat": boat,
+                  "score": score,
                   "exhibition_time":
                       exhibition,
-
                   "start_timing":
                       start,
-
                   "course_number":
                       course,
-
                   "win_rate":
                       win_rate,
-
                   "motor_rate":
                       motor_rate,
               }
-
-          # =====================================================
-          # 展示順位
-          # =====================================================
 
           def exhibition_rank(
               race
@@ -1443,16 +1106,13 @@ jobs:
                   )
 
                   rows.append({
-                      "boat":
-                          boat,
-
-                      "time":
-                          num(
-                              p.get(
-                                  "exhibition_time"
-                              ),
-                              99
-                          )
+                      "boat": boat,
+                      "time": num(
+                          p.get(
+                              "exhibition_time"
+                          ),
+                          99
+                      )
                   })
 
               rows.sort(
@@ -1461,10 +1121,6 @@ jobs:
               )
 
               return rows
-
-          # =====================================================
-          # ST順位
-          # =====================================================
 
           def start_rank(
               race
@@ -1493,16 +1149,13 @@ jobs:
                   )
 
                   rows.append({
-                      "boat":
-                          boat,
-
-                      "st":
-                          num(
-                              p.get(
-                                  "start_timing"
-                              ),
-                              9
-                          )
+                      "boat": boat,
+                      "st": num(
+                          p.get(
+                              "start_timing"
+                          ),
+                          9
+                      )
                   })
 
               rows.sort(
@@ -1511,10 +1164,6 @@ jobs:
               )
 
               return rows
-
-          # =====================================================
-          # 進入変化
-          # =====================================================
 
           def course_changes(
               race
@@ -1553,18 +1202,11 @@ jobs:
                   if course != boat:
 
                       changes.append({
-                          "boat":
-                              boat,
-
-                          "course":
-                              course,
+                          "boat": boat,
+                          "course": course,
                       })
 
               return changes
-
-          # =====================================================
-          # 展開予測
-          # =====================================================
 
           def scenario_forecast(
               race,
@@ -1603,11 +1245,9 @@ jobs:
               for x in boats:
 
                   boat = x["boat"]
-
                   course = x[
                       "course_number"
                   ]
-
                   st = x[
                       "start_timing"
                   ]
@@ -1658,23 +1298,14 @@ jobs:
                       prob *= 0.98
 
                   candidates.append({
-                      "boat":
-                          boat,
-
-                      "course":
-                          course,
-
-                      "tactic":
-                          tactic,
-
-                      "probability":
-                          prob,
+                      "boat": boat,
+                      "course": course,
+                      "tactic": tactic,
+                      "probability": prob,
                   })
 
               total = sum(
-                  x[
-                      "probability"
-                  ]
+                  x["probability"]
                   for x in candidates
               )
 
@@ -1682,16 +1313,11 @@ jobs:
                   total = 1
 
               for x in candidates:
-
-                  x[
-                      "probability"
-                  ] /= total
+                  x["probability"] /= total
 
               candidates.sort(
                   key=lambda x:
-                      x[
-                          "probability"
-                      ],
+                      x["probability"],
                   reverse=True
               )
 
@@ -1700,13 +1326,9 @@ jobs:
                       candidates[0]
                       if candidates
                       else None,
-
                   "candidates":
                       candidates,
               }
-                        # =====================================================
-          # AI評価
-          # =====================================================
 
           def evaluate_race(race):
 
@@ -1714,23 +1336,39 @@ jobs:
                   return None
 
               boats = [
-                  score_boat(race, boat)
+                  score_boat(
+                      race,
+                      boat
+                  )
                   for boat in range(1, 7)
               ]
 
               boats.sort(
-                  key=lambda x: x["score"],
+                  key=lambda x:
+                      x["score"],
                   reverse=True
               )
 
-              ex_rank = exhibition_rank(race)
-              st_rank = start_rank(race)
-              changes = course_changes(race)
+              ex_rank = exhibition_rank(
+                  race
+              )
+
+              st_rank = start_rank(
+                  race
+              )
+
+              changes = course_changes(
+                  race
+              )
+
               scenario = scenario_forecast(
                   race,
                   boats
               )
-              weather = weather_info(race)
+
+              weather = weather_info(
+                  race
+              )
 
               top = boats[0]
               second = boats[1]
@@ -1829,15 +1467,15 @@ jobs:
                   "grade": grade,
                   "weather": weather,
                   "scenario": scenario,
-                  "exhibition_rank": ex_rank,
-                  "start_rank": st_rank,
-                  "course_changes": changes,
-                  "reasons": reasons,
+                  "exhibition_rank":
+                      ex_rank,
+                  "start_rank":
+                      st_rank,
+                  "course_changes":
+                      changes,
+                  "reasons":
+                      reasons,
               }
-
-          # =====================================================
-          # 3連単120通り
-          # =====================================================
 
           def all_combos():
 
@@ -1849,10 +1487,6 @@ jobs:
                       3
                   )
               ]
-
-          # =====================================================
-          # AI確率
-          # =====================================================
 
           def combo_probability(
               analysis,
@@ -1868,8 +1502,11 @@ jobs:
                   return 0.0
 
               score_map = {
-                  x["boat"]: x["score"]
-                  for x in analysis["boats"]
+                  x["boat"]:
+                      x["score"]
+                  for x in analysis[
+                      "boats"
+                  ]
               }
 
               scores = [
@@ -1900,7 +1537,9 @@ jobs:
                   raw *= (
                       normalized
                       **
-                      order_weight[index]
+                      order_weight[
+                          index
+                      ]
                   )
 
               scenario = analysis.get(
@@ -1916,7 +1555,9 @@ jobs:
               scenario_map = {
                   x["boat"]:
                       num(
-                          x["probability"]
+                          x[
+                              "probability"
+                          ]
                       )
                   for x in candidates
               }
@@ -1937,10 +1578,6 @@ jobs:
               )
 
               return raw
-
-          # =====================================================
-          # 120通りを確率化
-          # =====================================================
 
           def probability_map(
               analysis
@@ -1971,14 +1608,6 @@ jobs:
                   in raw.items()
               }
 
-          # =====================================================
-          # 買い目作成
-          #
-          # 本命 15倍以下 3本
-          # 狙い 15倍超〜80倍未満 4本
-          # 穴   80倍以上 3本
-          # =====================================================
-
           def make_tickets(
               analysis,
               odds_map
@@ -2000,10 +1629,8 @@ jobs:
                       },
                   }
 
-              probabilities = (
-                  probability_map(
-                      analysis
-                  )
+              probabilities = probability_map(
+                  analysis
               )
 
               ranking = odds_ranking(
@@ -2012,9 +1639,7 @@ jobs:
 
               rows = []
 
-              for combo, odds in (
-                  odds_map.items()
-              ):
+              for combo, odds in odds_map.items():
 
                   odds = num(odds)
 
@@ -2166,12 +1791,7 @@ jobs:
                           len(hole_pool),
                   },
               }
-
-          # =====================================================
-          # 購入金額配分
-          # =====================================================
-
-          def allocate_tickets(
+                        def allocate_tickets(
               ticket_set,
               budget=1000
           ):
@@ -2210,10 +1830,7 @@ jobs:
 
               tickets = []
 
-              for (
-                  group_name,
-                  rows
-              ) in groups:
+              for group_name, rows in groups:
 
                   for row in rows:
 
@@ -2223,9 +1840,7 @@ jobs:
                           "group"
                       ] = group_name
 
-                      tickets.append(
-                          item
-                      )
+                      tickets.append(item)
 
               if len(tickets) != 10:
                   return []
@@ -2374,9 +1989,7 @@ jobs:
                       ][0]
                   )
 
-                  unit_alloc[
-                      idx
-                  ] += 1
+                  unit_alloc[idx] += 1
 
               for i, t in enumerate(
                   tickets
@@ -2390,10 +2003,6 @@ jobs:
 
               return tickets
 
-          # =====================================================
-          # LINE Push
-          # =====================================================
-
           def line_push(text):
 
               if not (
@@ -2403,8 +2012,7 @@ jobs:
               ):
 
                   raise RuntimeError(
-                      "LINEのSecretsが"
-                      "設定されていません"
+                      "LINEのSecretsが設定されていません"
                   )
 
               url = (
@@ -2429,8 +2037,7 @@ jobs:
                   "messages": [
                       {
                           "type": "text",
-                          "text":
-                              text[:5000],
+                          "text": text[:5000],
                       }
                   ],
               }
@@ -2448,12 +2055,9 @@ jobs:
                   response.text[:300]
               )
 
-              if (
-                  response.status_code
-                  not in (
-                      200,
-                      201
-                  )
+              if response.status_code not in (
+                  200,
+                  201
               ):
 
                   raise RuntimeError(
@@ -2462,10 +2066,6 @@ jobs:
                   )
 
               return True
-
-          # =====================================================
-          # 通知済み状態
-          # =====================================================
 
           def load_state():
 
@@ -2529,10 +2129,6 @@ jobs:
                   encoding="utf-8"
               )
 
-          # =====================================================
-          # 予想内容ハッシュ
-          # =====================================================
-
           def prediction_hash(
               analysis,
               tickets
@@ -2584,10 +2180,6 @@ jobs:
                   )
               ).hexdigest()
 
-          # =====================================================
-          # 買い目表示
-          # =====================================================
-
           def ticket_lines(
               tickets,
               group_name
@@ -2602,11 +2194,9 @@ jobs:
               rows = [
                   t
                   for t in tickets
-                  if (
-                      t["group"]
-                      ==
-                      group_name
-                  )
+                  if t["group"]
+                  ==
+                  group_name
               ]
 
               lines = [
@@ -2660,10 +2250,6 @@ jobs:
               return "\n".join(
                   lines
               )
-
-          # =====================================================
-          # LINE通知本文
-          # =====================================================
 
           def build_message(
               analysis,
@@ -2807,10 +2393,6 @@ jobs:
                   lines
               )
 
-          # =====================================================
-          # 通知対象分析
-          # =====================================================
-
           def collect_predictions(
               races,
               odds_data,
@@ -2866,9 +2448,13 @@ jobs:
                   )
 
                   if not (
-                      ticket_set["has_odds"]
+                      ticket_set[
+                          "has_odds"
+                      ]
                       and
-                      ticket_set["valid343"]
+                      ticket_set[
+                          "valid343"
+                      ]
                   ):
                       continue
 
@@ -2929,10 +2515,6 @@ jobs:
                   odds_ok_count
               )
 
-          # =====================================================
-          # メイン処理
-          # =====================================================
-
           def main():
 
               print(
@@ -2952,9 +2534,7 @@ jobs:
                   "======================================"
               )
 
-              race_data = (
-                  fetch_race_data()
-              )
+              race_data = fetch_race_data()
 
               races = flatten_races(
                   race_data
@@ -3105,10 +2685,6 @@ jobs:
                   "======================================"
               )
 
-          # =====================================================
-          # Python実行
-          # =====================================================
-
           if __name__ == "__main__":
               main()
 
@@ -3116,9 +2692,14 @@ jobs:
 
       # =========================================================
       # 5. Python実行
+      # ★ LINE Secretsをここで渡す
       # =========================================================
 
       - name: Run BOATRACE AI LINE
+
+        env:
+          LINE_CHANNEL_ACCESS_TOKEN: ${{ secrets.BOATAI }}
+          LINE_USER_ID: ${{ secrets.LINE_USER_ID }}
 
         run: |
           python line_notify.py
