@@ -365,44 +365,238 @@ jobs:
           def race_key(race):
               return f"{now_jst():%Y-%m-%d}_{i(race.get('stadium_number'))}_{i(race.get('race_number'))}"
 
-          def message_for(analysis, tickets, odds_source):
+          def ticket_text(tickets, group):
+              return "\n".join(x["combo"] for x in tickets if x["group"] == group)
+
+          def formation_text(tickets):
+              combos = [x["combo"].split("-") for x in tickets]
+              firsts = sorted({x[0] for x in combos})
+              seconds = sorted({x[1] for x in combos})
+              thirds = sorted({x[2] for x in combos})
+              f1 = ",".join(firsts)
+              f2 = ",".join(seconds)
+              f3 = ",".join(thirds)
+              return f"{f1} - {f2} - {f3}"
+
+          def flex_message_for(analysis, tickets, odds_source):
               race = analysis["race"]
               stadium = i(race.get("stadium_number"))
               race_no = i(race.get("race_number"))
               venue = STADIUMS.get(stadium, f"会場{stadium}")
               close = close_dt(race)
               close_text = close.strftime("%H:%M") if close else "--:--"
+              remain = max(0, int((close - now_jst()).total_seconds() // 60)) if close else 0
               top = analysis["top"]
-              lines = [
-                  "🚤 BOAT RACE AI予想",
-                  "",
-                  "🔥 勝負度S",
-                  f"{venue} {race_no}R",
-                  f"AI信頼スコア：{analysis['rating']}",
-                  f"締切予定：{close_text}",
-                  f"展開中心：{top['boat']}号艇",
-                  f"展示1位：{analysis['ex1']}号艇 / ST1位：{analysis['st1']}号艇",
-                  f"風速：{analysis['wind']:.1f}m / 波高：{analysis['wave']:.1f}cm",
-                  "",
-              ]
-              for group in ("本命", "狙い", "穴"):
-                  lines.append(f"{group}🚤")
-                  for t in (x for x in tickets if x["group"] == group):
-                      lines.append(f"{t['combo']} 100円 / {t['odds']:.1f}倍 / AI{t['p']*100:.1f}%")
-                  lines.append("")
-              lines += ["合計：1,000円", f"オッズ取得：{odds_source}", f"Model：{MODEL_NAME}"]
-              return "\n".join(lines)
 
-          def line_push(text):
+              main_text = ticket_text(tickets, "本命")
+              cover_text = ticket_text(tickets, "狙い")
+              hole_text = ticket_text(tickets, "穴")
+              normal = next((x["combo"] for x in tickets if x["group"] == "本命"), "-")
+              form = formation_text(tickets)
+
+              alt = f"BOATRACE AI予想 {venue} {race_no}R 締切{close_text}"
+
+              bubble = {
+                  "type": "bubble",
+                  "size": "mega",
+                  "body": {
+                      "type": "box",
+                      "layout": "vertical",
+                      "paddingAll": "18px",
+                      "backgroundColor": "#FFFFFF",
+                      "contents": [
+                          {
+                              "type": "text",
+                              "text": "🚤 BOATRACE AI 予想",
+                              "weight": "bold",
+                              "size": "xl",
+                              "color": "#1F1F1F"
+                          },
+                          {"type": "separator", "margin": "md", "color": "#E5E7EB"},
+                          {
+                              "type": "text",
+                              "text": f"{venue} {race_no}R",
+                              "weight": "bold",
+                              "size": "xxl",
+                              "margin": "lg",
+                              "color": "#111111"
+                          },
+                          {
+                              "type": "box",
+                              "layout": "horizontal",
+                              "margin": "md",
+                              "contents": [
+                                  {
+                                      "type": "text",
+                                      "text": f"⏰ 締切予定 {close_text}",
+                                      "weight": "bold",
+                                      "size": "md",
+                                      "flex": 3,
+                                      "color": "#222222"
+                                  },
+                                  {
+                                      "type": "text",
+                                      "text": f"残り {remain}分",
+                                      "weight": "bold",
+                                      "size": "md",
+                                      "align": "end",
+                                      "flex": 2,
+                                      "color": "#222222"
+                                  }
+                              ]
+                          },
+                          {
+                              "type": "box",
+                              "layout": "horizontal",
+                              "margin": "xl",
+                              "spacing": "sm",
+                              "contents": [
+                                  {
+                                      "type": "box",
+                                      "layout": "vertical",
+                                      "flex": 1,
+                                      "backgroundColor": "#FFF0F2",
+                                      "paddingAll": "10px",
+                                      "cornerRadius": "10px",
+                                      "contents": [
+                                          {"type": "text", "text": "本命🚤", "weight": "bold", "align": "center", "size": "md"},
+                                          {"type": "text", "text": main_text, "weight": "bold", "align": "center", "size": "lg", "wrap": True, "margin": "md"}
+                                      ]
+                                  },
+                                  {
+                                      "type": "box",
+                                      "layout": "vertical",
+                                      "flex": 1,
+                                      "backgroundColor": "#EAF5FF",
+                                      "paddingAll": "10px",
+                                      "cornerRadius": "10px",
+                                      "contents": [
+                                          {"type": "text", "text": "狙い🚤", "weight": "bold", "align": "center", "size": "md"},
+                                          {"type": "text", "text": cover_text, "weight": "bold", "align": "center", "size": "lg", "wrap": True, "margin": "md"}
+                                      ]
+                                  },
+                                  {
+                                      "type": "box",
+                                      "layout": "vertical",
+                                      "flex": 1,
+                                      "backgroundColor": "#ECF9EE",
+                                      "paddingAll": "10px",
+                                      "cornerRadius": "10px",
+                                      "contents": [
+                                          {"type": "text", "text": "穴🚤", "weight": "bold", "align": "center", "size": "md"},
+                                          {"type": "text", "text": hole_text, "weight": "bold", "align": "center", "size": "lg", "wrap": True, "margin": "md"}
+                                      ]
+                                  }
+                              ]
+                          },
+                          {
+                              "type": "text",
+                              "text": "🎫 投票",
+                              "weight": "bold",
+                              "size": "xl",
+                              "margin": "xl",
+                              "color": "#222222"
+                          },
+                          {
+                              "type": "box",
+                              "layout": "horizontal",
+                              "margin": "md",
+                              "spacing": "sm",
+                              "contents": [
+                                  {
+                                      "type": "box",
+                                      "layout": "vertical",
+                                      "flex": 1,
+                                      "backgroundColor": "#7D92AB",
+                                      "paddingAll": "8px",
+                                      "cornerRadius": "8px",
+                                      "contents": [
+                                          {"type": "text", "text": "通常", "color": "#FFFFFF", "weight": "bold", "align": "center"},
+                                          {"type": "text", "text": normal, "color": "#FFFFFF", "weight": "bold", "align": "center", "margin": "sm"}
+                                      ]
+                                  },
+                                  {
+                                      "type": "box",
+                                      "layout": "vertical",
+                                      "flex": 2,
+                                      "backgroundColor": "#2586D9",
+                                      "paddingAll": "8px",
+                                      "cornerRadius": "8px",
+                                      "contents": [
+                                          {"type": "text", "text": "フォーメーション", "color": "#FFFFFF", "weight": "bold", "align": "center"},
+                                          {"type": "text", "text": form, "color": "#FFFFFF", "weight": "bold", "align": "center", "wrap": True, "margin": "sm", "size": "sm"}
+                                      ]
+                                  },
+                                  {
+                                      "type": "box",
+                                      "layout": "vertical",
+                                      "flex": 1,
+                                      "backgroundColor": "#09A34A",
+                                      "paddingAll": "8px",
+                                      "cornerRadius": "8px",
+                                      "contents": [
+                                          {"type": "text", "text": "BOX", "color": "#FFFFFF", "weight": "bold", "align": "center"},
+                                          {"type": "text", "text": "—", "color": "#FFFFFF", "weight": "bold", "align": "center", "margin": "sm"}
+                                      ]
+                                  }
+                              ]
+                          },
+                          {
+                              "type": "box",
+                              "layout": "vertical",
+                              "margin": "xl",
+                              "backgroundColor": "#F6F8FC",
+                              "paddingAll": "12px",
+                              "cornerRadius": "10px",
+                              "contents": [
+                                  {"type": "text", "text": "🧠 展開予測", "weight": "bold", "size": "lg", "color": "#1473B9"},
+                                  {"type": "text", "text": f"{top['boat']}号艇 中心　AI信頼 {analysis['rating']}%", "weight": "bold", "size": "md", "wrap": True, "margin": "sm"}
+                              ]
+                          },
+                          {
+                              "type": "box",
+                              "layout": "vertical",
+                              "margin": "md",
+                              "backgroundColor": "#F6F8FC",
+                              "paddingAll": "12px",
+                              "cornerRadius": "10px",
+                              "contents": [
+                                  {"type": "text", "text": "📊 判断基準", "weight": "bold", "size": "lg", "color": "#1473B9"},
+                                  {
+                                      "type": "text",
+                                      "text": (
+                                          f"AI上位：{top['boat']}号艇　展示1位：{analysis['ex1']}号艇　"
+                                          f"ST1位：{analysis['st1']}号艇\n"
+                                          f"風 {analysis['wind']:.1f}m / 波 {analysis['wave']:.1f}cm\n"
+                                          f"オッズ取得：{odds_source}\nModel：{MODEL_NAME}"
+                                      ),
+                                      "size": "sm",
+                                      "wrap": True,
+                                      "margin": "sm",
+                                      "color": "#333333"
+                                  }
+                              ]
+                          }
+                      ]
+                  }
+              }
+
+              return {
+                  "type": "flex",
+                  "altText": alt,
+                  "contents": bubble
+              }
+
+          def line_push(message):
               if not LINE_TOKEN or not LINE_USER_ID:
                   raise RuntimeError("GitHub Secrets BOATAI または LINE_USER_ID が未設定です")
               r = requests.post(
                   "https://api.line.me/v2/bot/message/push",
                   headers={"Authorization": f"Bearer {LINE_TOKEN}", "Content-Type": "application/json"},
-                  json={"to": LINE_USER_ID, "messages": [{"type": "text", "text": text[:5000]}]},
+                  json={"to": LINE_USER_ID, "messages": [message]},
                   timeout=25,
               )
-              print("LINE", r.status_code, r.text[:300])
+              print("LINE", r.status_code, r.text[:500])
               if r.status_code != 200:
                   raise RuntimeError(f"LINE送信失敗: HTTP {r.status_code}")
 
@@ -445,7 +639,7 @@ jobs:
                   if sent.get(key) == signature:
                       print("SKIP", key)
                       continue
-                  line_push(message_for(analysis, tickets, odds_source))
+                  line_push(flex_message_for(analysis, tickets, odds_source))
                   sent[key] = signature
                   state_save(state)
                   time.sleep(1)
