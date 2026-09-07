@@ -4,6 +4,7 @@ on:
   workflow_dispatch:
 
   schedule:
+    # 5分ごとに自動実行
     - cron: "*/5 * * * *"
 
 permissions:
@@ -14,17 +15,14 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-
   notify:
-
     runs-on: ubuntu-latest
 
     steps:
 
       # =========================================================
-      # 1. Repository
+      # 1. リポジトリ取得
       # =========================================================
-
       - name: Checkout
         uses: actions/checkout@v4
 
@@ -32,525 +30,739 @@ jobs:
       # =========================================================
       # 2. Python
       # =========================================================
-
       - name: Setup Python
         uses: actions/setup-python@v5
-
         with:
           python-version: "3.12"
 
 
       # =========================================================
-      # 3. Packages
+      # 3. 必要ライブラリ
       # =========================================================
-
       - name: Install packages
-
         run: |
-
           python -m pip install --upgrade pip
-
           pip install requests playwright
-
           python -m playwright install --with-deps chromium
 
 
       # =========================================================
-      # 4. BOATRACE AI → LINE
+      # 4. BOATRACE AI LINE
       # =========================================================
-
       - name: BOATRACE AI LINE
 
         env:
-
           LINE_CHANNEL_ACCESS_TOKEN: ${{ secrets.BOATAI }}
-
           LINE_USER_ID: ${{ secrets.LINE_USER_ID }}
 
-
         run: |
-
           cat > line_notify.py <<'PY'
 
           import os
           import re
           import json
+          import math
           import time
+          import hashlib
           import itertools
           import requests
 
           from pathlib import Path
-
-          from datetime import (
-              datetime,
-              timedelta,
-              timezone
-          )
-
-          from playwright.sync_api import (
-              sync_playwright
-          )
+          from datetime import datetime, timedelta, timezone
 
 
           # =====================================================
           # 基本設定
           # =====================================================
 
-          JST = timezone(
-              timedelta(hours=9)
+          JST = timezone(timedelta(hours=9))
+
+
+          API_BASE = (
+              "https://boatraceopenapi.github.io/api/v1"
           )
 
 
-          TOOL_URL = (
-              "https://sto323742-hue.github.io/-2026/"
+          ODDS_BASE = (
+              "https://lamrongol.github.io/"
+              "BoatraceOdds/v3"
+          )
+
+
+          MODEL_NAME = (
+              "gold-v3-odds-band-15-80"
+          )
+
+
+          LINE_CHANNEL_ACCESS_TOKEN = (
+              os.getenv(
+                  "LINE_CHANNEL_ACCESS_TOKEN",
+                  ""
+              ).strip()
+          )
+
+
+          LINE_USER_ID = (
+              os.getenv(
+                  "LINE_USER_ID",
+                  ""
+              ).strip()
           )
 
 
           STATE_FILE = Path(
-              ".boatrace_line_notified.json"
+              "boatrace_line_state.json"
           )
 
 
           # =====================================================
-          # LINE通知設定
+          # 会場名
           # =====================================================
 
-          # 締切1分前以降は通知しない
+          STADIUMS = {
 
-          MIN_BEFORE = 1
+              1: "桐生",
+              2: "戸田",
+              3: "江戸川",
+              4: "平和島",
+              5: "多摩川",
+              6: "浜名湖",
+              7: "蒲郡",
+              8: "常滑",
+              9: "津",
+              10: "三国",
+              11: "びわこ",
+              12: "住之江",
+              13: "尼崎",
+              14: "鳴門",
+              15: "丸亀",
+              16: "児島",
+              17: "宮島",
+              18: "徳山",
+              19: "下関",
+              20: "若松",
+              21: "芦屋",
+              22: "福岡",
+              23: "唐津",
+              24: "大村",
+
+          }
 
 
-          # False
-          # Web側で予想完成後、
-          # 通知可能ならすぐ通知
+          WEATHER_NAMES = {
 
-          USE_NOTIFICATION_WINDOW = False
+              1: "晴",
+              2: "曇",
+              3: "雨",
+              4: "雪",
+              5: "霧",
 
-
-          WINDOW_MIN_BEFORE = 10
-
-          WINDOW_MAX_BEFORE = 30
+          }
 
 
           # =====================================================
-          # Web予想完成待ち
-          # =====================================================
-
-          PREDICTION_WAIT_SECONDS = 60
-
-          PREDICTION_CHECK_INTERVAL_MS = 1000
-
-
-          # =====================================================
-          # 現在時刻
+          # 共通関数
           # =====================================================
 
           def now_jst():
 
-              return datetime.now(
-                  JST
+              return datetime.now(JST)
+
+
+          def today_jst():
+
+              return now_jst().strftime(
+                  "%Y-%m-%d"
+              )
+
+
+          def today_compact():
+
+              return now_jst().strftime(
+                  "%Y%m%d"
+              )
+
+
+          def today_year():
+
+              return now_jst().strftime(
+                  "%Y"
+              )
+
+
+          def num(
+              value,
+              default=0.0
+          ):
+
+              try:
+
+                  return float(value)
+
+              except (
+                  TypeError,
+                  ValueError
+              ):
+
+                  return float(default)
+
+
+          def int_num(
+              value,
+              default=0
+          ):
+
+              try:
+
+                  return int(
+                      float(value)
+                  )
+
+              except (
+                  TypeError,
+                  ValueError
+              ):
+
+                  return int(default)
+
+
+          def clamp(
+              value,
+              low,
+              high
+          ):
+
+              return max(
+                  low,
+                  min(
+                      high,
+                      value
+                  )
+              )
+
+
+          def safe_get(
+              obj,
+              *keys,
+              default=None
+          ):
+
+              cur = obj
+
+              for key in keys:
+
+                  if not isinstance(
+                      cur,
+                      dict
+                  ):
+
+                      return default
+
+                  if key not in cur:
+
+                      return default
+
+                  cur = cur[key]
+
+              return cur
+
+
+          # =====================================================
+          # URL
+          # =====================================================
+
+          def race_data_url():
+
+              return (
+                  f"{API_BASE}/"
+                  f"{today_year()}/"
+                  f"{today_compact()}.json"
+              )
+
+
+          def odds_date_url():
+
+              return (
+                  f"{ODDS_BASE}/"
+                  f"{today_year()}/"
+                  f"{today_compact()}.json"
+              )
+
+
+          def odds_today_url():
+
+              return (
+                  f"{ODDS_BASE}/today.json"
               )
 
 
           # =====================================================
-          # 通知履歴
+          # HTTP GET
           # =====================================================
 
-          def load_state():
+          def get_json(
+              url,
+              timeout=25
+          ):
 
-              if not STATE_FILE.exists():
+              headers = {
 
-                  return {}
+                  "User-Agent":
+                      "Mozilla/5.0 "
+                      "(BOATRACE-AI-LINE)",
+
+                  "Accept":
+                      "application/json,text/plain,*/*",
+
+                  "Cache-Control":
+                      "no-cache",
+
+              }
+
+
+              final_url = (
+                  f"{url}"
+                  f"?t={int(time.time())}"
+              )
 
 
               try:
 
-                  with open(
-                      STATE_FILE,
-                      "r",
-                      encoding="utf-8"
-                  ) as f:
+                  response = requests.get(
 
-                      data = json.load(
-                          f
-                      )
+                      final_url,
+
+                      headers=headers,
+
+                      timeout=timeout
+
+                  )
 
 
-                      if isinstance(
-                          data,
-                          dict
-                      ):
+                  print(
+                      "GET",
+                      url,
+                      response.status_code
+                  )
 
-                          return data
+
+                  if (
+                      response.status_code
+                      !=
+                      200
+                  ):
+
+                      return None
+
+
+                  return response.json()
 
 
               except Exception as e:
 
                   print(
-                      "履歴読込エラー:",
-                      e
+                      "GET ERROR",
+                      url,
+                      repr(e)
                   )
 
+                  return None
 
-              return {}
 
+          # =====================================================
+          # BOATRACE当日データ取得
+          # =====================================================
 
-          def save_state(state):
+          def fetch_race_data():
 
-              limit = (
-                  now_jst()
-                  -
-                  timedelta(days=3)
+              data = get_json(
+                  race_data_url()
               )
 
 
-              cleaned = {}
+              if not isinstance(
+                  data,
+                  dict
+              ):
+
+                  raise RuntimeError(
+                      "BOATRACEデータを"
+                      "取得できませんでした"
+                  )
 
 
-              for key, value in state.items():
+              return data
 
-                  try:
 
-                      dt = datetime.fromisoformat(
-                          value
+          # =====================================================
+          # 3連単オッズ取得
+          #
+          # ① 日付JSON
+          # ② today.json
+          #
+          # Web版と同じフォールバック方式
+          # =====================================================
+
+          def fetch_odds_data():
+
+              urls = [
+
+                  (
+                      "日付JSON",
+                      odds_date_url()
+                  ),
+
+                  (
+                      "today.json",
+                      odds_today_url()
+                  ),
+
+              ]
+
+
+              for (
+                  source_name,
+                  url
+              ) in urls:
+
+                  print(
+                      "ODDS TRY:",
+                      source_name,
+                      url
+                  )
+
+
+                  data = get_json(
+                      url
+                  )
+
+
+                  if isinstance(
+                      data,
+                      (dict, list)
+                  ):
+
+                      print(
+                          "ODDS SUCCESS:",
+                          source_name
                       )
 
 
-                      if dt.tzinfo is None:
-
-                          dt = dt.replace(
-                              tzinfo=JST
-                          )
-
-
-                      if dt >= limit:
-
-                          cleaned[key] = value
+                      return (
+                          data,
+                          source_name
+                      )
 
 
-                  except Exception:
-
-                      pass
-
-
-              with open(
-                  STATE_FILE,
-                  "w",
-                  encoding="utf-8"
-              ) as f:
-
-                  json.dump(
-                      cleaned,
-                      f,
-                      ensure_ascii=False,
-                      indent=2
-                  )
-
-
-          # =====================================================
-          # テキスト整理
-          # =====================================================
-
-          def clean(text):
-
-              if text is None:
-
-                  return ""
-
-
-              return re.sub(
-                  r"\s+",
-                  " ",
-                  str(text)
-              ).strip()
-
-
-          def combo_only(text):
-
-              if not text:
-
-                  return ""
-
-
-              m = re.search(
-                  r"([1-6]-[1-6]-[1-6])",
-                  str(text)
+              print(
+                  "ODDS ERROR:"
+                  " 3連単オッズ取得失敗"
               )
 
 
-              if not m:
-
-                  return ""
-
-
-              return m.group(1)
-
-
-          # =====================================================
-          # オッズ
-          # =====================================================
-
-          def parse_odds(text):
-
-              if not text:
-
-                  return 0.0
-
-
-              m = re.search(
-                  r"オッズ\s*([0-9]+(?:\.[0-9]+)?)倍",
-                  str(text)
+              return (
+                  None,
+                  "未取得"
               )
 
 
-              if not m:
-
-                  m = re.search(
-                      r"([0-9]+(?:\.[0-9]+)?)倍",
-                      str(text)
-                  )
-
-
-              if not m:
-
-                  return 0.0
-
-
-              try:
-
-                  return float(
-                      m.group(1)
-                  )
-
-              except Exception:
-
-                  return 0.0
-
-
           # =====================================================
-          # 人気順位
+          # 当日レースを配列化
           # =====================================================
 
-          def parse_popularity(text):
+          def flatten_races(
+              data
+          ):
 
-              if not text:
-
-                  return 0
+              output = []
 
 
-              m = re.search(
-                  r"人気\s*([0-9]+)位",
-                  str(text)
+              programs = (
+                  data.get(
+                      "programs",
+                      {}
+                  )
+                  if isinstance(
+                      data,
+                      dict
+                  )
+                  else {}
               )
 
 
-              if not m:
-
-                  return 0
-
-
-              try:
-
-                  return int(
-                      m.group(1)
-                  )
-
-              except Exception:
-
-                  return 0
+              stadiums = programs.get(
+                  "stadiums",
+                  {}
+              )
 
 
-          # =====================================================
-          # 買い目オブジェクト整理
-          # =====================================================
+              if not isinstance(
+                  stadiums,
+                  dict
+              ):
 
-          def unique_tickets(values):
-
-              result = []
-
-              seen = set()
+                  return output
 
 
-              for value in values:
+              for (
+                  stadium_key,
+                  stadium_data
+              ) in stadiums.items():
 
                   if not isinstance(
-                      value,
+                      stadium_data,
                       dict
                   ):
 
                       continue
 
 
-                  combo = combo_only(
-                      value.get(
-                          "combo",
-                          ""
-                      )
+                  races = stadium_data.get(
+                      "races",
+                      {}
                   )
 
 
-                  if not combo:
+                  if not isinstance(
+                      races,
+                      dict
+                  ):
 
                       continue
 
 
-                  if combo in seen:
+                  for (
+                      race_key,
+                      race
+                  ) in races.items():
 
-                      continue
+                      if not isinstance(
+                          race,
+                          dict
+                      ):
+
+                          continue
 
 
-                  seen.add(
-                      combo
-                  )
+                      item = dict(race)
 
 
-                  try:
+                      item[
+                          "stadium_number"
+                      ] = int_num(
 
-                      odds = float(
-                          value.get(
-                              "odds",
-                              0
+                          race.get(
+                              "stadium_number",
+                              stadium_key
                           )
-                          or
-                          0
+
                       )
 
-                  except Exception:
 
-                      odds = 0.0
+                      item[
+                          "race_number"
+                      ] = int_num(
 
-
-                  try:
-
-                      popularity = int(
-                          value.get(
-                              "popularity",
-                              0
+                          race.get(
+                              "race_number",
+                              race_key
                           )
-                          or
-                          0
+
                       )
 
-                  except Exception:
 
-                      popularity = 0
-
-
-                  result.append({
-
-                      "combo":
-                          combo,
-
-                      "odds":
-                          odds,
-
-                      "popularity":
-                          popularity
-
-                  })
+                      output.append(
+                          item
+                      )
 
 
-              return result
+              return output
 
 
           # =====================================================
-          # 買い目からコンボだけ取得
+          # レースキー
           # =====================================================
 
-          def ticket_combos(tickets):
+          def race_key(
+              race
+          ):
 
-              return [
+              date = (
+                  race.get("date")
+                  or
+                  today_jst()
+              )
 
-                  x["combo"]
 
-                  for x in tickets
-
-                  if x.get(
-                      "combo"
+              stadium = int_num(
+                  race.get(
+                      "stadium_number"
                   )
+              )
 
-              ]
+
+              race_no = int_num(
+                  race.get(
+                      "race_number"
+                  )
+              )
+
+
+              return (
+                  f"{date}_"
+                  f"{stadium}_"
+                  f"{race_no}"
+              )
 
 
           # =====================================================
-          # 残り時間
+          # 締切時刻
           # =====================================================
 
-          def remaining_minutes(cutoff):
+          def close_time_text(
+              race
+          ):
 
-              try:
-
-                  h, m = map(
-                      int,
-                      cutoff.split(":")
+              value = str(
+                  race.get(
+                      "closed_at",
+                      ""
                   )
+              )
 
 
-                  now = now_jst()
+              match = re.search(
+                  r"(\d{2}):(\d{2})",
+                  value
+              )
 
 
-                  target = now.replace(
+              if not match:
 
-                      hour=h,
+                  return "--:--"
 
-                      minute=m,
 
-                      second=0,
+              return (
+                  f"{match.group(1)}:"
+                  f"{match.group(2)}"
+              )
 
-                      microsecond=0
 
+          def close_datetime(
+              race
+          ):
+
+              value = str(
+                  race.get(
+                      "closed_at",
+                      ""
                   )
+              ).strip()
 
 
-                  seconds = (
-                      target
-                      -
-                      now
-                  ).total_seconds()
-
-
-                  return int(
-                      seconds // 60
-                  )
-
-
-              except Exception as e:
-
-                  print(
-                      "残り時間計算エラー:",
-                      cutoff,
-                      e
-                  )
-
+              if not value:
 
                   return None
 
 
-          # =====================================================
-          # 残り時間表示
-          # =====================================================
+              formats = [
 
-          def remaining_text(minutes):
+                  "%Y-%m-%d %H:%M:%S",
 
-              if minutes is None:
+                  "%Y-%m-%d %H:%M",
+
+                  "%Y/%m/%d %H:%M:%S",
+
+                  "%Y/%m/%d %H:%M",
+
+              ]
+
+
+              for fmt in formats:
+
+                  try:
+
+                      dt = datetime.strptime(
+                          value,
+                          fmt
+                      )
+
+
+                      return dt.replace(
+                          tzinfo=JST
+                      )
+
+
+                  except ValueError:
+
+                      pass
+
+
+              return None
+
+
+          def upcoming(
+              race
+          ):
+
+              dt = close_datetime(
+                  race
+              )
+
+
+              if dt is None:
+
+                  return True
+
+
+              return (
+                  dt >
+                  now_jst()
+              )
+
+
+          def remaining_text(
+              race
+          ):
+
+              dt = close_datetime(
+                  race
+              )
+
+
+              if dt is None:
 
                   return "--"
 
 
-              if minutes <= 0:
+              seconds = int(
+                  (
+                      dt -
+                      now_jst()
+                  ).total_seconds()
+              )
+
+
+              if seconds <= 0:
 
                   return "締切"
 
 
-              if minutes >= 60:
+              hours = (
+                  seconds // 3600
+              )
 
-                  h = minutes // 60
 
-                  m = minutes % 60
+              minutes = (
+                  seconds % 3600
+              ) // 60
 
+
+              if hours > 0:
 
                   return (
-                      f"{h}時間{m}分"
+                      f"{hours}時間"
+                      f"{minutes}分"
                   )
 
 
@@ -560,797 +772,83 @@ jobs:
 
 
           # =====================================================
-          # オッズ帯チェック
+          # 展示データ確認
           # =====================================================
 
-          def odds_band_ok(
-              group,
-              odds
+          def preview_ready(
+              race
           ):
 
-              if odds <= 0:
+              preview = race.get(
+                  "preview",
+                  {}
+              )
+
+
+              if not isinstance(
+                  preview,
+                  dict
+              ):
 
                   return False
 
 
-              if group == "main":
-
-                  return (
-                      odds <= 15.0
-                  )
-
-
-              if group == "cover":
-
-                  return (
-                      odds > 15.0
-                      and
-                      odds < 80.0
-                  )
+              racers = preview.get(
+                  "racers",
+                  {}
+              )
 
 
-              if group == "hole":
-
-                  return (
-                      odds >= 80.0
-                  )
-
-
-              return False          
-          # =====================================================
-          # BOX
-          # =====================================================
-
-          def make_box(boats):
-
-              result = set()
-
-
-              for p in itertools.permutations(
-                  boats,
-                  3
+              if not isinstance(
+                  racers,
+                  dict
               ):
 
-                  result.add(
-                      f"{p[0]}-{p[1]}-{p[2]}"
-                  )
+                  return False
 
 
-              return result
-
-
-          def find_box(combos):
-
-              combo_set = set(
-                  combos
-              )
-
-
-              for boats in itertools.combinations(
-                  range(1, 7),
-                  3
+              for boat in range(
+                  1,
+                  7
               ):
 
-                  box = make_box(
-                      boats
+                  p = racers.get(
+                      str(boat)
                   )
 
 
-                  if box.issubset(
-                      combo_set
+                  if not isinstance(
+                      p,
+                      dict
                   ):
 
-                      return {
+                      return False
 
-                          "boats":
-                              boats,
 
-                          "combos":
-                              box
-
-                      }
-
-
-              return None
-
-
-          # =====================================================
-          # フォーメーション
-          # =====================================================
-
-          def formation_combos(
-              first,
-              second,
-              third
-          ):
-
-              result = set()
-
-
-              for a in first:
-
-                  for b in second:
-
-                      for c in third:
-
-                          if len({
-                              a,
-                              b,
-                              c
-                          }) != 3:
-
-                              continue
-
-
-                          result.add(
-                              f"{a}-{b}-{c}"
-                          )
-
-
-              return result
-
-
-          def format_numbers(nums):
-
-              return ",".join(
-
-                  str(x)
-
-                  for x in sorted(
-                      nums
-                  )
-
-              )
-
-
-          def find_best_formation(
-              combos
-          ):
-
-              combo_set = set(
-                  combos
-              )
-
-
-              if len(
-                  combo_set
-              ) < 2:
-
-                  return None
-
-
-              parsed = [
-
-                  tuple(
-                      map(
-                          int,
-                          c.split("-")
-                      )
-                  )
-
-                  for c in combo_set
-
-              ]
-
-
-              first_pool = sorted(
-
-                  set(
-                      x[0]
-                      for x in parsed
-                  )
-
-              )
-
-
-              second_pool = sorted(
-
-                  set(
-                      x[1]
-                      for x in parsed
-                  )
-
-              )
-
-
-              third_pool = sorted(
-
-                  set(
-                      x[2]
-                      for x in parsed
-                  )
-
-              )
-
-
-              def subsets(values):
-
-                  out = []
-
-
-                  for size in range(
-                      1,
-                      len(values) + 1
-                  ):
-
-                      out.extend(
-
-                          itertools.combinations(
-                              values,
-                              size
-                          )
-
-                      )
-
-
-                  return out
-
-
-              best = None
-
-
-              for first in subsets(
-                  first_pool
-              ):
-
-                  for second in subsets(
-                      second_pool
-                  ):
-
-                      for third in subsets(
-                          third_pool
-                      ):
-
-                          generated = formation_combos(
-                              first,
-                              second,
-                              third
-                          )
-
-
-                          if len(
-                              generated
-                          ) < 2:
-
-                              continue
-
-
-                          if not generated.issubset(
-                              combo_set
-                          ):
-
-                              continue
-
-
-                          candidate = {
-
-                              "first":
-                                  first,
-
-                              "second":
-                                  second,
-
-                              "third":
-                                  third,
-
-                              "combos":
-                                  generated,
-
-                              "score":
-                                  len(
-                                      generated
-                                  )
-
-                          }
-
-
-                          if (
-                              best is None
-                              or
-                              candidate["score"]
-                              >
-                              best["score"]
-                          ):
-
-                              best = candidate
-
-
-              return best
-
-
-          # =====================================================
-          # 通常 / フォーメーション / BOX
-          # =====================================================
-
-          def classify_bets(
-              combos
-          ):
-
-              remaining = set(
-                  combos
-              )
-
-
-              formations = []
-
-              boxes = []
-
-
-              while True:
-
-                  found = find_box(
-                      list(
-                          remaining
-                      )
-                  )
-
-
-                  if not found:
-
-                      break
-
-
-                  boxes.append(
-
-                      "・".join(
-                          str(x)
-                          for x in found["boats"]
-                      )
-
-                  )
-
-
-                  remaining -= (
-                      found["combos"]
-                  )
-
-
-              while len(
-                  remaining
-              ) >= 2:
-
-                  found = find_best_formation(
-                      list(
-                          remaining
-                      )
-                  )
-
-
-                  if not found:
-
-                      break
-
-
-                  formations.append(
-
-                      f"{format_numbers(found['first'])}"
-                      f" - "
-                      f"{format_numbers(found['second'])}"
-                      f" - "
-                      f"{format_numbers(found['third'])}"
-
-                  )
-
-
-                  remaining -= (
-                      found["combos"]
-                  )
-
-
-              return {
-
-                  "normal":
-                      sorted(
-                          remaining
+                  ex = num(
+                      p.get(
+                          "exhibition_time"
                       ),
-
-                  "formation":
-                      formations,
-
-                  "box":
-                      boxes
-
-              }
-
-
-          # =====================================================
-          # Webツールから
-          # 本命3 / 狙い4 / 穴3
-          # ＋ オッズ
-          # ＋ 人気順位
-          # を取得
-          # =====================================================
-
-          def extract_bet_sections(card):
-
-              data = card.evaluate(
-                  """
-                  (root) => {
-
-                    const result = {
-                      main: [],
-                      cover: [],
-                      hole: []
-                    };
-
-                    let current = null;
-
-
-                    const nodes =
-                      root.querySelectorAll(
-                        '.bet-head, .ticket'
-                      );
-
-
-                    for (const node of nodes) {
-
-
-                      if (
-                        node.classList.contains(
-                          'bet-head'
-                        )
-                      ) {
-
-                        if (
-                          node.classList.contains(
-                            'main'
-                          )
-                        ) {
-
-                          current = 'main';
-
-                        }
-
-                        else if (
-                          node.classList.contains(
-                            'cover'
-                          )
-                        ) {
-
-                          current = 'cover';
-
-                        }
-
-                        else if (
-                          node.classList.contains(
-                            'hole'
-                          )
-                        ) {
-
-                          current = 'hole';
-
-                        }
-
-                        else {
-
-                          current = null;
-
-                        }
-
-
-                        continue;
-                      }
-
-
-                      if (
-                        !node.classList.contains(
-                          'ticket'
-                        )
-                        ||
-                        !current
-                      ) {
-
-                        continue;
-                      }
-
-
-                      const comboNode =
-                        node.querySelector(
-                          '.combo'
-                        );
-
-
-                      const subNode =
-                        node.querySelector(
-                          '.ticket-sub'
-                        );
-
-
-                      if (!comboNode) {
-
-                        continue;
-                      }
-
-
-                      const comboText =
-                        comboNode.textContent
-                        || '';
-
-
-                      const comboMatch =
-                        comboText.match(
-                          /([1-6]-[1-6]-[1-6])/
-                        );
-
-
-                      if (!comboMatch) {
-
-                        continue;
-                      }
-
-
-                      const subText =
-                        subNode
-                          ?(
-                              subNode.textContent
-                              || ''
-                            )
-                          :'';
-
-
-                      const oddsMatch =
-                        subText.match(
-                          /オッズ\\s*([0-9]+(?:\\.[0-9]+)?)倍/
-                        );
-
-
-                      const popularityMatch =
-                        subText.match(
-                          /人気\\s*([0-9]+)位/
-                        );
-
-
-                      result[current].push({
-
-                        combo:
-                          comboMatch[1],
-
-                        odds:
-                          oddsMatch
-                            ?Number(
-                                oddsMatch[1]
-                              )
-                            :0,
-
-                        popularity:
-                          popularityMatch
-                            ?Number(
-                                popularityMatch[1]
-                              )
-                            :0
-
-                      });
-
-                    }
-
-
-                    return result;
-
-                  }
-                  """
-              )
-
-
-              return {
-
-                  "main":
-                      unique_tickets(
-                          data.get(
-                              "main",
-                              []
-                          )
-                      )[:3],
-
-                  "cover":
-                      unique_tickets(
-                          data.get(
-                              "cover",
-                              []
-                          )
-                      )[:4],
-
-                  "hole":
-                      unique_tickets(
-                          data.get(
-                              "hole",
-                              []
-                          )
-                      )[:3]
-
-              }
-
-
-          # =====================================================
-          # 3 + 4 + 3 完成確認
-          # ＋ オッズ帯チェック
-          # =====================================================
-
-          def validate_bets(
-              bets,
-              race_name=""
-          ):
-
-              main = bets.get(
-                  "main",
-                  []
-              )
-
-
-              cover = bets.get(
-                  "cover",
-                  []
-              )
-
-
-              hole = bets.get(
-                  "hole",
-                  []
-              )
-
-
-              if len(main) != 3:
-
-                  print(
-                      "本命3点未完成:",
-                      race_name,
-                      len(main)
-                  )
-
-                  return False
-
-
-              if len(cover) != 4:
-
-                  print(
-                      "狙い4点未完成:",
-                      race_name,
-                      len(cover)
-                  )
-
-                  return False
-
-
-              if len(hole) != 3:
-
-                  print(
-                      "穴3点未完成:",
-                      race_name,
-                      len(hole)
-                  )
-
-                  return False
-
-
-              all_tickets = (
-                  main
-                  +
-                  cover
-                  +
-                  hole
-              )
-
-
-              all_combos = ticket_combos(
-                  all_tickets
-              )
-
-
-              if len(
-                  all_combos
-              ) != 10:
-
-                  print(
-                      "10点未完成:",
-                      race_name,
-                      len(all_combos)
-                  )
-
-                  return False
-
-
-              if len(
-                  set(
-                      all_combos
-                  )
-              ) != 10:
-
-                  print(
-                      "買い目重複あり:",
-                      race_name
-                  )
-
-                  return False
-
-
-              # ----------------------------------------------
-              # 本命🚤 15.0倍以下
-              # ----------------------------------------------
-
-              for ticket in main:
-
-                  odds = float(
-                      ticket.get(
-                          "odds",
-                          0
-                      )
-                      or
-                      0
+                      -1
                   )
 
 
-                  if not odds_band_ok(
-                      "main",
-                      odds
-                  ):
+                  st = num(
+                      p.get(
+                          "start_timing"
+                      ),
+                      999
+                  )
 
-                      print(
-                          "❌ 本命オッズ条件違反:",
-                          race_name,
-                          ticket.get("combo"),
-                          odds
-                      )
+
+                  if ex <= 0:
 
                       return False
 
 
-              # ----------------------------------------------
-              # 狙い🚤 15.0倍超〜80.0倍未満
-              # ----------------------------------------------
-
-              for ticket in cover:
-
-                  odds = float(
-                      ticket.get(
-                          "odds",
-                          0
-                      )
-                      or
-                      0
-                  )
-
-
-                  if not odds_band_ok(
-                      "cover",
-                      odds
+                  if not math.isfinite(
+                      st
                   ):
-
-                      print(
-                          "❌ 狙いオッズ条件違反:",
-                          race_name,
-                          ticket.get("combo"),
-                          odds
-                      )
-
-                      return False
-
-
-              # ----------------------------------------------
-              # 穴🚤 80.0倍以上
-              # ----------------------------------------------
-
-              for ticket in hole:
-
-                  odds = float(
-                      ticket.get(
-                          "odds",
-                          0
-                      )
-                      or
-                      0
-                  )
-
-
-                  if not odds_band_ok(
-                      "hole",
-                      odds
-                  ):
-
-                      print(
-                          "❌ 穴オッズ条件違反:",
-                          race_name,
-                          ticket.get("combo"),
-                          odds
-                      )
 
                       return False
 
@@ -1359,305 +857,2653 @@ jobs:
 
 
           # =====================================================
-          # 3 + 4 + 3 完成待ち
+          # 水面情報
           # =====================================================
 
-          def wait_for_complete_bets(
-              page,
-              card,
-              race_name
+          def weather_info(
+              race
           ):
 
-              deadline = (
-                  time.monotonic()
-                  +
-                  PREDICTION_WAIT_SECONDS
+              preview = race.get(
+                  "preview",
+                  {}
               )
 
 
-              last_bets = {
+              return {
 
-                  "main": [],
+                  "wind_speed":
+                      num(
+                          preview.get(
+                              "wind_speed"
+                          )
+                      ),
 
-                  "cover": [],
+                  "wind_direction":
+                      int_num(
+                          preview.get(
+                              "wind_direction_number"
+                          )
+                      ),
 
-                  "hole": []
+                  "wave":
+                      num(
+                          preview.get(
+                              "wave_height"
+                          )
+                      ),
+
+                  "weather":
+                      int_num(
+                          preview.get(
+                              "weather_number"
+                          )
+                      ),
+
+                  "air":
+                      num(
+                          preview.get(
+                              "air_temperature"
+                          )
+                      ),
+
+                  "water":
+                      num(
+                          preview.get(
+                              "water_temperature"
+                          )
+                      ),
 
               }
 
 
-              while (
-                  time.monotonic()
-                  <
-                  deadline
+          # =====================================================
+          # 次の②へ続きます
+          # =====================================================
+                    # =====================================================
+          # 3連単オッズ探索
+          # =====================================================
+
+          def find_race_odds_node(
+              obj,
+              stadium,
+              race_no
+          ):
+
+              if isinstance(
+                  obj,
+                  list
               ):
 
-                  try:
+                  for item in obj:
 
-                      bets = extract_bet_sections(
-                          card
+                      found = (
+                          find_race_odds_node(
+                              item,
+                              stadium,
+                              race_no
+                          )
                       )
 
+                      if found is not None:
 
-                      last_bets = bets
-
-
-                      main = bets[
-                          "main"
-                      ]
+                          return found
 
 
-                      cover = bets[
-                          "cover"
-                      ]
+                  return None
 
 
-                      hole = bets[
-                          "hole"
-                      ]
+              if not isinstance(
+                  obj,
+                  dict
+              ):
+
+                  return None
 
 
-                      print(
-                          "予想完成待ち:",
-                          race_name,
-                          f"本命{len(main)}",
-                          f"狙い{len(cover)}",
-                          f"穴{len(hole)}"
+              s = int_num(
+                  obj.get(
+                      "stadium_number",
+                      obj.get(
+                          "stadium",
+                          obj.get(
+                              "place",
+                              obj.get(
+                                  "place_no",
+                                  0
+                              )
+                          )
                       )
+                  )
+              )
 
 
-                      if validate_bets(
-                          bets,
-                          race_name
-                      ):
-
-                          print(
-                              "✅ 予想完成:",
-                              race_name
+              r = int_num(
+                  obj.get(
+                      "race_number",
+                      obj.get(
+                          "race",
+                          obj.get(
+                              "race_no",
+                              0
                           )
-
-
-                          print(
-                              "本命🚤:",
-                              [
-                                  (
-                                      x["combo"],
-                                      x["odds"]
-                                  )
-                                  for x in main
-                              ]
-                          )
-
-
-                          print(
-                              "狙い🚤:",
-                              [
-                                  (
-                                      x["combo"],
-                                      x["odds"]
-                                  )
-                                  for x in cover
-                              ]
-                          )
-
-
-                          print(
-                              "穴🚤:",
-                              [
-                                  (
-                                      x["combo"],
-                                      x["odds"]
-                                  )
-                                  for x in hole
-                              ]
-                          )
-
-
-                          return bets
-
-
-                  except Exception as e:
-
-                      print(
-                          "予想確認エラー:",
-                          race_name,
-                          e
                       )
+                  )
+              )
 
 
-                  page.wait_for_timeout(
-                      PREDICTION_CHECK_INTERVAL_MS
+              if (
+                  s == stadium
+                  and
+                  r == race_no
+              ):
+
+                  if isinstance(
+                      obj.get(
+                          "trifecta"
+                      ),
+                      (dict, list)
+                  ):
+
+                      return obj
+
+
+                  odds = obj.get(
+                      "odds"
                   )
 
 
-              print(
-                  "❌ 予想完成タイムアウト:",
-                  race_name,
-                  f"本命{len(last_bets['main'])}",
-                  f"狙い{len(last_bets['cover'])}",
-                  f"穴{len(last_bets['hole'])}"
-              )
+                  if (
+                      isinstance(
+                          odds,
+                          dict
+                      )
+                      and
+                      isinstance(
+                          odds.get(
+                              "trifecta"
+                          ),
+                          (dict, list)
+                      )
+                  ):
+
+                      return odds
+
+
+              stadium_keys = [
+
+                  str(stadium),
+
+                  f"{stadium:02d}",
+
+                  f"{stadium}場",
+
+                  f"stadium_{stadium}",
+
+              ]
+
+
+              race_keys = [
+
+                  str(race_no),
+
+                  f"{race_no:02d}",
+
+                  f"{race_no}R",
+
+                  f"race_{race_no}",
+
+              ]
+
+
+              for sk in stadium_keys:
+
+                  if sk not in obj:
+
+                      continue
+
+
+                  sub = obj.get(
+                      sk
+                  )
+
+
+                  if not isinstance(
+                      sub,
+                      (dict, list)
+                  ):
+
+                      continue
+
+
+                  if isinstance(
+                      sub,
+                      dict
+                  ):
+
+                      for rk in race_keys:
+
+                          if rk not in sub:
+
+                              continue
+
+
+                          candidate = sub.get(
+                              rk
+                          )
+
+
+                          found = (
+                              find_race_odds_node(
+                                  candidate,
+                                  stadium,
+                                  race_no
+                              )
+                          )
+
+
+                          if found is not None:
+
+                              return found
+
+
+                  found = (
+                      find_race_odds_node(
+                          sub,
+                          stadium,
+                          race_no
+                      )
+                  )
+
+
+                  if found is not None:
+
+                      return found
+
+
+              for value in obj.values():
+
+                  if isinstance(
+                      value,
+                      (dict, list)
+                  ):
+
+                      found = (
+                          find_race_odds_node(
+                              value,
+                              stadium,
+                              race_no
+                          )
+                      )
+
+
+                      if found is not None:
+
+                          return found
 
 
               return None
 
 
           # =====================================================
-          # 買い目表示
+          # 3連単オッズを
+          # "1-2-3": 12.3
+          # の形へ変換
           # =====================================================
 
-          def format_ticket_line(
-              ticket
+          def flatten_trifecta(
+              trifecta
           ):
 
-              combo = ticket.get(
-                  "combo",
-                  ""
+              result = {}
+
+
+              if isinstance(
+                  trifecta,
+                  list
+              ):
+
+                  for item in trifecta:
+
+                      if not isinstance(
+                          item,
+                          dict
+                      ):
+
+                          continue
+
+
+                      combo = str(
+                          item.get(
+                              "combination",
+                              item.get(
+                                  "combo",
+                                  ""
+                              )
+                          )
+                      )
+
+
+                      odds = num(
+                          item.get(
+                              "odds",
+                              item.get(
+                                  "rate",
+                                  item.get(
+                                      "value",
+                                      0
+                                  )
+                              )
+                          )
+                      )
+
+
+                      if (
+                          re.fullmatch(
+                              r"[1-6]-[1-6]-[1-6]",
+                              combo
+                          )
+                          and
+                          odds > 0
+                      ):
+
+                          result[
+                              combo
+                          ] = odds
+
+
+                  return result
+
+
+              if not isinstance(
+                  trifecta,
+                  dict
+              ):
+
+                  return result
+
+
+              for key, value in (
+                  trifecta.items()
+              ):
+
+                  combo = str(
+                      key
+                  )
+
+
+                  if re.fullmatch(
+                      r"[1-6]-[1-6]-[1-6]",
+                      combo
+                  ):
+
+                      if isinstance(
+                          value,
+                          dict
+                      ):
+
+                          odds = num(
+                              value.get(
+                                  "odds",
+                                  value.get(
+                                      "rate",
+                                      value.get(
+                                          "value",
+                                          0
+                                      )
+                                  )
+                              )
+                          )
+
+                      else:
+
+                          odds = num(
+                              value
+                          )
+
+
+                      if odds > 0:
+
+                          result[
+                              combo
+                          ] = odds
+
+
+                      continue
+
+
+                  if (
+                      str(key).isdigit()
+                      and
+                      1 <= int(key) <= 6
+                      and
+                      isinstance(
+                          value,
+                          dict
+                      )
+                  ):
+
+                      first = int(
+                          key
+                      )
+
+
+                      for key2, value2 in (
+                          value.items()
+                      ):
+
+                          if (
+                              not str(
+                                  key2
+                              ).isdigit()
+                              or
+                              not (
+                                  1
+                                  <=
+                                  int(key2)
+                                  <=
+                                  6
+                              )
+                              or
+                              not isinstance(
+                                  value2,
+                                  dict
+                              )
+                          ):
+
+                              continue
+
+
+                          second = int(
+                              key2
+                          )
+
+
+                          for key3, value3 in (
+                              value2.items()
+                          ):
+
+                              if (
+                                  not str(
+                                      key3
+                                  ).isdigit()
+                              ):
+
+                                  continue
+
+
+                              third = int(
+                                  key3
+                              )
+
+
+                              if not (
+                                  1
+                                  <=
+                                  third
+                                  <=
+                                  6
+                              ):
+
+                                  continue
+
+
+                              if len(
+                                  {
+                                      first,
+                                      second,
+                                      third
+                                  }
+                              ) != 3:
+
+                                  continue
+
+
+                              odds = (
+
+                                  num(
+                                      value3.get(
+                                          "odds",
+                                          value3.get(
+                                              "rate",
+                                              value3.get(
+                                                  "value",
+                                                  0
+                                              )
+                                          )
+                                      )
+                                  )
+
+                                  if isinstance(
+                                      value3,
+                                      dict
+                                  )
+
+                                  else num(
+                                      value3
+                                  )
+
+                              )
+
+
+                              if odds > 0:
+
+                                  result[
+                                      f"{first}-{second}-{third}"
+                                  ] = odds
+
+
+              return result
+
+
+          # =====================================================
+          # 指定レースのオッズMAP
+          # =====================================================
+
+          def get_odds_map(
+              odds_data,
+              stadium,
+              race_no
+          ):
+
+              if odds_data is None:
+
+                  return {}
+
+
+              node = (
+                  find_race_odds_node(
+                      odds_data,
+                      stadium,
+                      race_no
+                  )
               )
 
 
-              odds = float(
-                  ticket.get(
-                      "odds",
-                      0
-                  )
-                  or
-                  0
+              if not isinstance(
+                  node,
+                  dict
+              ):
+
+                  return {}
+
+
+              trifecta = node.get(
+                  "trifecta"
               )
 
 
-              popularity = int(
-                  ticket.get(
-                      "popularity",
-                      0
+              if trifecta is None:
+
+                  odds = node.get(
+                      "odds"
                   )
-                  or
-                  0
+
+
+                  if isinstance(
+                      odds,
+                      dict
+                  ):
+
+                      trifecta = (
+                          odds.get(
+                              "trifecta"
+                          )
+                      )
+
+
+              return (
+                  flatten_trifecta(
+                      trifecta
+                  )
+              )
+
+
+          # =====================================================
+          # 人気順位
+          # =====================================================
+
+          def odds_ranking(
+              odds_map
+          ):
+
+              valid = [
+
+                  (
+                      combo,
+                      odds
+                  )
+
+                  for combo, odds
+                  in odds_map.items()
+
+                  if num(
+                      odds
+                  ) > 0
+
+              ]
+
+
+              valid.sort(
+                  key=lambda x:
+                      x[1]
+              )
+
+
+              ranking = {}
+
+
+              for index, (
+                  combo,
+                  odds
+              ) in enumerate(
+                  valid,
+                  start=1
+              ):
+
+                  ranking[
+                      combo
+                  ] = index
+
+
+              return ranking
+
+
+          # =====================================================
+          # 選手・展示スコア
+          # =====================================================
+
+          def score_boat(
+              race,
+              boat
+          ):
+
+              preview = race.get(
+                  "preview",
+                  {}
+              )
+
+
+              racers = preview.get(
+                  "racers",
+                  {}
+              )
+
+
+              p = racers.get(
+                  str(boat),
+                  {}
+              )
+
+
+              score = 0.0
+
+
+              exhibition = num(
+                  p.get(
+                      "exhibition_time"
+                  ),
+                  99
+              )
+
+
+              start = num(
+                  p.get(
+                      "start_timing"
+                  ),
+                  1
+              )
+
+
+              course = int_num(
+                  p.get(
+                      "course_number",
+                      boat
+                  ),
+                  boat
+              )
+
+
+              racer = race.get(
+                  "racers",
+                  {}
+              )
+
+
+              racer_data = (
+
+                  racer.get(
+                      str(boat),
+                      {}
+                  )
+
+                  if isinstance(
+                      racer,
+                      dict
+                  )
+
+                  else {}
+
+              )
+
+
+              win_rate = num(
+                  racer_data.get(
+                      "win_rate"
+                  )
+              )
+
+
+              second_rate = num(
+                  racer_data.get(
+                      "second_place_rate"
+                  )
+              )
+
+
+              motor_rate = num(
+                  racer_data.get(
+                      "motor_second_place_rate"
+                  )
+              )
+
+
+              boat_rate = num(
+                  racer_data.get(
+                      "boat_second_place_rate"
+                  )
+              )
+
+
+              if exhibition < 99:
+
+                  score += (
+                      10.0 -
+                      exhibition
+                  ) * 22.0
+
+
+              score += (
+                  0.25 -
+                  start
+              ) * 42.0
+
+
+              score += (
+                  7 -
+                  course
+              ) * 3.8
+
+
+              score += (
+                  win_rate * 2.6
+              )
+
+
+              score += (
+                  second_rate * 0.18
+              )
+
+
+              score += (
+                  motor_rate * 0.16
+              )
+
+
+              score += (
+                  boat_rate * 0.08
+              )
+
+
+              return {
+
+                  "boat":
+                      boat,
+
+                  "score":
+                      score,
+
+                  "exhibition_time":
+                      exhibition,
+
+                  "start_timing":
+                      start,
+
+                  "course_number":
+                      course,
+
+                  "win_rate":
+                      win_rate,
+
+                  "motor_rate":
+                      motor_rate,
+
+              }
+
+
+          # =====================================================
+          # 展示順位
+          # =====================================================
+
+          def exhibition_rank(
+              race
+          ):
+
+              rows = []
+
+
+              preview = race.get(
+                  "preview",
+                  {}
+              )
+
+
+              racers = preview.get(
+                  "racers",
+                  {}
+              )
+
+
+              for boat in range(
+                  1,
+                  7
+              ):
+
+                  p = racers.get(
+                      str(boat),
+                      {}
+                  )
+
+
+                  rows.append({
+
+                      "boat":
+                          boat,
+
+                      "time":
+                          num(
+                              p.get(
+                                  "exhibition_time"
+                              ),
+                              99
+                          )
+
+                  })
+
+
+              rows.sort(
+                  key=lambda x:
+                      x["time"]
+              )
+
+
+              return rows
+
+
+          # =====================================================
+          # ST順位
+          # =====================================================
+
+          def start_rank(
+              race
+          ):
+
+              rows = []
+
+
+              preview = race.get(
+                  "preview",
+                  {}
+              )
+
+
+              racers = preview.get(
+                  "racers",
+                  {}
+              )
+
+
+              for boat in range(
+                  1,
+                  7
+              ):
+
+                  p = racers.get(
+                      str(boat),
+                      {}
+                  )
+
+
+                  rows.append({
+
+                      "boat":
+                          boat,
+
+                      "st":
+                          num(
+                              p.get(
+                                  "start_timing"
+                              ),
+                              9
+                          )
+
+                  })
+
+
+              rows.sort(
+                  key=lambda x:
+                      x["st"]
+              )
+
+
+              return rows
+
+
+          # =====================================================
+          # 進入変化
+          # =====================================================
+
+          def course_changes(
+              race
+          ):
+
+              preview = race.get(
+                  "preview",
+                  {}
+              )
+
+
+              racers = preview.get(
+                  "racers",
+                  {}
+              )
+
+
+              changes = []
+
+
+              for boat in range(
+                  1,
+                  7
+              ):
+
+                  p = racers.get(
+                      str(boat),
+                      {}
+                  )
+
+
+                  course = int_num(
+                      p.get(
+                          "course_number",
+                          boat
+                      ),
+                      boat
+                  )
+
+
+                  if course != boat:
+
+                      changes.append({
+
+                          "boat":
+                              boat,
+
+                          "course":
+                              course,
+
+                      })
+
+
+              return changes
+
+
+          # =====================================================
+          # 展開予測
+          # =====================================================
+
+          def scenario_forecast(
+              race,
+              boats
+          ):
+
+              weather = weather_info(
+                  race
+              )
+
+
+              wind = num(
+                  weather.get(
+                      "wind_speed"
+                  )
+              )
+
+
+              wave = num(
+                  weather.get(
+                      "wave"
+                  )
+              )
+
+
+              candidates = []
+
+
+              total_score = sum(
+
+                  max(
+                      0.1,
+                      x["score"]
+                  )
+
+                  for x in boats
+
+              )
+
+
+              if total_score <= 0:
+
+                  total_score = 1
+
+
+              for x in boats:
+
+                  boat = x["boat"]
+
+
+                  course = x[
+                      "course_number"
+                  ]
+
+
+                  st = x[
+                      "start_timing"
+                  ]
+
+
+                  base = max(
+                      0.1,
+                      x["score"]
+                  )
+
+
+                  prob = (
+                      base /
+                      total_score
+                  )
+
+
+                  if course == 1:
+
+                      tactic = "逃げ"
+
+                      prob *= 1.16
+
+
+                  elif course in (
+                      2,
+                      3
+                  ):
+
+                      tactic = "差し・まくり"
+
+                      prob *= 1.05
+
+
+                  elif course in (
+                      4,
+                      5
+                  ):
+
+                      tactic = "まくり差し"
+
+                      prob *= 1.01
+
+
+                  else:
+
+                      tactic = "展開突き"
+
+                      prob *= 0.92
+
+
+                  if st <= 0.10:
+
+                      prob *= 1.08
+
+
+                  if wind >= 5:
+
+                      prob *= (
+                          1.02
+                          if course >= 3
+                          else 0.98
+                      )
+
+
+                  if wave >= 5:
+
+                      prob *= 0.98
+
+
+                  candidates.append({
+
+                      "boat":
+                          boat,
+
+                      "course":
+                          course,
+
+                      "tactic":
+                          tactic,
+
+                      "probability":
+                          prob,
+
+                  })
+
+
+              total = sum(
+
+                  x[
+                      "probability"
+                  ]
+
+                  for x in candidates
+
+              )
+
+
+              if total <= 0:
+
+                  total = 1
+
+
+              for x in candidates:
+
+                  x[
+                      "probability"
+                  ] /= total
+
+
+              candidates.sort(
+
+                  key=lambda x:
+                      x[
+                          "probability"
+                      ],
+
+                  reverse=True
+
+              )
+
+
+              return {
+
+                  "top":
+                      candidates[0]
+                      if candidates
+                      else None,
+
+                  "candidates":
+                      candidates,
+
+              }
+
+
+          # =====================================================
+          # AI評価
+          # =====================================================
+
+          def evaluate_race(
+              race
+          ):
+
+              if not preview_ready(
+                  race
+              ):
+
+                  return None
+
+
+              boats = [
+
+                  score_boat(
+                      race,
+                      boat
+                  )
+
+                  for boat in range(
+                      1,
+                      7
+                  )
+
+              ]
+
+
+              boats.sort(
+
+                  key=lambda x:
+                      x["score"],
+
+                  reverse=True
+
+              )
+
+
+              ex_rank = (
+                  exhibition_rank(
+                      race
+                  )
+              )
+
+
+              st_rank = (
+                  start_rank(
+                      race
+                  )
+              )
+
+
+              changes = (
+                  course_changes(
+                      race
+                  )
+              )
+
+
+              scenario = (
+                  scenario_forecast(
+                      race,
+                      boats
+                  )
+              )
+
+
+              weather = (
+                  weather_info(
+                      race
+                  )
+              )
+
+
+              top = boats[0]
+
+
+              second = boats[1]
+
+
+              score_gap = (
+                  top["score"] -
+                  second["score"]
+              )
+
+
+              rating = 70
+
+
+              rating += clamp(
+                  score_gap * 0.7,
+                  0,
+                  10
               )
 
 
               if (
-                  odds > 0
+                  ex_rank
                   and
-                  popularity > 0
+                  ex_rank[0][
+                      "boat"
+                  ]
+                  ==
+                  top["boat"]
               ):
 
-                  return (
-                      f"{combo}　"
-                      f"{odds:.1f}倍"
-                      f"（人気{popularity}位）"
+                  rating += 4
+
+
+              if (
+                  st_rank
+                  and
+                  st_rank[0][
+                      "boat"
+                  ]
+                  ==
+                  top["boat"]
+              ):
+
+                  rating += 4
+
+
+              if (
+                  top[
+                      "course_number"
+                  ]
+                  ==
+                  1
+              ):
+
+                  rating += 3
+
+
+              wind = num(
+                  weather[
+                      "wind_speed"
+                  ]
+              )
+
+
+              wave = num(
+                  weather[
+                      "wave"
+                  ]
+              )
+
+
+              if wind <= 4:
+
+                  rating += 2
+
+
+              if wave <= 4:
+
+                  rating += 2
+
+
+              if len(
+                  changes
+              ) >= 2:
+
+                  rating -= 3
+
+
+              if wind >= 7:
+
+                  rating -= 4
+
+
+              if wave >= 8:
+
+                  rating -= 4
+
+
+              rating = int(
+                  round(
+                      clamp(
+                          rating,
+                          0,
+                          100
+                      )
+                  )
+              )
+
+
+              grade = (
+
+                  "S"
+                  if rating >= 82
+
+                  else "A"
+                  if rating >= 74
+
+                  else "B"
+
+              )
+
+
+              reasons = []
+
+
+              reasons.append(
+                  f"{top['boat']}号艇がAI総合1位"
+              )
+
+
+              reasons.append(
+                  f"展示1位は{ex_rank[0]['boat']}号艇"
+              )
+
+
+              reasons.append(
+                  f"ST1位は{st_rank[0]['boat']}号艇"
+              )
+
+
+              reasons.append(
+                  f"風速{wind:.1f}m・波高{wave:.1f}cm"
+              )
+
+
+              return {
+
+                  "race":
+                      race,
+
+                  "boats":
+                      boats,
+
+                  "rating":
+                      rating,
+
+                  "grade":
+                      grade,
+
+                  "weather":
+                      weather,
+
+                  "scenario":
+                      scenario,
+
+                  "exhibition_rank":
+                      ex_rank,
+
+                  "start_rank":
+                      st_rank,
+
+                  "course_changes":
+                      changes,
+
+                  "reasons":
+                      reasons,
+
+              }
+
+
+          # =====================================================
+          # 3連単120通り
+          # =====================================================
+
+          def all_combos():
+
+              return [
+
+                  f"{a}-{b}-{c}"
+
+                  for a, b, c
+                  in itertools.permutations(
+                      range(
+                          1,
+                          7
+                      ),
+                      3
                   )
 
-
-              if odds > 0:
-
-                  return (
-                      f"{combo}　"
-                      f"{odds:.1f}倍"
-                  )
+              ]
 
 
-              return combo
+          # =====================================================
+          # AI確率
+          # =====================================================
 
-
-          def tickets_text(
-              tickets
+          def combo_probability(
+              analysis,
+              combo
           ):
 
-              return "\n".join(
+              parts = [
 
-                  format_ticket_line(
-                      x
+                  int(x)
+
+                  for x in (
+                      combo.split(
+                          "-"
+                      )
                   )
 
-                  for x in tickets
+              ]
 
-              )  
+
+              if len(
+                  parts
+              ) != 3:
+
+                  return 0.0
+
+
+              score_map = {
+
+                  x["boat"]:
+                      x["score"]
+
+                  for x in (
+                      analysis[
+                          "boats"
+                      ]
+                  )
+
+              }
+
+
+              scores = [
+
+                  score_map.get(
+                      boat,
+                      0
+                  )
+
+                  for boat in parts
+
+              ]
+
+
+              order_weight = (
+
+                  1.00,
+                  0.72,
+                  0.48
+
+              )
+
+
+              raw = 1.0
+
+
+              for index, score in enumerate(
+                  scores
+              ):
+
+                  normalized = max(
+                      0.1,
+                      score + 50
+                  )
+
+
+                  raw *= (
+                      normalized
+                      **
+                      order_weight[index]
+                  )
+
+
+              scenario = analysis.get(
+                  "scenario",
+                  {}
+              )
+
+
+              candidates = scenario.get(
+                  "candidates",
+                  []
+              )
+
+
+              scenario_map = {
+
+                  x["boat"]:
+                      num(
+                          x["probability"]
+                      )
+
+                  for x in candidates
+
+              }
+
+
+              first_boat_prob = (
+                  scenario_map.get(
+                      parts[0],
+                      0.05
+                  )
+              )
+
+
+              raw *= (
+                  1
+                  +
+                  first_boat_prob
+                  *
+                  2.2
+              )
+
+
+              return raw
+
+
           # =====================================================
-          # 投票方法表示
+          # 120通りを確率化
           # =====================================================
 
-          def betting_summary(
-              bets
+          def probability_map(
+              analysis
           ):
 
-              all_combos = (
+              raw = {}
 
-                  ticket_combos(
-                      bets.get(
+
+              for combo in all_combos():
+
+                  raw[
+                      combo
+                  ] = (
+                      combo_probability(
+                          analysis,
+                          combo
+                      )
+                  )
+
+
+              total = sum(
+                  raw.values()
+              )
+
+
+              if total <= 0:
+
+                  total = 1
+
+
+              return {
+
+                  combo:
+                      value / total
+
+                  for combo, value
+                  in raw.items()
+
+              }
+
+
+          # =====================================================
+          # 買い目作成
+          #
+          # 本命 15倍以下 3本
+          # 狙い 15〜80倍未満 4本
+          # 穴   80倍以上 3本
+          # =====================================================
+
+          def make_tickets(
+              analysis,
+              odds_map
+          ):
+
+              if not odds_map:
+
+                  return {
+
+                      "has_odds":
+                          False,
+
+                      "valid343":
+                          False,
+
+                      "main":
+                          [],
+
+                      "cover":
+                          [],
+
+                      "hole":
+                          [],
+
+                      "odds_count":
+                          0,
+
+                      "band_count":
+                          {
+                              "main": 0,
+                              "cover": 0,
+                              "hole": 0,
+                          },
+
+                  }
+
+
+              probabilities = (
+                  probability_map(
+                      analysis
+                  )
+              )
+
+
+              ranking = (
+                  odds_ranking(
+                      odds_map
+                  )
+              )
+
+
+              rows = []
+
+
+              for combo, odds in (
+                  odds_map.items()
+              ):
+
+                  odds = num(
+                      odds
+                  )
+
+
+                  if odds <= 0:
+
+                      continue
+
+
+                  probability = num(
+                      probabilities.get(
+                          combo,
+                          0
+                      )
+                  )
+
+
+                  ev = (
+                      probability *
+                      odds
+                  )
+
+
+                  rows.append({
+
+                      "combo":
+                          combo,
+
+                      "odds":
+                          odds,
+
+                      "probability":
+                          probability,
+
+                      "ev":
+                          ev,
+
+                      "popularity":
+                          int_num(
+                              ranking.get(
+                                  combo
+                              )
+                          ),
+
+                  })
+
+
+              main_pool = [
+
+                  x for x in rows
+
+                  if (
+                      x["odds"] <= 15
+                  )
+
+              ]
+
+
+              cover_pool = [
+
+                  x for x in rows
+
+                  if (
+                      x["odds"] > 15
+                      and
+                      x["odds"] < 80
+                  )
+
+              ]
+
+
+              hole_pool = [
+
+                  x for x in rows
+
+                  if (
+                      x["odds"] >= 80
+                  )
+
+              ]
+
+
+              main_pool.sort(
+
+                  key=lambda x: (
+
+                      x["probability"]
+                      +
+                      x["ev"]
+                      * 0.002
+
+                  ),
+
+                  reverse=True
+
+              )
+
+
+              cover_pool.sort(
+
+                  key=lambda x: (
+
+                      x["probability"]
+                      * 1.00
+
+                      +
+
+                      min(
+                          x["odds"],
+                          80
+                      )
+                      /
+                      80
+                      *
+                      0.012
+
+                      +
+
+                      x["ev"]
+                      * 0.006
+
+                  ),
+
+                  reverse=True
+
+              )
+
+
+              hole_pool.sort(
+
+                  key=lambda x: (
+
+                      x["probability"]
+                      * 1.00
+
+                      +
+
+                      min(
+                          x["odds"],
+                          200
+                      )
+                      /
+                      200
+                      *
+                      0.010
+
+                      +
+
+                      min(
+                          x["ev"],
+                          3
+                      )
+                      * 0.008
+
+                  ),
+
+                  reverse=True
+
+              )
+
+
+              main = (
+                  main_pool[:3]
+              )
+
+
+              cover = (
+                  cover_pool[:4]
+              )
+
+
+              hole = (
+                  hole_pool[:3]
+              )
+
+
+              all_selected = (
+
+                  main
+                  +
+                  cover
+                  +
+                  hole
+
+              )
+
+
+              combos = [
+
+                  x["combo"]
+
+                  for x in (
+                      all_selected
+                  )
+
+              ]
+
+
+              valid343 = (
+
+                  len(main) == 3
+
+                  and
+
+                  len(cover) == 4
+
+                  and
+
+                  len(hole) == 3
+
+                  and
+
+                  len(
+                      set(
+                          combos
+                      )
+                  ) == 10
+
+              )
+
+
+              return {
+
+                  "has_odds":
+                      True,
+
+                  "valid343":
+                      valid343,
+
+                  "main":
+                      main,
+
+                  "cover":
+                      cover,
+
+                  "hole":
+                      hole,
+
+                  "odds_count":
+                      len(rows),
+
+                  "band_count": {
+
+                      "main":
+                          len(
+                              main_pool
+                          ),
+
+                      "cover":
+                          len(
+                              cover_pool
+                          ),
+
+                      "hole":
+                          len(
+                              hole_pool
+                          ),
+
+                  },
+
+              }
+
+
+          # =====================================================
+          # 次の③へ続きます
+          # =====================================================
+                    # =====================================================
+          # 購入金額配分
+          # =====================================================
+
+          def allocate_tickets(
+              ticket_set,
+              budget=1000
+          ):
+
+              budget = max(
+                  100,
+                  int_num(
+                      budget,
+                      1000
+                  )
+              )
+
+
+              groups = [
+
+                  (
+                      "main",
+                      ticket_set.get(
                           "main",
                           []
                       )
-                  )
+                  ),
 
-                  +
-
-                  ticket_combos(
-                      bets.get(
+                  (
+                      "cover",
+                      ticket_set.get(
                           "cover",
                           []
                       )
-                  )
+                  ),
 
-                  +
-
-                  ticket_combos(
-                      bets.get(
+                  (
+                      "hole",
+                      ticket_set.get(
                           "hole",
                           []
                       )
-                  )
+                  ),
 
-              )
-
-
-              classified = classify_bets(
-                  all_combos
-              )
+              ]
 
 
-              lines = []
+              tickets = []
 
 
-              if classified["normal"]:
+              for (
+                  group_name,
+                  rows
+              ) in groups:
 
-                  lines.append(
-                      "通常"
-                  )
+                  for row in rows:
 
+                      item = dict(
+                          row
+                      )
 
-                  for combo in classified[
-                      "normal"
-                  ]:
+                      item[
+                          "group"
+                      ] = group_name
 
-                      lines.append(
-                          combo
+                      tickets.append(
+                          item
                       )
 
 
-              for f in classified[
-                  "formation"
-              ]:
+              if len(
+                  tickets
+              ) != 10:
 
-                  lines.append(
-                      "フォーメーション"
+                  return []
+
+
+              # 100円単位
+              units = max(
+                  10,
+                  budget // 100
+              )
+
+
+              weights = []
+
+
+              for t in tickets:
+
+                  p = num(
+                      t.get(
+                          "probability"
+                      )
                   )
 
-                  lines.append(
-                      f
+
+                  odds = num(
+                      t.get(
+                          "odds"
+                      )
                   )
 
 
-              for b in classified[
-                  "box"
-              ]:
+                  if t[
+                      "group"
+                  ] == "main":
 
-                  lines.append(
-                      "BOX"
+                      w = (
+                          p * 1.35
+                      )
+
+
+                  elif t[
+                      "group"
+                  ] == "cover":
+
+                      w = (
+                          p * 1.10
+                          +
+                          min(
+                              odds,
+                              80
+                          )
+                          /
+                          80
+                          *
+                          0.012
+                      )
+
+
+                  else:
+
+                      w = (
+                          p * 0.95
+                          +
+                          min(
+                              odds,
+                              200
+                          )
+                          /
+                          200
+                          *
+                          0.010
+                      )
+
+
+                  weights.append(
+                      max(
+                          w,
+                          0.0001
+                      )
                   )
 
+
+              total_weight = sum(
+                  weights
+              )
+
+
+              if total_weight <= 0:
+
+                  total_weight = 1
+
+
+              unit_alloc = [
+
+                  1
+                  for _ in tickets
+
+              ]
+
+
+              remaining = (
+                  units
+                  -
+                  len(
+                      tickets
+                  )
+              )
+
+
+              if remaining < 0:
+
+                  return []
+
+
+              raw_add = [
+
+                  remaining
+                  *
+                  (
+                      w /
+                      total_weight
+                  )
+
+                  for w in weights
+
+              ]
+
+
+              floor_add = [
+
+                  int(
+                      math.floor(
+                          x
+                      )
+                  )
+
+                  for x in raw_add
+
+              ]
+
+
+              for i, add in enumerate(
+                  floor_add
+              ):
+
+                  unit_alloc[
+                      i
+                  ] += add
+
+
+              used = sum(
+                  floor_add
+              )
+
+
+              left = (
+                  remaining
+                  -
+                  used
+              )
+
+
+              remainders = [
+
+                  (
+                      i,
+                      raw_add[i]
+                      -
+                      floor_add[i]
+                  )
+
+                  for i in range(
+                      len(
+                          tickets
+                      )
+                  )
+
+              ]
+
+
+              remainders.sort(
+
+                  key=lambda x:
+                      x[1],
+
+                  reverse=True
+
+              )
+
+
+              for i in range(
+                  left
+              ):
+
+                  idx = (
+                      remainders[
+                          i %
+                          len(
+                              remainders
+                          )
+                      ][0]
+                  )
+
+                  unit_alloc[
+                      idx
+                  ] += 1
+
+
+              for i, t in enumerate(
+                  tickets
+              ):
+
+                  t[
+                      "money"
+                  ] = (
+                      unit_alloc[i]
+                      *
+                      100
+                  )
+
+
+              return tickets
+
+
+          # =====================================================
+          # LINE Push
+          # =====================================================
+
+          def line_push(
+              text
+          ):
+
+              if not (
+                  LINE_CHANNEL_ACCESS_TOKEN
+                  and
+                  LINE_USER_ID
+              ):
+
+                  raise RuntimeError(
+                      "LINEのSecretsが"
+                      "設定されていません"
+                  )
+
+
+              url = (
+                  "https://api.line.me/"
+                  "v2/bot/message/push"
+              )
+
+
+              headers = {
+
+                  "Authorization":
+                      "Bearer "
+                      +
+                      LINE_CHANNEL_ACCESS_TOKEN,
+
+                  "Content-Type":
+                      "application/json",
+
+              }
+
+
+              payload = {
+
+                  "to":
+                      LINE_USER_ID,
+
+                  "messages": [
+
+                      {
+
+                          "type":
+                              "text",
+
+                          "text":
+                              text[:5000],
+
+                      }
+
+                  ],
+
+              }
+
+
+              response = requests.post(
+
+                  url,
+
+                  headers=headers,
+
+                  json=payload,
+
+                  timeout=25
+
+              )
+
+
+              print(
+                  "LINE PUSH:",
+                  response.status_code,
+                  response.text[:300]
+              )
+
+
+              if response.status_code not in (
+                  200,
+                  201
+              ):
+
+                  raise RuntimeError(
+                      "LINE送信失敗 "
+                      f"{response.status_code}"
+                  )
+
+
+              return True
+
+
+          # =====================================================
+          # 通知済み状態
+          # =====================================================
+
+          def load_state():
+
+              if not STATE_FILE.exists():
+
+                  return {
+
+                      "sent":
+                          {},
+
+                      "last_date":
+                          today_jst(),
+
+                  }
+
+
+              try:
+
+                  data = json.loads(
+                      STATE_FILE.read_text(
+                          encoding="utf-8"
+                      )
+                  )
+
+
+                  if not isinstance(
+                      data,
+                      dict
+                  ):
+
+                      raise ValueError(
+                          "state invalid"
+                      )
+
+
+                  data.setdefault(
+                      "sent",
+                      {}
+                  )
+
+
+                  data.setdefault(
+                      "last_date",
+                      today_jst()
+                  )
+
+
+                  return data
+
+
+              except Exception as e:
+
+                  print(
+                      "STATE READ ERROR:",
+                      repr(e)
+                  )
+
+
+                  return {
+
+                      "sent":
+                          {},
+
+                      "last_date":
+                          today_jst(),
+
+                  }
+
+
+          def save_state(
+              state
+          ):
+
+              STATE_FILE.write_text(
+
+                  json.dumps(
+                      state,
+                      ensure_ascii=False,
+                      indent=2
+                  ),
+
+                  encoding="utf-8"
+
+              )
+
+
+          # =====================================================
+          # 予想内容ハッシュ
+          #
+          # 同じレースでも
+          # 買い目が変わった場合は
+          # 再通知できるようにする
+          # =====================================================
+
+          def prediction_hash(
+              analysis,
+              tickets
+          ):
+
+              payload = {
+
+                  "key":
+                      race_key(
+                          analysis[
+                              "race"
+                          ]
+                      ),
+
+                  "rating":
+                      analysis[
+                          "rating"
+                      ],
+
+                  "tickets": [
+
+                      {
+
+                          "combo":
+                              t[
+                                  "combo"
+                              ],
+
+                          "group":
+                              t[
+                                  "group"
+                              ],
+
+                          "odds":
+                              round(
+                                  num(
+                                      t[
+                                          "odds"
+                                      ]
+                                  ),
+                                  1
+                              ),
+
+                          "money":
+                              int_num(
+                                  t[
+                                      "money"
+                                  ]
+                              ),
+
+                      }
+
+                      for t in tickets
+
+                  ],
+
+              }
+
+
+              raw = json.dumps(
+
+                  payload,
+
+                  ensure_ascii=False,
+
+                  sort_keys=True
+
+              )
+
+
+              return hashlib.sha256(
+                  raw.encode(
+                      "utf-8"
+                  )
+              ).hexdigest()
+
+
+          # =====================================================
+          # 買い目表示
+          # =====================================================
+
+          def ticket_lines(
+              tickets,
+              group_name
+          ):
+
+              labels = {
+
+                  "main":
+                      "本命🚤",
+
+                  "cover":
+                      "狙い🚤",
+
+                  "hole":
+                      "穴🚤",
+
+              }
+
+
+              rows = [
+
+                  t
+
+                  for t in tickets
+
+                  if t[
+                      "group"
+                  ] == group_name
+
+              ]
+
+
+              lines = [
+
+                  labels[
+                      group_name
+                  ]
+
+              ]
+
+
+              for t in rows:
+
+                  combo = t[
+                      "combo"
+                  ]
+
+
+                  odds = num(
+                      t[
+                          "odds"
+                      ]
+                  )
+
+
+                  rank = int_num(
+                      t.get(
+                          "popularity"
+                      )
+                  )
+
+
+                  money = int_num(
+                      t.get(
+                          "money"
+                      )
+                  )
+
+
+                  prob = (
+                      num(
+                          t.get(
+                              "probability"
+                          )
+                      )
+                      *
+                      100
+                  )
+
+
+                  rank_text = (
+
+                      f"人気{rank}位"
+
+                      if rank > 0
+
+                      else "人気順位なし"
+
+                  )
+
+
                   lines.append(
-                      b
+
+                      f"{combo} "
+                      f"{money:,}円 "
+                      f"／ {odds:.1f}倍 "
+                      f"／ {rank_text} "
+                      f"／ AI{prob:.1f}%"
+
                   )
 
 
@@ -1667,927 +3513,377 @@ jobs:
 
 
           # =====================================================
-          # レース名取得
+          # LINE通知本文
           # =====================================================
 
-          def race_name_from_card(
-              card
-          ):
-
-              try:
-
-                  return clean(
-
-                      card.locator(
-                          ".race-name"
-                      ).inner_text()
-
-                  )
-
-              except Exception:
-
-                  return ""
-
-
-          # =====================================================
-          # 締切予定取得
-          # =====================================================
-
-          def cutoff_from_card(
-              card
-          ):
-
-              try:
-
-                  boxes = card.locator(
-                      ".time-box"
-                  )
-
-
-                  count = boxes.count()
-
-
-                  for i in range(
-                      count
-                  ):
-
-                      box = boxes.nth(
-                          i
-                      )
-
-
-                      label = clean(
-
-                          box.locator(
-                              "small"
-                          ).inner_text()
-
-                      )
-
-
-                      if (
-                          "締切予定"
-                          not in label
-                      ):
-
-                          continue
-
-
-                      value = clean(
-
-                          box.locator(
-                              "b"
-                          ).inner_text()
-
-                      )
-
-
-                      if re.fullmatch(
-                          r"\d{2}:\d{2}",
-                          value
-                      ):
-
-                          return value
-
-
-              except Exception as e:
-
-                  print(
-                      "締切取得エラー:",
-                      e
-                  )
-
-
-              return ""
-
-
-          # =====================================================
-          # Web側残り時間取得
-          # =====================================================
-
-          def web_remaining_from_card(
-              card
-          ):
-
-              try:
-
-                  boxes = card.locator(
-                      ".time-box"
-                  )
-
-
-                  count = boxes.count()
-
-
-                  for i in range(
-                      count
-                  ):
-
-                      box = boxes.nth(
-                          i
-                      )
-
-
-                      label = clean(
-
-                          box.locator(
-                              "small"
-                          ).inner_text()
-
-                      )
-
-
-                      if (
-                          "残り時間"
-                          not in label
-                      ):
-
-                          continue
-
-
-                      return clean(
-
-                          box.locator(
-                              "b"
-                          ).inner_text()
-
-                      )
-
-
-              except Exception as e:
-
-                  print(
-                      "残り時間取得エラー:",
-                      e
-                  )
-
-
-              return ""
-
-
-          # =====================================================
-          # AI信頼スコア
-          # =====================================================
-
-          def ai_score_from_card(
-              card
-          ):
-
-              try:
-
-                  return clean(
-
-                      card.locator(
-                          ".ai-score"
-                      ).inner_text()
-
-                  )
-
-              except Exception:
-
-                  return ""
-
-
-          # =====================================================
-          # AI展開予測
-          # =====================================================
-
-          def scenario_from_card(
-              card
-          ):
-
-              try:
-
-                  root = card.locator(
-                      ".scenario-main"
-                  )
-
-
-                  if root.count() == 0:
-
-                      return ""
-
-
-                  strong = clean(
-
-                      root.locator(
-                          "strong"
-                      ).inner_text()
-
-                  )
-
-
-                  pct = clean(
-
-                      root.locator(
-                          "span"
-                      ).inner_text()
-
-                  )
-
-
-                  return clean(
-                      f"{strong} {pct}"
-                  )
-
-
-              except Exception as e:
-
-                  print(
-                      "展開予測取得エラー:",
-                      e
-                  )
-
-
-              return ""
-
-
-          # =====================================================
-          # 判断基準
-          # =====================================================
-
-          def reason_from_card(
-              card
-          ):
-
-              try:
-
-                  root = card.locator(
-                      ".reason"
-                  )
-
-
-                  if root.count() == 0:
-
-                      return ""
-
-
-                  text = clean(
-                      root.inner_text()
-                  )
-
-
-                  text = re.sub(
-                      r"^判断基準\s*",
-                      "",
-                      text
-                  )
-
-
-                  return text
-
-
-              except Exception as e:
-
-                  print(
-                      "判断基準取得エラー:",
-                      e
-                  )
-
-
-              return ""
-
-
-          # =====================================================
-          # 会場・R番号
-          # =====================================================
-
-          def split_race_name(
-              race_name
-          ):
-
-              race_name = clean(
-                  race_name
-              )
-
-
-              m = re.search(
-                  r"(.+?)\s+(\d+)R",
-                  race_name
-              )
-
-
-              if not m:
-
-                  return (
-                      race_name,
-                      ""
-                  )
-
-
-              return (
-                  clean(
-                      m.group(1)
-                  ),
-                  f"{m.group(2)}R"
-              )
-
-
-          # =====================================================
-          # LINE用Flexテキスト
-          # =====================================================
-
-          def flex_text(
-              text,
-              size="sm",
-              color="#FFFFFF",
-              weight="regular",
-              wrap=True,
-              margin=None
-          ):
-
-              item = {
-
-                  "type":
-                      "text",
-
-                  "text":
-                      str(text),
-
-                  "size":
-                      size,
-
-                  "color":
-                      color,
-
-                  "weight":
-                      weight,
-
-                  "wrap":
-                      wrap
-
-              }
-
-
-              if margin:
-
-                  item[
-                      "margin"
-                  ] = margin
-
-
-              return item
-
-
-          # =====================================================
-          # 買い目ブロック
-          # =====================================================
-
-          def bet_group_block(
-              title,
+          def build_message(
+              analysis,
+              ticket_set,
               tickets,
-              color
+              odds_source
           ):
 
-              contents = [
+              race = analysis[
+                  "race"
+              ]
 
-                  flex_text(
-                      title,
-                      size="md",
-                      color=color,
-                      weight="bold"
+
+              stadium = int_num(
+                  race.get(
+                      "stadium_number"
                   )
+              )
+
+
+              race_no = int_num(
+                  race.get(
+                      "race_number"
+                  )
+              )
+
+
+              venue = STADIUMS.get(
+                  stadium,
+                  f"会場{stadium}"
+              )
+
+
+              weather = analysis[
+                  "weather"
+              ]
+
+
+              scenario = analysis.get(
+                  "scenario",
+                  {}
+              )
+
+
+              top = scenario.get(
+                  "top"
+              ) or {}
+
+
+              total_money = sum(
+
+                  int_num(
+                      t.get(
+                          "money"
+                      )
+                  )
+
+                  for t in tickets
+
+              )
+
+
+              lines = [
+
+                  "🚤 BOAT RACE AI予想",
+
+                  "",
+
+                  f"🔥 勝負度S",
+
+                  f"{venue} {race_no}R",
+
+                  "",
+
+                  f"AI信頼スコア："
+                  f"{analysis['rating']}",
+
+                  "",
+
+                  f"締切予定："
+                  f"{close_time_text(race)}",
+
+                  f"残り時間："
+                  f"{remaining_text(race)}",
+
+                  "",
+
+                  (
+                      "展開予測："
+                      f"{top.get('boat','-')}号艇 "
+                      f"{top.get('tactic','-')}"
+                  ),
+
+                  "",
+
+                  (
+                      "水面："
+                      f"{WEATHER_NAMES.get(int_num(weather.get('weather')),'-')} "
+                      f"／ 風速{num(weather.get('wind_speed')):.1f}m "
+                      f"／ 波高{num(weather.get('wave')):.1f}cm"
+                  ),
+
+                  "",
+
+                  ticket_lines(
+                      tickets,
+                      "main"
+                  ),
+
+                  "",
+
+                  ticket_lines(
+                      tickets,
+                      "cover"
+                  ),
+
+                  "",
+
+                  ticket_lines(
+                      tickets,
+                      "hole"
+                  ),
+
+                  "",
+
+                  f"合計："
+                  f"{total_money:,}円",
+
+                  "",
+
+                  "判断基準",
 
               ]
 
 
-              for ticket in tickets:
+              for reason in (
+                  analysis.get(
+                      "reasons",
+                      []
+                  )
+              ):
 
-                  contents.append(
-
-                      flex_text(
-                          format_ticket_line(
-                              ticket
-                          ),
-                          size="sm",
-                          color="#FFFFFF",
-                          margin="sm"
-                      )
-
+                  lines.append(
+                      f"・{reason}"
                   )
 
 
-              return {
+              lines.extend([
 
-                  "type":
-                      "box",
+                  (
+                      "・3連単オッズ："
+                      f"{ticket_set.get('odds_count',0)}通り取得"
+                  ),
 
-                  "layout":
-                      "vertical",
+                  (
+                      "・本命候補："
+                      f"{ticket_set.get('band_count',{}).get('main',0)}通り"
+                  ),
 
-                  "margin":
-                      "md",
+                  (
+                      "・狙い候補："
+                      f"{ticket_set.get('band_count',{}).get('cover',0)}通り"
+                  ),
 
-                  "contents":
-                      contents
+                  (
+                      "・穴候補："
+                      f"{ticket_set.get('band_count',{}).get('hole',0)}通り"
+                  ),
 
-              }
+                  "",
+
+                  "本命🚤：15倍以下",
+
+                  "狙い🚤：15倍超〜80倍未満",
+
+                  "穴🚤：80倍以上",
+
+                  "",
+
+                  f"オッズ取得：{odds_source}",
+
+                  f"Model：{MODEL_NAME}",
+
+              ])
+
+
+              return "\n".join(
+                  lines
+              )
 
 
           # =====================================================
-          # LINE Flex Message
+          # 通知対象分析
           # =====================================================
 
-          def build_flex_message(
-              race_name,
-              cutoff,
-              remain,
-              ai_score,
-              scenario,
-              reason,
-              bets
+          def collect_predictions(
+              races,
+              odds_data,
+              budget=1000
           ):
 
-              venue, race_no = split_race_name(
-                  race_name
-              )
+              results = []
 
 
-              body = []
+              raw_s_count = 0
 
 
-              # ----------------------------------------------
-              # タイトル
-              # ----------------------------------------------
+              odds_ok_count = 0
 
-              body.append(
 
-                  flex_text(
-                      "🚤 BOAT RACE AI予想",
-                      size="lg",
-                      color="#F2CD67",
-                      weight="bold"
+              for race in races:
+
+                  if not upcoming(
+                      race
+                  ):
+
+                      continue
+
+
+                  analysis = evaluate_race(
+                      race
                   )
 
-              )
+
+                  if analysis is None:
+
+                      continue
 
 
-              body.append(
+                  if analysis[
+                      "grade"
+                  ] != "S":
 
-                  flex_text(
-                      f"{venue} {race_no}",
-                      size="xl",
-                      color="#FFFFFF",
-                      weight="bold",
-                      margin="sm"
+                      continue
+
+
+                  raw_s_count += 1
+
+
+                  stadium = int_num(
+                      race.get(
+                          "stadium_number"
+                      )
                   )
 
-              )
+
+                  race_no = int_num(
+                      race.get(
+                          "race_number"
+                      )
+                  )
 
 
-              # ----------------------------------------------
-              # S評価 / AIスコア
-              # ----------------------------------------------
+                  odds_map = get_odds_map(
 
-              if ai_score:
+                      odds_data,
 
-                  body.append({
+                      stadium,
 
-                      "type":
-                          "box",
+                      race_no
 
-                      "layout":
-                          "horizontal",
+                  )
 
-                      "margin":
-                          "md",
 
-                      "contents":[
+                  ticket_set = make_tickets(
 
-                          flex_text(
-                              "勝負度",
-                              size="sm",
-                              color="#AAAAAA"
-                          ),
+                      analysis,
 
-                          flex_text(
-                              "S",
-                              size="md",
-                              color="#F2CD67",
-                              weight="bold"
-                          ),
+                      odds_map
 
-                          flex_text(
-                              f"AI {ai_score}",
-                              size="sm",
-                              color="#FFFFFF",
-                              weight="bold"
-                          )
+                  )
 
+
+                  if not (
+                      ticket_set[
+                          "has_odds"
                       ]
+                      and
+                      ticket_set[
+                          "valid343"
+                      ]
+                  ):
+
+                      continue
+
+
+                  tickets = (
+                      allocate_tickets(
+
+                          ticket_set,
+
+                          budget
+
+                      )
+                  )
+
+
+                  if len(
+                      tickets
+                  ) != 10:
+
+                      continue
+
+
+                  odds_ok_count += 1
+
+
+                  results.append({
+
+                      "analysis":
+                          analysis,
+
+                      "ticket_set":
+                          ticket_set,
+
+                      "tickets":
+                          tickets,
 
                   })
 
 
-              # ----------------------------------------------
-              # 締切予定 / 残り時間
-              # 横並び
-              # ----------------------------------------------
+              results.sort(
 
-              body.append({
+                  key=lambda x: (
 
-                  "type":
-                      "box",
+                      -x[
+                          "analysis"
+                      ][
+                          "rating"
+                      ],
 
-                  "layout":
-                      "horizontal",
-
-                  "margin":
-                      "md",
-
-                  "spacing":
-                      "md",
-
-                  "contents":[
-
-                      {
-
-                          "type":
-                              "box",
-
-                          "layout":
-                              "vertical",
-
-                          "flex":
-                              1,
-
-                          "contents":[
-
-                              flex_text(
-                                  "締切予定",
-                                  size="xs",
-                                  color="#999999"
-                              ),
-
-                              flex_text(
-                                  cutoff or "--:--",
-                                  size="md",
-                                  color="#F2CD67",
-                                  weight="bold"
-                              )
-
+                      int_num(
+                          x[
+                              "analysis"
+                          ][
+                              "race"
                           ]
+                          .get(
+                              "stadium_number"
+                          )
+                      ),
 
-                      },
-
-
-                      {
-
-                          "type":
-                              "box",
-
-                          "layout":
-                              "vertical",
-
-                          "flex":
-                              1,
-
-                          "contents":[
-
-                              flex_text(
-                                  "残り時間",
-                                  size="xs",
-                                  color="#999999"
-                              ),
-
-                              flex_text(
-                                  remain or "--",
-                                  size="md",
-                                  color="#F2CD67",
-                                  weight="bold"
-                              )
-
+                      int_num(
+                          x[
+                              "analysis"
+                          ][
+                              "race"
                           ]
-
-                      }
-
-                  ]
-
-              })
-
-
-              # ----------------------------------------------
-              # 本命🚤
-              # ----------------------------------------------
-
-              body.append(
-
-                  bet_group_block(
-                      "本命🚤",
-                      bets.get(
-                          "main",
-                          []
+                          .get(
+                              "race_number"
+                          )
                       ),
-                      "#71BAFF"
+
                   )
 
               )
-
-
-              # ----------------------------------------------
-              # 狙い🚤
-              # ----------------------------------------------
-
-              body.append(
-
-                  bet_group_block(
-                      "狙い🚤",
-                      bets.get(
-                          "cover",
-                          []
-                      ),
-                      "#E8D7A4"
-                  )
-
-              )
-
-
-              # ----------------------------------------------
-              # 穴🚤
-              # ----------------------------------------------
-
-              body.append(
-
-                  bet_group_block(
-                      "穴🚤",
-                      bets.get(
-                          "hole",
-                          []
-                      ),
-                      "#FF9B52"
-                  )
-
-              )
-
-
-              # ----------------------------------------------
-              # 投票
-              # ----------------------------------------------
-
-              bet_text = betting_summary(
-                  bets
-              )
-
-
-              if bet_text:
-
-                  body.append(
-
-                      flex_text(
-                          "🎟 投票",
-                          size="md",
-                          color="#F2CD67",
-                          weight="bold",
-                          margin="lg"
-                      )
-
-                  )
-
-
-                  body.append(
-
-                      flex_text(
-                          bet_text,
-                          size="sm",
-                          color="#FFFFFF",
-                          margin="sm"
-                      )
-
-                  )
-
-
-              # ----------------------------------------------
-              # 展開予測
-              # ----------------------------------------------
-
-              if scenario:
-
-                  body.append(
-
-                      flex_text(
-                          "🧠 展開予測",
-                          size="md",
-                          color="#F2CD67",
-                          weight="bold",
-                          margin="lg"
-                      )
-
-                  )
-
-
-                  body.append(
-
-                      flex_text(
-                          scenario,
-                          size="sm",
-                          color="#FFFFFF",
-                          weight="bold",
-                          margin="sm"
-                      )
-
-                  )
-
-
-              # ----------------------------------------------
-              # 判断基準
-              # ----------------------------------------------
-
-              if reason:
-
-                  body.append(
-
-                      flex_text(
-                          "📌 判断基準",
-                          size="md",
-                          color="#F2CD67",
-                          weight="bold",
-                          margin="lg"
-                      )
-
-                  )
-
-
-                  body.append(
-
-                      flex_text(
-                          reason,
-                          size="xs",
-                          color="#BBBBBB",
-                          margin="sm"
-                      )
-
-                  )
-
-
-              return {
-
-                  "type":
-                      "flex",
-
-                  "altText":
-                      f"{race_name} AI予想",
-
-                  "contents":{
-
-                      "type":
-                          "bubble",
-
-                      "size":
-                          "mega",
-
-                      "body":{
-
-                          "type":
-                              "box",
-
-                          "layout":
-                              "vertical",
-
-                          "backgroundColor":
-                              "#090909",
-
-                          "contents":
-                              body
-
-                      }
-
-                  }
-
-              }
-
-
-          # =====================================================
-          # LINE送信
-          # =====================================================
-
-          def send_line(
-              message
-          ):
-
-              token = os.getenv(
-                  "LINE_CHANNEL_ACCESS_TOKEN",
-                  ""
-              )
-
-
-              user_id = os.getenv(
-                  "LINE_USER_ID",
-                  ""
-              )
-
-
-              if not token:
-
-                  raise RuntimeError(
-                      "LINE_CHANNEL_ACCESS_TOKEN がありません"
-                  )
-
-
-              if not user_id:
-
-                  raise RuntimeError(
-                      "LINE_USER_ID がありません"
-                  )
-
-
-              url = (
-                  "https://api.line.me/v2/bot/message/push"
-              )
-
-
-              headers = {
-
-                  "Authorization":
-                      f"Bearer {token}",
-
-                  "Content-Type":
-                      "application/json"
-
-              }
-
-
-              payload = {
-
-                  "to":
-                      user_id,
-
-                  "messages":[
-                      message
-                  ]
-
-              }
-
-
-              response = requests.post(
-                  url,
-                  headers=headers,
-                  json=payload,
-                  timeout=30
-              )
-
-
-              print(
-                  "LINE status:",
-                  response.status_code
-              )
-
-
-              if response.status_code >= 400:
-
-                  print(
-                      "LINE error:",
-                      response.text
-                  )
-
-
-                  raise RuntimeError(
-                      f"LINE送信失敗 {response.status_code}"
-                  )
-
-
-              return True
-
-
-          # =====================================================
-          # 通知可能時間チェック
-          # =====================================================
-
-          def notification_allowed(
-              remaining
-          ):
-
-              if remaining is None:
-
-                  return False
-
-
-              # 締切済み・締切直前
-              if remaining < MIN_BEFORE:
-
-                  return False
-
-
-              if not USE_NOTIFICATION_WINDOW:
-
-                  return True
 
 
               return (
-                  remaining >= WINDOW_MIN_BEFORE
-                  and
-                  remaining <= WINDOW_MAX_BEFORE
+
+                  results,
+
+                  raw_s_count,
+
+                  odds_ok_count
+
               )
 
 
-          # =====================================================
-          # 日付キー
-          # =====================================================
-
-          def today_key():
-
-              return now_jst().strftime(
-                  "%Y-%m-%d"
-              )          
           # =====================================================
           # メイン処理
           # =====================================================
@@ -2595,7 +3891,7 @@ jobs:
           def main():
 
               print(
-                  "=============================================="
+                  "======================================"
               )
 
               print(
@@ -2603,436 +3899,200 @@ jobs:
               )
 
               print(
-                  "現在時刻:",
+                  "JST:",
                   now_jst().isoformat()
               )
 
               print(
-                  "=============================================="
+                  "======================================"
+              )
+
+
+              race_data = (
+                  fetch_race_data()
+              )
+
+
+              races = flatten_races(
+                  race_data
+              )
+
+
+              print(
+                  "RACES:",
+                  len(
+                      races
+                  )
+              )
+
+
+              (
+                  odds_data,
+                  odds_source
+              ) = fetch_odds_data()
+
+
+              if odds_data is None:
+
+                  print(
+                      "オッズ未取得のため"
+                      "通知判定を見送ります"
+                  )
+
+                  return
+
+
+              (
+                  predictions,
+                  raw_s_count,
+                  odds_ok_count
+              ) = collect_predictions(
+
+                  races,
+
+                  odds_data,
+
+                  budget=1000
+
+              )
+
+
+              print(
+                  "AI S評価:",
+                  raw_s_count
+              )
+
+
+              print(
+                  "オッズ条件通過:",
+                  odds_ok_count
+              )
+
+
+              print(
+                  "通知候補:",
+                  len(
+                      predictions
+                  )
               )
 
 
               state = load_state()
 
 
-              with sync_playwright() as p:
+              if state.get(
+                  "last_date"
+              ) != today_jst():
 
-                  browser = p.chromium.launch(
-                      headless=True
+                  state = {
+
+                      "sent":
+                          {},
+
+                      "last_date":
+                          today_jst(),
+
+                  }
+
+
+              sent = state.setdefault(
+                  "sent",
+                  {}
+              )
+
+
+              new_count = 0
+
+
+              for item in predictions:
+
+                  analysis = item[
+                      "analysis"
+                  ]
+
+
+                  ticket_set = item[
+                      "ticket_set"
+                  ]
+
+
+                  tickets = item[
+                      "tickets"
+                  ]
+
+
+                  key = race_key(
+                      analysis[
+                          "race"
+                      ]
                   )
 
 
-                  page = browser.new_page(
+                  phash = prediction_hash(
 
-                      viewport={
-                          "width": 1280,
-                          "height": 2000
-                      },
+                      analysis,
 
-                      locale="ja-JP"
+                      tickets
 
                   )
 
 
-                  # ---------------------------------------------
-                  # GitHub Pagesを開く
-                  # ---------------------------------------------
-
-                  print(
-                      "Webツールを開きます:",
-                      TOOL_URL
+                  old_hash = sent.get(
+                      key
                   )
 
 
-                  page.goto(
-
-                      TOOL_URL,
-
-                      wait_until="domcontentloaded",
-
-                      timeout=120000
-
-                  )
-
-
-                  # JavaScript予想完成待ち
-
-                  page.wait_for_timeout(
-                      5000
-                  )
-
-
-                  # ---------------------------------------------
-                  # レースカード出現待ち
-                  # ---------------------------------------------
-
-                  try:
-
-                      page.wait_for_selector(
-
-                          ".race",
-
-                          timeout=60000
-
-                      )
-
-                  except Exception:
+                  if old_hash == phash:
 
                       print(
-                          "現在表示可能なS評価レースはありません"
+                          "SKIP SENT:",
+                          key
                       )
 
-                      browser.close()
-
-                      save_state(
-                          state
-                      )
-
-                      return
+                      continue
 
 
-                  cards = page.locator(
-                      ".race"
+                  message = build_message(
+
+                      analysis,
+
+                      ticket_set,
+
+                      tickets,
+
+                      odds_source
+
                   )
 
 
-                  count = cards.count()
-
-
-                  print(
-                      "S評価レース数:",
-                      count
+                  line_push(
+                      message
                   )
 
 
-                  # ---------------------------------------------
-                  # 各レース確認
-                  # ---------------------------------------------
+                  sent[
+                      key
+                  ] = phash
 
-                  for i in range(
-                      count
-                  ):
 
-                      card = cards.nth(
-                          i
-                      )
+                  new_count += 1
 
 
-                      try:
+                  save_state(
+                      state
+                  )
 
-                          race_name = race_name_from_card(
-                              card
-                          )
 
+                  time.sleep(
+                      1
+                  )
 
-                          if not race_name:
 
-                              print(
-                                  "レース名取得失敗"
-                              )
+              print(
+                  "NEW LINE:",
+                  new_count
+              )
 
-                              continue
-
-
-                          print(
-                              ""
-                          )
-
-                          print(
-                              "------------------------------------------"
-                          )
-
-                          print(
-                              "確認:",
-                              race_name
-                          )
-
-
-                          # ---------------------------------
-                          # 締切予定
-                          # ---------------------------------
-
-                          cutoff = cutoff_from_card(
-                              card
-                          )
-
-
-                          if not cutoff:
-
-                              print(
-                                  "締切予定取得失敗:",
-                                  race_name
-                              )
-
-                              continue
-
-
-                          remaining = remaining_minutes(
-                              cutoff
-                          )
-
-
-                          print(
-                              "締切:",
-                              cutoff
-                          )
-
-
-                          print(
-                              "残り:",
-                              remaining
-                          )
-
-
-                          # ---------------------------------
-                          # 通知可能時間か確認
-                          # ---------------------------------
-
-                          if not notification_allowed(
-                              remaining
-                          ):
-
-                              print(
-                                  "通知時間外:",
-                                  race_name,
-                                  remaining
-                              )
-
-                              continue
-
-
-                          # ---------------------------------
-                          # 通知済み確認
-                          # ---------------------------------
-
-                          notify_key = (
-                              f"{today_key()}|"
-                              f"{race_name}"
-                          )
-
-
-                          if notify_key in state:
-
-                              print(
-                                  "通知済み:",
-                                  race_name
-                              )
-
-                              continue
-
-
-                          # ---------------------------------
-                          # 買い目表示ボタンを開く
-                          # ---------------------------------
-
-                          try:
-
-                              detail_button = card.locator(
-                                  ".gold-btn"
-                              )
-
-
-                              if detail_button.count() > 0:
-
-                                  detail = card.locator(
-                                      ".detail"
-                                  )
-
-
-                                  display_value = detail.evaluate(
-                                      """
-                                      (el) => {
-                                        return window.getComputedStyle(el).display;
-                                      }
-                                      """
-                                  )
-
-
-                                  if display_value != "block":
-
-                                      detail_button.click()
-
-                                      page.wait_for_timeout(
-                                          500
-                                      )
-
-
-                          except Exception as e:
-
-                              print(
-                                  "買い目展開エラー:",
-                                  race_name,
-                                  e
-                              )
-
-
-                          # ---------------------------------
-                          # Web予想の3・4・3完成待ち
-                          # ---------------------------------
-
-                          bets = wait_for_complete_bets(
-
-                              page,
-
-                              card,
-
-                              race_name
-
-                          )
-
-
-                          if not bets:
-
-                              print(
-                                  "予想未完成のため通知しません:",
-                                  race_name
-                              )
-
-                              continue
-
-
-                          # ---------------------------------
-                          # 最終オッズ帯チェック
-                          # ---------------------------------
-
-                          if not validate_bets(
-                              bets,
-                              race_name
-                          ):
-
-                              print(
-                                  "オッズ帯条件不一致のため通知しません:",
-                                  race_name
-                              )
-
-                              continue
-
-
-                          # ---------------------------------
-                          # AI信頼スコア
-                          # ---------------------------------
-
-                          ai_score = ai_score_from_card(
-                              card
-                          )
-
-
-                          # ---------------------------------
-                          # Web側残り時間
-                          # ---------------------------------
-
-                          web_remain = web_remaining_from_card(
-                              card
-                          )
-
-
-                          # GitHub Actions側でも再計算
-                          # Web表示よりこちらを優先
-
-                          calc_remain = remaining_text(
-                              remaining
-                          )
-
-
-                          remain = (
-                              calc_remain
-                              or
-                              web_remain
-                              or
-                              "--"
-                          )
-
-
-                          # ---------------------------------
-                          # 展開予測
-                          # ---------------------------------
-
-                          scenario = scenario_from_card(
-                              card
-                          )
-
-
-                          # ---------------------------------
-                          # 判断基準
-                          # ---------------------------------
-
-                          reason = reason_from_card(
-                              card
-                          )
-
-
-                          # ---------------------------------
-                          # LINE Flex作成
-                          # ---------------------------------
-
-                          message = build_flex_message(
-
-                              race_name=race_name,
-
-                              cutoff=cutoff,
-
-                              remain=remain,
-
-                              ai_score=ai_score,
-
-                              scenario=scenario,
-
-                              reason=reason,
-
-                              bets=bets
-
-                          )
-
-
-                          # ---------------------------------
-                          # LINE送信
-                          # ---------------------------------
-
-                          print(
-                              "LINE送信:",
-                              race_name
-                          )
-
-
-                          send_line(
-                              message
-                          )
-
-
-                          # ---------------------------------
-                          # 通知済み保存
-                          # ---------------------------------
-
-                          state[
-                              notify_key
-                          ] = now_jst().isoformat()
-
-
-                          save_state(
-                              state
-                          )
-
-
-                          print(
-                              "✅ LINE通知完了:",
-                              race_name
-                          )
-
-
-                      except Exception as e:
-
-                          print(
-                              "レース処理エラー:",
-                              e
-                          )
-
-
-                  browser.close()
-
-
-              # ---------------------------------------------
-              # 最終履歴保存
-              # ---------------------------------------------
 
               save_state(
                   state
@@ -3040,7 +4100,7 @@ jobs:
 
 
               print(
-                  "=============================================="
+                  "======================================"
               )
 
               print(
@@ -3048,55 +4108,68 @@ jobs:
               )
 
               print(
-                  "=============================================="
+                  "======================================"
               )
 
 
           # =====================================================
-          # 実行
+          # Python実行
           # =====================================================
 
           if __name__ == "__main__":
 
               main()
 
-          PY
+
+          # =====================================================
+          # 次の④へ続きます
+          # =====================================================
+                    PY
 
 
+      # =========================================================
+      # 5. Python実行
+      # =========================================================
+      - name: Run BOATRACE AI LINE
+
+        run: |
           python line_notify.py
 
 
       # =========================================================
-      # 5. 通知履歴をGitHubへ保存
+      # 6. 通知済み状態をGitHubへ保存
+      #
+      # boatrace_line_state.json を保存することで
+      # 5分ごとのActions実行でも
+      # 同じ買い目の重複通知を防止します
       # =========================================================
-
-      - name: Save notification history
+      - name: Save notification state
 
         run: |
+          if [ -f boatrace_line_state.json ]; then
 
-          if [ ! -f ".boatrace_line_notified.json" ]; then
-            echo "{}" > .boatrace_line_notified.json
-          fi
+            git config user.name "github-actions[bot]"
 
-          git config user.name "github-actions[bot]"
+            git config user.email \
+              "41898282+github-actions[bot]@users.noreply.github.com"
 
-          git config user.email \
-            "41898282+github-actions[bot]@users.noreply.github.com"
+            git add boatrace_line_state.json
 
-          git add .boatrace_line_notified.json
+            if git diff --cached --quiet; then
 
-          if git diff \
-            --cached \
-            --quiet
-          then
+              echo "通知状態に変更なし"
 
-            echo "通知履歴に変更なし"
+            else
+
+              git commit \
+                -m "Update BOATRACE LINE notification state"
+
+              git push
+
+            fi
 
           else
 
-            git commit \
-              -m "Update BOATRACE LINE notification history"
-
-            git push
+            echo "state file not found"
 
           fi
