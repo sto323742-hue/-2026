@@ -74,12 +74,6 @@ button{cursor:pointer}
   margin-bottom:13px
 }
 
-.budget-label{
-  font-size:12px;
-  color:#c9b98a;
-  margin-bottom:6px
-}
-
 select,input[type=date]{
   width:100%;
   height:51px;
@@ -145,8 +139,116 @@ select,input[type=date]{
   font-weight:950
 }
 
+/* ==============================
+   買い目
+============================== */
+
+.bet-grid{
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:6px;
+  align-items:start;
+  margin-top:10px
+}
+
+.bet-col{
+  min-width:0;
+  border:1px solid #302813;
+  border-radius:12px;
+  overflow:hidden;
+  background:#090909
+}
+
+.bet-col.main-col{
+  border-color:#285e91;
+  background:linear-gradient(180deg,#071425,#090909)
+}
+
+.bet-col.cover-col{
+  border-color:#65562d;
+  background:linear-gradient(180deg,#171205,#090909)
+}
+
+.bet-col.hole-col{
+  border-color:#8a4b22;
+  background:linear-gradient(180deg,#211006,#090909)
+}
+
+.bet-head{
+  margin:0;
+  padding:9px 4px;
+  border-radius:0;
+  background:#0b0b0b;
+  border:0;
+  border-bottom:1px solid #302813;
+  font-weight:950;
+  text-align:center;
+  font-size:12px;
+  white-space:nowrap
+}
+
+.bet-head.main{color:#ff6a78}
+.bet-head.cover{color:#71baff}
+.bet-head.hole{color:#55df8b}
+
+.ticket{
+  display:block;
+  padding:8px 5px;
+  border-bottom:1px solid #24200f;
+  background:transparent;
+  text-align:center
+}
+
+.ticket:last-child{
+  border-bottom:0
+}
+
+.combo{
+  display:block;
+  font-weight:950;
+  letter-spacing:.4px;
+  font-size:15px;
+  white-space:nowrap
+}
+
+.ticket-sub{
+  display:block;
+  margin-top:4px;
+  color:#8f8f8f;
+  font-size:7px;
+  line-height:1.35;
+  word-break:break-word
+}
+
+.bet-total{
+  text-align:right;
+  margin-top:8px;
+  color:#f2cd67;
+  font-weight:950;
+  font-size:16px
+}
+
+/* ==============================
+   AI分析 開閉
+============================== */
+
+.toggle{
+  width:100%;
+  min-height:45px;
+  margin-top:8px;
+  border-radius:13px;
+  font-weight:900;
+  background:#131313;
+  border:1px solid #55451a;
+  color:#edcc70
+}
+
+.ai-detail{
+  display:none;
+  margin-top:8px
+}
+
 .ai-box{
-  margin-top:10px;
   background:#080808;
   border:1px solid #29220e;
   border-radius:12px;
@@ -185,7 +287,7 @@ select,input[type=date]{
 
 .weather-grid{
   display:grid;
-  grid-template-columns:repeat(3,1fr);
+  grid-template-columns:repeat(4,1fr);
   gap:6px;
   margin-top:10px
 }
@@ -272,140 +374,20 @@ select,input[type=date]{
   line-height:1.55
 }
 
-.gold-btn,.toggle{
-  width:100%;
-  border-radius:13px;
-  font-weight:900
-}
-
-.gold-btn{
-  min-height:44px;
-  margin-top:10px;
-  background:#17140d;
-  border:1px solid #6e581d;
-  color:#f0cc68
-}
-
-.toggle{
-  min-height:45px;
-  margin-top:8px;
-  background:#131313;
-  border:1px solid #55451a;
-  color:#edcc70
-}
-
-.detail{
-  display:none;
-  margin-top:8px
-}
-
-.bet-grid{
-  display:grid;
-  grid-template-columns:repeat(3,minmax(0,1fr));
-  gap:6px;
-  align-items:start
-}
-
-.bet-col{
-  min-width:0;
-  border:1px solid #302813;
-  border-radius:12px;
-  overflow:hidden;
-  background:#090909
-}
-
-.bet-col.main-col{
-  border-color:#285e91;
-  background:linear-gradient(180deg,#071425,#090909)
-}
-
-.bet-col.cover-col{
-  border-color:#65562d;
-  background:linear-gradient(180deg,#171205,#090909)
-}
-
-.bet-col.hole-col{
-  border-color:#8a4b22;
-  background:linear-gradient(180deg,#211006,#090909)
-}
-
-.bet-head{
-  margin:0;
-  padding:9px 4px;
-  border-radius:0;
-  background:#0b0b0b;
-  border:0;
-  border-bottom:1px solid #302813;
-  font-weight:950;
-  text-align:center;
-  font-size:12px;
-  white-space:nowrap
-}
-
-.bet-head.main{color:#71baff}
-.bet-head.cover{color:#e8d7a4}
-.bet-head.hole{color:#ff9b52}
-
-.ticket{
-  display:block;
-  padding:8px 5px;
-  border-bottom:1px solid #24200f;
-  background:transparent;
-  text-align:center
-}
-
-.ticket:last-child{
-  border-bottom:0
-}
-
-.combo{
-  display:block;
-  font-weight:950;
-  letter-spacing:.4px;
-  font-size:15px;
-  white-space:nowrap
-}
-
-.money{
-  display:block;
-  margin-top:3px;
-  color:#efd16e;
-  font-weight:900;
-  font-size:11px;
-  white-space:nowrap
-}
-
-.ticket-sub{
-  display:block;
-  margin-top:4px;
-  color:#8f8f8f;
-  font-size:7px;
-  line-height:1.35;
-  word-break:break-word
-}
-
-.total{
-  border-top:1px solid #6d551c;
-  margin-top:9px;
-  padding-top:9px;
-  font-weight:950
-}
-
-.logic,.reason{
+.reason{
   margin-top:9px;
   padding:10px;
   border-radius:10px;
-  background:#0a0a0a;
-  color:#aaa;
+  border:1px solid #463814;
+  background:#0b0905;
+  color:#c8bb96;
   font-size:10px;
   line-height:1.65
 }
 
-.reason{
-  border:1px solid #463814;
-  background:#0b0905;
-  color:#c8bb96
-}
+/* ==============================
+   メニュー・成績
+============================== */
 
 .menu{
   display:grid;
@@ -505,12 +487,76 @@ select,input[type=date]{
   font-weight:950
 }
 
-.history-wrap,.venue-wrap{
+/* ==============================
+   会場別学習進捗
+============================== */
+
+.learning-progress-wrap{
   display:none
 }
 
-.history-controls{
-  margin:10px 0
+.progress-list{
+  display:grid;
+  gap:7px;
+  margin-top:9px
+}
+
+.progress-item{
+  background:#090909;
+  border:1px solid #2c2510;
+  border-radius:11px;
+  padding:9px
+}
+
+.progress-top{
+  display:flex;
+  justify-content:space-between;
+  gap:8px;
+  font-size:11px
+}
+
+.progress-track{
+  height:7px;
+  background:#1c1a13;
+  border-radius:999px;
+  overflow:hidden;
+  margin-top:7px
+}
+
+.progress-fill{
+  height:100%;
+  background:linear-gradient(90deg,#b77a18,#f0cc68);
+  border-radius:999px
+}
+
+.learn-ready{
+  color:#58dc8d;
+  font-weight:950
+}
+
+.learn-mid{
+  color:#f0cc68;
+  font-weight:950
+}
+
+.learn-low{
+  color:#aaa;
+  font-weight:900
+}
+
+.learning-note{
+  margin-top:8px;
+  color:#81775d;
+  font-size:9px;
+  line-height:1.6
+}
+
+/* ==============================
+   的中・不的中
+============================== */
+
+.history-wrap,.venue-wrap{
+  display:none
 }
 
 .venue-tabs{
@@ -553,13 +599,13 @@ select,input[type=date]{
 }
 
 .result-chip{
-  min-height:42px;
+  min-height:46px;
   border-radius:10px;
   border:1px solid #4a421e;
   background:#111;
   color:#ddd;
-  font-size:11px;
-  font-weight:900
+  font-size:12px;
+  font-weight:950
 }
 
 .result-chip.active.all{
@@ -591,11 +637,12 @@ select,input[type=date]{
 .history-scroll{
   overflow-x:auto;
   border:1px solid #342b12;
-  border-radius:12px
+  border-radius:12px;
+  -webkit-overflow-scrolling:touch
 }
 
 .history-table{
-  min-width:940px;
+  min-width:860px;
   width:100%;
   border-collapse:collapse;
   background:#080808;
@@ -631,15 +678,18 @@ select,input[type=date]{
   font-weight:950
 }
 
-.roi{
-  color:#58dc8d;
+.proximity{
   font-weight:950
 }
 
-.scenario-mini{
-  color:#e8ca73;
-  font-weight:900
-}
+.prox-exact{color:#58dc8d}
+.prox-near{color:#f0cc68}
+.prox-mid{color:#71baff}
+.prox-low{color:#aaa}
+
+/* ==============================
+   会場別成績
+============================== */
 
 .venue-row{
   display:grid;
@@ -725,71 +775,6 @@ select,input[type=date]{
   color:#cfc3a0
 }
 
-.progress-list{
-  display:grid;
-  gap:7px;
-  margin-top:9px
-}
-
-.progress-item{
-  background:#090909;
-  border:1px solid #2c2510;
-  border-radius:11px;
-  padding:9px
-}
-
-.progress-top{
-  display:flex;
-  justify-content:space-between;
-  gap:8px;
-  font-size:11px
-}
-
-.progress-track{
-  height:7px;
-  background:#1c1a13;
-  border-radius:999px;
-  overflow:hidden;
-  margin-top:7px
-}
-
-.progress-fill{
-  height:100%;
-  background:linear-gradient(90deg,#b77a18,#f0cc68);
-  border-radius:999px
-}
-
-.learn-ready{
-  color:#58dc8d;
-  font-weight:950
-}
-
-.learn-mid{
-  color:#f0cc68;
-  font-weight:950
-}
-
-.learn-low{
-  color:#aaa;
-  font-weight:900
-}
-
-.proximity{
-  font-weight:950
-}
-
-.prox-exact{color:#58dc8d}
-.prox-near{color:#f0cc68}
-.prox-mid{color:#71baff}
-.prox-low{color:#aaa}
-
-.learning-note{
-  margin-top:8px;
-  color:#81775d;
-  font-size:9px;
-  line-height:1.6
-}
-
 @media(max-width:480px){
   .brand{font-size:23px}
   .wrap{padding-left:9px;padding-right:9px}
@@ -799,9 +784,9 @@ select,input[type=date]{
   .range{grid-template-columns:1fr}
   .candidate b{font-size:16px}
   .menu{grid-template-columns:1fr}
-  .weather-grid{grid-template-columns:repeat(3,1fr)}
+  .weather-grid{grid-template-columns:repeat(2,1fr)}
   .venue-chip{min-width:64px}
-  .result-chip{font-size:10px}
+  .result-chip{font-size:11px}
 }
 </style>
 </head>
@@ -905,7 +890,13 @@ select,input[type=date]{
     📍 会場別 学習進捗（100R基準）
   </div>
 
-  <div id="learningProgress"></div>
+  <button class="toggle" id="learningProgressToggle">
+    会場別 学習進捗を表示
+  </button>
+
+  <div class="learning-progress-wrap" id="learningProgressWrap">
+    <div id="learningProgress"></div>
+  </div>
 
   <div class="section-title">
     的中・不的中レース
@@ -1050,9 +1041,7 @@ function apiURL(d){
   return `${API_BASE}/${d.slice(0,4)}/${d.replaceAll('-','')}.json`;
 
 }
-
-
-/* ========================================
+  /* ========================================
    JSON取得 共通処理
 ======================================== */
 
@@ -2588,9 +2577,10 @@ function evaluate(
     oddsCoverage
   };
 }
-  /* ========================================
+
+
+/* ========================================
    買い目選定
-   本線3点・狙い4点・穴3点
 ======================================== */
 
 function makeTickets(a){
@@ -2626,9 +2616,6 @@ function makeTickets(a){
 
   const used=
     new Set();
-
-
-  /* 本線3点 */
 
   const mainPool=
     scored
@@ -2669,7 +2656,6 @@ function makeTickets(a){
     );
   }
 
-
   for(
     const x
     of [...scored]
@@ -2701,9 +2687,6 @@ function makeTickets(a){
       );
     }
   }
-
-
-  /* 狙い4点 */
 
   const coverPool=
     scored
@@ -2756,7 +2739,6 @@ function makeTickets(a){
     );
   }
 
-
   for(
     const x
     of [...scored]
@@ -2788,9 +2770,6 @@ function makeTickets(a){
       );
     }
   }
-
-
-  /* 穴3点 */
 
   const holePool=
     scored
@@ -2857,7 +2836,6 @@ function makeTickets(a){
     );
   }
 
-
   if(
     withOdds &&
     hole.length<3
@@ -2906,7 +2884,6 @@ function makeTickets(a){
     }
   }
 
-
   if(
     !withOdds
   ){
@@ -2943,7 +2920,6 @@ function makeTickets(a){
       }
     }
   }
-
 
   return{
     main:
@@ -3134,309 +3110,280 @@ function allocate(
 
   return out;
 }
-
-
 /* ========================================
-   学習履歴
+   保存データ
 ======================================== */
 
 function records(){
 
   try{
 
-    const x=
+    const a=
       JSON.parse(
-        localStorage
-        .getItem(
+        localStorage.getItem(
           STORAGE_KEY
         )||
         '[]'
       );
 
-    return Array.isArray(x)
-      ?x
+    return Array.isArray(a)
+      ?a
       :[];
 
-  }catch{
+  }catch(e){
 
     return[];
+
   }
 }
 
 
-function save(x){
+function save(rs){
 
-  localStorage
-  .setItem(
+  localStorage.setItem(
     STORAGE_KEY,
-    JSON.stringify(x)
+    JSON.stringify(rs)
   );
 }
 
 
-function comboParts(combo){
+/* ========================================
+   学習データ補完
+======================================== */
 
-  return String(
-    combo||''
+function groupLabel(g){
+
+  if(g==='main'){
+    return '本線';
+  }
+
+  if(g==='cover'){
+    return '狙い';
+  }
+
+  if(g==='hole'){
+    return '穴';
+  }
+
+  return '';
+}
+
+
+function normalizeCombo(v){
+
+  return String(v||'')
+  .replace(
+    /[^\d]+/g,
+    '-'
   )
-  .split('-')
-  .map(Number)
-  .filter(
-    x=>
-      x>=1 &&
-      x<=6
-  )
-  .slice(
-    0,
-    3
+  .replace(
+    /^-|-$/g,
+    ''
   );
 }
 
 
-function analyzeTicketCloseness(
-  ticketCombo,
-  resultCombo
+function comboDistance(
+  predicted,
+  actual
 ){
 
   const p=
-    comboParts(
-      ticketCombo
-    );
+    normalizeCombo(
+      predicted
+    )
+    .split('-')
+    .map(Number);
 
-  const r=
-    comboParts(
-      resultCombo
-    );
+  const a=
+    normalizeCombo(
+      actual
+    )
+    .split('-')
+    .map(Number);
 
   if(
     p.length!==3 ||
-    r.length!==3
+    a.length!==3 ||
+    p.some(
+      x=>!x
+    ) ||
+    a.some(
+      x=>!x
+    )
   ){
-
     return{
       score:0,
-      type:'unknown',
-      label:'分析不可',
-      overlap:0,
-      positionMatches:0,
-      missPositions:[]
+      label:'判定不能',
+      exact:false
     };
   }
 
-  const pos=
-    [0,1,2]
-    .filter(
-      i=>
-        p[i]===
-        r[i]
-    );
-
-  const positionMatches=
-    pos.length;
-
-  const overlap=
-    p.filter(
-      x=>
-        r.includes(x)
-    ).length;
-
-  const missPositions=
-    [0,1,2]
-    .filter(
-      i=>
-        p[i]!==r[i]
-    )
-    .map(
-      i=>i+1
-    );
-
   if(
-    ticketCombo===
-    resultCombo
+    p[0]===a[0] &&
+    p[1]===a[1] &&
+    p[2]===a[2]
   ){
-
     return{
       score:100,
-      type:'exact',
       label:'完全一致',
-      overlap:3,
-      positionMatches:3,
-      missPositions:[]
+      exact:true
     };
   }
 
-  if(
-    overlap===3
-  ){
+  const samePos=
+    (
+      p[0]===a[0]
+      ?1
+      :0
+    )+
+    (
+      p[1]===a[1]
+      ?1
+      :0
+    )+
+    (
+      p[2]===a[2]
+      ?1
+      :0
+    );
 
-    return{
-      score:90,
-      type:'three_wrong_order',
-      label:'3艇一致・順番違い',
-      overlap,
-      positionMatches,
-      missPositions
-    };
+  const sameBoats=
+    p.filter(
+      x=>a.includes(x)
+    ).length;
+
+  let score=0;
+  let label='遠い';
+
+  if(
+    p[0]===a[0] &&
+    sameBoats===3
+  ){
+    score=92;
+    label='1着一致・3艇一致';
   }
-
-  if(
-    positionMatches===2
+  else if(
+    samePos===2
   ){
-
-    const miss=
-      missPositions[0];
-
-    return{
-      score:82,
-      type:'two_positions',
-      label:
-        `${miss}着だけ外れ`,
-      overlap,
-      positionMatches,
-      missPositions
-    };
+    score=88;
+    label='2着順一致';
   }
-
-  if(
-    overlap===2
+  else if(
+    p[0]===a[0] &&
+    sameBoats===2
   ){
-
-    return{
-      score:65,
-      type:'two_boats',
-      label:'2艇一致',
-      overlap,
-      positionMatches,
-      missPositions
-    };
+    score=82;
+    label='1着一致・2艇一致';
   }
-
-  if(
-    overlap===1
+  else if(
+    sameBoats===3
   ){
-
-    return{
-      score:35,
-      type:'one_boat',
-      label:'1艇一致',
-      overlap,
-      positionMatches,
-      missPositions
-    };
+    score=78;
+    label='3艇一致';
+  }
+  else if(
+    p[0]===a[0]
+  ){
+    score=68;
+    label='1着一致';
+  }
+  else if(
+    samePos===1 &&
+    sameBoats>=2
+  ){
+    score=62;
+    label='部分一致';
+  }
+  else if(
+    sameBoats===2
+  ){
+    score=55;
+    label='2艇一致';
+  }
+  else if(
+    sameBoats===1
+  ){
+    score=30;
+    label='1艇一致';
   }
 
   return{
-    score:0,
-    type:'none',
-    label:'完全外れ',
-    overlap:0,
-    positionMatches:0,
-    missPositions:[
-      1,
-      2,
-      3
-    ]
+    score,
+    label,
+    exact:false
   };
 }
 
 
-function analyzePredictionCloseness(
-  rec,
-  resultCombo
+function calcProximity(
+  tickets,
+  result
 ){
 
-  const ts=
-    Array.isArray(
-      rec?.tickets
-    )
-    ?rec.tickets
-    :[];
-
   if(
-    !ts.length ||
-    !resultCombo
+    !Array.isArray(tickets) ||
+    !tickets.length ||
+    !result
   ){
-
-    return{
-      score:0,
-      type:'unknown',
-      label:'予想10点データなし',
-      bestCombo:'',
-      bestGroup:'',
-      overlap:0,
-      positionMatches:0,
-      missPositions:[]
-    };
+    return null;
   }
 
-  const ranked=
-    ts
-    .map(
-      t=>({
-        ...analyzeTicketCloseness(
-          t.combo,
-          resultCombo
-        ),
+  let best=null;
 
-        combo:t.combo,
-        group:t.group||'',
-        special:
-          !!t.special
-      })
-    )
-    .sort(
-      (a,b)=>
-        b.score-
-        a.score ||
-        b.positionMatches-
-        a.positionMatches ||
-        b.overlap-
-        a.overlap
+  for(
+    const t
+    of tickets
+  ){
+
+    const d=
+      comboDistance(
+        t.combo,
+        result
+      );
+
+    const item={
+      ...d,
+      bestCombo:
+        t.combo,
+
+      bestGroup:
+        t.group
+    };
+
+    if(
+      !best ||
+      item.score>
+      best.score
+    ){
+      best=item;
+    }
+  }
+
+  return best;
+}
+
+
+function proximityClass(p){
+
+  const s=
+    num(
+      p?.score
     );
 
-  const best=
-    ranked[0];
+  if(s>=100){
+    return 'prox-exact';
+  }
 
-  return{
-    score:
-      best.score,
+  if(s>=80){
+    return 'prox-near';
+  }
 
-    type:
-      best.type,
+  if(s>=55){
+    return 'prox-mid';
+  }
 
-    label:
-      best.label,
-
-    bestCombo:
-      best.combo,
-
-    bestGroup:
-      best.group,
-
-    special:
-      best.special,
-
-    overlap:
-      best.overlap,
-
-    positionMatches:
-      best.positionMatches,
-
-    missPositions:
-      best.missPositions,
-
-    top3:
-      ranked
-      .slice(0,3)
-      .map(
-        x=>({
-          combo:x.combo,
-          group:x.group,
-          score:x.score,
-          label:x.label
-        })
-      )
-  };
+  return 'prox-low';
 }
 
 
@@ -3453,595 +3400,156 @@ function backfillLearningRecords(){
   ){
 
     if(
-      !rec.learningSnapshot &&
-      Array.isArray(rec.tickets) &&
-      rec.tickets.length
-    ){
-
-      rec.learningSnapshot={
-
-        model:
-          rec.model||
-          MODEL_NAME,
-
-        savedAt:
-          rec.savedAt||'',
-
-        rating:
-          num(rec.rating),
-
-        grade:
-          rec.grade||
-          'S',
-
-        tickets:
-          rec.tickets.map(
-            t=>({
-              combo:t.combo,
-              group:t.group||'',
-              probability:
-                num(t.probability),
-              special:
-                !!t.special,
-              money:
-                num(t.money)
-            })
-          ),
-
-        predictionMeta:
-          rec.predictionMeta||
-          null
-      };
-
-      changed=true;
-    }
-
-
-    if(
       rec.done &&
       rec.result &&
-      !rec.proximity &&
-      Array.isArray(rec.tickets) &&
-      rec.tickets.length
+      !rec.proximity
     ){
 
       rec.proximity=
-        analyzePredictionCloseness(
-          rec,
+        calcProximity(
+          rec.tickets,
           rec.result
         );
 
       changed=true;
     }
+
+    if(
+      !rec.model
+    ){
+
+      rec.model=
+        MODEL_NAME;
+
+      changed=true;
+    }
   }
 
-  if(
-    changed
-  ){
+  if(changed){
     save(rs);
   }
 }
 
 
-function proximityClass(p){
-
-  if(!p){
-    return'prox-low';
-  }
-
-  if(
-    p.type==='exact'
-  ){
-    return'prox-exact';
-  }
-
-  if(
-    p.score>=80
-  ){
-    return'prox-near';
-  }
-
-  if(
-    p.score>=60
-  ){
-    return'prox-mid';
-  }
-
-  return'prox-low';
-}
-
-
-function groupLabel(g){
-
-  return g==='main'
-    ?'本線'
-    :g==='cover'
-    ?'狙い'
-    :g==='hole'
-    ?'穴'
-    :'-';
-}
-
-
-function learningSummary(rs){
-
-  const done=
-    rs.filter(
-      x=>x.done
-    );
-
-  const miss=
-    done.filter(
-      x=>!x.hit
-    );
-
-  const known=
-    miss.filter(
-      x=>
-        x.proximity &&
-        x.proximity.type!==
-        'unknown'
-    );
-
-  const c={
-    three:0,
-    twoPos:0,
-    twoBoats:0,
-    one:0,
-    none:0,
-    thirdOnly:0,
-    secondOnly:0,
-    firstOnly:0
-  };
-
-  for(
-    const x
-    of known
-  ){
-
-    const p=
-      x.proximity;
-
-    if(
-      p.type===
-      'three_wrong_order'
-    ){
-      c.three++;
-    }
-    else if(
-      p.type===
-      'two_positions'
-    ){
-      c.twoPos++;
-    }
-    else if(
-      p.type===
-      'two_boats'
-    ){
-      c.twoBoats++;
-    }
-    else if(
-      p.type===
-      'one_boat'
-    ){
-      c.one++;
-    }
-    else if(
-      p.type===
-      'none'
-    ){
-      c.none++;
-    }
-
-    if(
-      p.type===
-      'two_positions' &&
-      p.missPositions
-      ?.length===1
-    ){
-
-      if(
-        p.missPositions[0]===1
-      ){
-        c.firstOnly++;
-      }
-
-      if(
-        p.missPositions[0]===2
-      ){
-        c.secondOnly++;
-      }
-
-      if(
-        p.missPositions[0]===3
-      ){
-        c.thirdOnly++;
-      }
-    }
-  }
-
-  const close=
-    known.filter(
-      x=>
-        num(
-          x.proximity?.score
-        )>=65
-    )
-    .length;
-
-  const closeRate=
-    known.length
-    ?close/
-     known.length*
-     100
-    :0;
-
-  return{
-    done,
-    miss,
-    known,
-    c,
-    close,
-    closeRate
-  };
-}
-
-
-function renderLearningStats(rs){
-
-  const L=
-    learningSummary(rs);
-
-  const root=
-    $('learningStats');
-
-  if(!root){
-    return;
-  }
-
-  if(
-    !L.done.length
-  ){
-
-    root.innerHTML=
-      `
-      <div class="empty">
-        結果が確定すると、
-        予想10点と実際の結果の接近度を自動分析します。
-      </div>
-      `;
-
-    return;
-  }
-
-  root.innerHTML=
-    `
-    <div class="learning-grid">
-
-      <div class="learning-card">
-        <small>分析済み不的中</small>
-        <b>${L.known.length}R</b>
-      </div>
-
-      <div class="learning-card">
-        <small>惜しい予想率（65点以上）</small>
-        <b>${L.closeRate.toFixed(1)}%</b>
-      </div>
-
-      <div class="learning-card">
-        <small>3艇一致・順番違い</small>
-        <b>${L.c.three}R</b>
-      </div>
-
-      <div class="learning-card">
-        <small>着順1か所だけ外れ</small>
-        <b>${L.c.twoPos}R</b>
-      </div>
-
-      <div class="learning-card">
-        <small>2艇一致</small>
-        <b>${L.c.twoBoats}R</b>
-      </div>
-
-      <div class="learning-card">
-        <small>完全外れ</small>
-        <b>${L.c.none}R</b>
-      </div>
-
-    </div>
-
-    <div class="learning-summary">
-
-      <b>
-        外し方の内訳
-      </b>
-
-      <br>
-
-      1着だけ外れ：
-      ${L.c.firstOnly}R
-      ／
-      2着だけ外れ：
-      ${L.c.secondOnly}R
-      ／
-      3着だけ外れ：
-      ${L.c.thirdOnly}R
-
-      <br>
-
-      この偏りを会場別・条件別に蓄積し、
-      100R到達後のロジック調整材料として使います。
-
-    </div>
-
-    <div class="learning-note">
-      ※少数データだけで予想ロジックを自動変更しない設計です。
-    </div>
-    `;
-}
-
-
-function renderLearningProgress(rs){
-
-  const root=
-    $('learningProgress');
-
-  if(!root){
-    return;
-  }
-
-  const done=
-    rs.filter(
-      x=>x.done
-    );
-
-  const rows=
-    Object.values(
-      STADIUMS
-    )
-    .map(
-      venue=>{
-
-        const a=
-          done.filter(
-            x=>
-              x.venue===
-              venue
-          );
-
-        const s=
-          calc(a);
-
-        const count=
-          a.length;
-
-        const pct=
-          Math.min(
-            100,
-            count
-          );
-
-        const status=
-          count>=100
-          ?'100R到達'
-          :count>=50
-          ?'蓄積中'
-          :'収集中';
-
-        return{
-          venue,
-          count,
-          pct,
-          status,
-          hitRate:
-            s.hitRate,
-          roi:
-            s.roi
-        };
-      }
-    )
-    .sort(
-      (a,b)=>
-        b.count-
-        a.count ||
-        a.venue.localeCompare(
-          b.venue,
-          'ja'
-        )
-    );
-
-  root.innerHTML=
-    `
-    <div class="progress-list">
-
-      ${
-        rows.map(
-          x=>`
-            <div class="progress-item">
-
-              <div class="progress-top">
-
-                <b>
-                  ${x.venue}
-                </b>
-
-                <span
-                  class="${
-                    x.count>=100
-                    ?'learn-ready'
-                    :x.count>=50
-                    ?'learn-mid'
-                    :'learn-low'
-                  }"
-                >
-                  ${x.count}/100R
-                  ${x.status}
-                </span>
-
-              </div>
-
-              <div class="progress-track">
-
-                <div
-                  class="progress-fill"
-                  style="width:${x.pct}%"
-                ></div>
-
-              </div>
-
-              <div class="learning-note">
-                的中率
-                ${x.hitRate.toFixed(1)}%
-                ／
-                回収率
-                ${x.roi.toFixed(1)}%
-              </div>
-
-            </div>
-          `
-        )
-        .join('')
-      }
-
-    </div>
-
-    <div class="learning-note">
-      100Rは会場別の初回分析ライン。
-      100R到達後も200R・300Rと継続して累計データを残します。
-    </div>
-    `;
-}
-  /* ========================================
+/* ========================================
    予想保存
 ======================================== */
 
-function savePrediction(a,tickets){
+function savePrediction(a){
 
-  const rs=records();
-
-  const key=
-    raceKey(a.race);
-
-  const exists=
-    rs.find(
-      x=>x.key===key
-    );
-
-  if(exists){
+  if(
+    a.grade!=='S'
+  ){
     return;
   }
 
-  const venue=
-    STADIUMS[
-      a.race.stadium_number
-    ]||
-    `会場${a.race.stadium_number}`;
+  const rs=
+    records();
 
-  const rec={
+  const key=
+    raceKey(
+      a.race
+    );
+
+  if(
+    rs.some(
+      x=>
+        x.key===key
+    )
+  ){
+    return;
+  }
+
+  const t=
+    makeTickets(a);
+
+  const tickets=
+    allocate(
+      t,
+      EVALUATION_STAKE,
+      a
+    );
+
+  rs.push({
+
     key,
 
     date:
       a.race.date||
       todayJST(),
 
-    venue,
-
     stadium:
-      a.race.stadium_number,
+      num(
+        a.race
+        .stadium_number
+      ),
+
+    venue:
+      STADIUMS[
+        num(
+          a.race
+          .stadium_number
+        )
+      ]||
+      `会場${a.race.stadium_number}`,
 
     race:
-      a.race.race_number,
-
-    close:
-      closeTime(a.race),
-
-    rating:
-      a.rating,
+      num(
+        a.race
+        .race_number
+      ),
 
     grade:
       a.grade,
 
-    model:
-      MODEL_NAME,
+    rating:
+      a.rating,
 
-    savedAt:
-      new Date().toISOString(),
+    tickets,
 
     done:false,
-    hit:false,
 
     result:'',
+
     payout:0,
+
+    hit:false,
+
     returnAmount:0,
+
     profit:0,
 
-    tickets:
-      tickets.map(
-        x=>({
-          combo:x.combo,
-          group:x.group,
-          money:x.money,
-          probability:x.probability,
-          odds:x.odds||0,
-          ev:x.ev||0,
-          popRank:x.popRank||0,
-          special:
-            !!x.special
-        })
-      ),
+    proximity:null,
 
-    predictionMeta:{
-      weather:
-        a.weather,
-
-      exhibitionRank:
-        a.exhibitionRank,
-
-      startRank:
-        a.startRank,
-
-      scenarioTop:
-        a.scenario?.top
-        ?{
-          boat:
-            a.scenario.top.boat,
-
-          tactic:
-            a.scenario.top.tactic,
-
-          probability:
-            a.scenario.top.probability
-        }
-        :null,
-
-      oddsCoverage:
-        a.oddsCoverage||0
-    }
-  };
-
-  rec.learningSnapshot={
     model:
       MODEL_NAME,
 
+    scenarioTop:
+      a.scenario?.top
+      ?{
+        boat:
+          a.scenario
+          .top
+          .boat,
+
+        tactic:
+          a.scenario
+          .top
+          .tactic,
+
+        probability:
+          a.scenario
+          .top
+          .probability
+      }
+      :null,
+
+    weather:
+      a.weather||null,
+
     savedAt:
-      rec.savedAt,
-
-    rating:
-      rec.rating,
-
-    grade:
-      rec.grade,
-
-    tickets:
-      rec.tickets.map(
-        x=>({...x})
-      ),
-
-    predictionMeta:
-      rec.predictionMeta
-  };
-
-  rs.push(rec);
+      Date.now()
+  });
 
   save(rs);
 }
@@ -4049,7 +3557,7 @@ function savePrediction(a,tickets){
 
 /* ========================================
    払戻データ
-   現行 api/v1 対応
+   api/v1 現行仕様対応
 ======================================== */
 
 function payouts(data){
@@ -4091,9 +3599,6 @@ function payouts(data){
       let combo='';
       let amount=0;
 
-
-      /* 配列形式 */
-
       if(
         Array.isArray(p)
       ){
@@ -4123,9 +3628,6 @@ function payouts(data){
         }
       }
 
-
-      /* オブジェクト形式にも対応 */
-
       else if(
         typeof p==='object'
       ){
@@ -4139,7 +3641,7 @@ function payouts(data){
           num(
             p.amount ??
             p.payout
-          );
+        );
 
         if(!combo){
 
@@ -4174,9 +3676,6 @@ function payouts(data){
         }
       }
 
-
-      /* 組み合わせ表記を 1-2-3 に統一 */
-
       if(combo){
 
         combo=
@@ -4189,7 +3688,6 @@ function payouts(data){
             /^-|-$/g,
             ''
           );
-
 
         if(
           /^[1-6]-[1-6]-[1-6]$/
@@ -4213,18 +3711,16 @@ function payouts(data){
 
 
 /* ========================================
-   結果確定・学習
+   結果反映
 ======================================== */
 
-function settle(
-  data
-){
+function settle(data){
+
+  const ps=
+    payouts(data);
 
   const rs=
     records();
-
-  const pm=
-    payouts(data);
 
   let changed=false;
 
@@ -4233,15 +3729,13 @@ function settle(
     of rs
   ){
 
-    if(
-      rec.done
-    ){
+    if(rec.done){
       continue;
     }
 
     const p=
-      pm[
-        `${Number(rec.stadium)}_${Number(rec.race)}`
+      ps[
+        `${rec.stadium}_${rec.race}`
       ];
 
     if(!p){
@@ -4256,9 +3750,6 @@ function settle(
     rec.payout=
       p.payout;
 
-
-    /* 的中買い目確認 */
-
     const hitTicket=
       (
         rec.tickets||
@@ -4266,35 +3757,24 @@ function settle(
       )
       .find(
         x=>
-          String(x.combo)===
-          String(p.combo)
+          x.combo===
+          p.combo
       );
 
     rec.hit=
       !!hitTicket;
 
-
-    /* 払戻金 */
-
-    if(hitTicket){
-
-      rec.returnAmount=
-        Math.round(
-          num(p.payout)*
-          (
-            num(
-              hitTicket.money
-            )/100
-          )
-        );
-
-    }else{
-
-      rec.returnAmount=0;
-    }
-
-
-    /* 投資額 */
+    rec.returnAmount=
+      hitTicket
+      ?Math.floor(
+        num(
+          hitTicket.money
+        )/100*
+        num(
+          p.payout
+        )
+      )
+      :0;
 
     const stake=
       (
@@ -4310,165 +3790,266 @@ function settle(
         0
       );
 
-
-    /* 収支 */
-
     rec.profit=
       rec.returnAmount-
       stake;
 
-
-    /* 不的中接近度 */
-
     rec.proximity=
-      analyzePredictionCloseness(
-        rec,
-        p.combo
+      calcProximity(
+        rec.tickets,
+        rec.result
       );
 
     changed=true;
   }
 
-
   if(changed){
-
     save(rs);
-
   }
 }
 
 
 /* ========================================
-   買い目表示
+   結果オッズ
 ======================================== */
 
-function ticketRows(
-  tickets,
-  group
-){
+function resultOddsValue(rec){
 
-  const rows=
-    tickets.filter(
-      x=>
-        x.group===
-        group
+  const direct=
+    num(
+      rec?.resultOdds
     );
 
-  if(!rows.length){
-
-    return`
-      <div class="ticket">
-        <span class="combo">
-          -
-        </span>
-      </div>
-    `;
+  if(direct>0){
+    return direct;
   }
 
-  return rows
-  .map(
-    x=>{
+  const payout=
+    num(
+      rec?.payout
+    );
 
-      const oddsText=
-        x.odds>0
-        ?`${x.odds.toFixed(1)}倍`
-        :'未取得';
+  if(payout>0){
+    return payout/100;
+  }
 
-      const rankText=
-        x.popRank>0 &&
-        x.popRank<999
-        ?`人気${x.popRank}位`
-        :'人気未取得';
+  return 0;
+}
 
-      return`
-        <div class="ticket">
 
-          <span class="combo">
-            ${x.combo}
-          </span>
+function resultOddsText(rec){
 
-          <span class="money">
-            ${x.money.toLocaleString()}円
-          </span>
+  const odds=
+    resultOddsValue(
+      rec
+    );
 
-          <span class="ticket-sub">
-            AI
-            ${(x.probability*100).toFixed(2)}%
-            <br>
-            ${oddsText}
-            ・
-            ${rankText}
-          </span>
+  if(odds<=0){
+    return '-';
+  }
 
-        </div>
-      `;
-    }
-  )
-  .join('');
+  return `${odds.toFixed(1)}倍`;
 }
 
 
 /* ========================================
-   展開予測表示
+   着順表示
 ======================================== */
 
-function scenarioHTML(a){
+function resultOrderText(rec){
 
-  const s=
-    a.scenario;
+  const result=
+    normalizeCombo(
+      rec?.result
+    );
 
-  if(
-    !s?.top
-  ){
-    return'';
-  }
+  return result||'-';
+}
 
-  const list=
-    s.candidates
-    .slice(0,5);
+
+/* ========================================
+   AI分析 天候表示
+======================================== */
+
+function weatherName(v){
+
+  return WEATHER_NAMES[
+    num(v)
+  ]||'-';
+}
+
+
+function windDirectionText(v){
+
+  const n=
+    num(v);
+
+  const names={
+    1:'北',
+    2:'北東',
+    3:'東',
+    4:'南東',
+    5:'南',
+    6:'南西',
+    7:'西',
+    8:'北西'
+  };
+
+  return names[n]||'-';
+}
+
+
+/* ========================================
+   買い目カード
+   金額は画面に表示しない
+======================================== */
+
+function ticketColumnHTML(
+  title,
+  cls,
+  tickets,
+  a
+){
 
   return`
-    <div class="scenario-box">
+    <div class="bet-col ${cls}-col">
 
-      <div class="scenario-title">
-        ⚡ AI展開予測
+      <div class="bet-head ${cls}">
+        ${title}
       </div>
 
-      <div class="scenario-main">
+      ${
+        tickets.map(
+          combo=>{
+
+            const market=
+              (
+                a.comboPool||
+                []
+              )
+              .find(
+                x=>
+                  x.combo===
+                  combo
+              );
+
+            const odds=
+              num(
+                market?.odds
+              );
+
+            const rank=
+              num(
+                market?.popRank
+              );
+
+            let sub='';
+
+            if(odds>0){
+
+              sub=
+                `${odds.toFixed(1)}倍`;
+
+              if(
+                rank>0 &&
+                rank<999
+              ){
+
+                sub+=
+                  ` / ${rank}人気`;
+              }
+            }
+
+            return`
+              <div class="ticket">
+
+                <span class="combo">
+                  ${combo}
+                </span>
+
+                ${
+                  sub
+                  ?`
+                    <span class="ticket-sub">
+                      ${sub}
+                    </span>
+                  `
+                  :''
+                }
+
+              </div>
+            `;
+          }
+        )
+        .join('')
+      }
+
+    </div>
+  `;
+}
+
+
+/* ========================================
+   AI分析カード
+======================================== */
+
+function aiDetailHTML(a){
+
+  const top3=
+    a.boats
+    .slice(0,3);
+
+  const w=
+    a.weather||{};
+
+  const scenarios=
+    (
+      a.scenario
+      ?.candidates||
+      []
+    )
+    .slice(0,4);
+
+  return`
+    <div class="ai-box">
+
+      <div class="ai-top">
 
         <div>
           <small>
-            最有力シナリオ
+            AI総合評価
           </small>
 
-          <br>
-
-          <strong>
-            ${s.top.boat}号艇
-            ${s.top.tactic}
-          </strong>
+          <div class="ai-score">
+            ${a.rating}点
+          </div>
         </div>
 
-        <span>
-          ${(s.top.probability*100).toFixed(1)}%
-        </span>
+        <div class="smark">
+          ${a.grade}
+        </div>
 
       </div>
 
-      <div class="scenario-list">
+      <div class="candidate-grid">
 
         ${
-          list.map(
-            x=>`
-              <div class="scenario-row">
+          top3.map(
+            (x,i)=>`
+              <div class="candidate">
 
-                <span>
-                  ${x.boat}号艇
-                  ${x.tactic}
-                </span>
+                <small>
+                  ${
+                    i===0
+                    ?'1位'
+                    :i===1
+                    ?'2位'
+                    :'3位'
+                  }
+                </small>
 
                 <b>
-                  ${(x.probability*100).toFixed(1)}%
+                  ${x.boat}号艇
                 </b>
 
               </div>
@@ -4479,8 +4060,148 @@ function scenarioHTML(a){
 
       </div>
 
-      <div class="scenario-note">
-        展示タイム・展示ST・進入・モーター・風・波・AI艇評価から展開を推定。
+      <div class="weather-grid">
+
+        <div class="weather-item">
+          <small>天候</small>
+          <b>
+            ${weatherName(w.weather)}
+          </b>
+        </div>
+
+        <div class="weather-item">
+          <small>風</small>
+          <b>
+            ${num(w.windSpeed).toFixed(1)}m
+          </b>
+        </div>
+
+        <div class="weather-item">
+          <small>波高</small>
+          <b>
+            ${num(w.wave).toFixed(0)}cm
+          </b>
+        </div>
+
+        <div class="weather-item">
+          <small>気温</small>
+          <b>
+            ${num(w.air).toFixed(1)}℃
+          </b>
+        </div>
+
+      </div>
+
+      <div class="weather-grid">
+
+        <div class="weather-item">
+          <small>水温</small>
+          <b>
+            ${num(w.water).toFixed(1)}℃
+          </b>
+        </div>
+
+        <div class="weather-item">
+          <small>風向</small>
+          <b>
+            ${windDirectionText(w.windDirection)}
+          </b>
+        </div>
+
+        <div class="weather-item">
+          <small>展示1位</small>
+          <b>
+            ${a.exhibitionRank?.[0]||'-'}号艇
+          </b>
+        </div>
+
+        <div class="weather-item">
+          <small>ST1位</small>
+          <b>
+            ${a.startRank?.[0]||'-'}号艇
+          </b>
+        </div>
+
+      </div>
+
+      ${
+        a.scenario?.top
+        ?`
+          <div class="scenario-box">
+
+            <div class="scenario-title">
+              AI展開予測
+            </div>
+
+            <div class="scenario-main">
+
+              <strong>
+                ${a.scenario.top.boat}号艇
+                ${a.scenario.top.tactic}
+              </strong>
+
+              <span>
+                ${
+                  (
+                    a.scenario
+                    .top
+                    .probability*
+                    100
+                  )
+                  .toFixed(1)
+                }%
+              </span>
+
+            </div>
+
+            <div class="scenario-list">
+
+              ${
+                scenarios.map(
+                  x=>`
+                    <div class="scenario-row">
+
+                      <span>
+                        ${x.boat}号艇
+                        ${x.tactic}
+                      </span>
+
+                      <b>
+                        ${
+                          (
+                            x.probability*
+                            100
+                          )
+                          .toFixed(1)
+                        }%
+                      </b>
+
+                    </div>
+                  `
+                )
+                .join('')
+              }
+
+            </div>
+
+            <div class="scenario-note">
+              展示・ST・進入・選手力・モーター・
+              風・波をAIが総合評価した展開予測です。
+            </div>
+
+          </div>
+        `
+        :''
+      }
+
+      <div class="reason">
+        ${
+          (
+            a.reasons||
+            []
+          )
+          .join('<br>')
+        }
       </div>
 
     </div>
@@ -4489,50 +4210,39 @@ function scenarioHTML(a){
 
 
 /* ========================================
-   レース表示
+   レースカード
+   買い目を常時表示
 ======================================== */
 
-function raceHTML(
-  a,
-  tickets
-){
+function raceHTML(a){
 
   const r=
     a.race;
 
   const venue=
     STADIUMS[
-      r.stadium_number
+      num(
+        r.stadium_number
+      )
     ]||
     `会場${r.stadium_number}`;
 
-  const mainCount=
-    tickets.filter(
-      x=>x.group==='main'
-    ).length;
+  const t=
+    makeTickets(a);
 
-  const coverCount=
-    tickets.filter(
-      x=>x.group==='cover'
-    ).length;
+  const total=
+    t.main.length+
+    t.cover.length+
+    t.hole.length;
 
-  const holeCount=
-    tickets.filter(
-      x=>x.group==='hole'
-    ).length;
+  const id=
+    `aiDetail_${r.stadium_number}_${r.race_number}`;
 
-  const totalCount=
-    tickets.length;
-
-  const totalMoney=
-    tickets.reduce(
-      (s,x)=>
-        s+x.money,
-      0
-    );
+  const btnId=
+    `aiToggle_${r.stadium_number}_${r.race_number}`;
 
   return`
-    <section class="race">
+    <article class="race">
 
       <div class="race-head">
 
@@ -4545,15 +4255,7 @@ function raceHTML(
 
           <div class="race-meta">
             締切 ${closeTime(r)}
-            ／
-            展示・ST取得済
-            ／
-            3連単オッズ
-            ${
-              a.oddsCoverage>=80
-              ?'連動'
-              :'取得待ち'
-            }
+            ・AI評価 ${a.rating}点
           </div>
 
         </div>
@@ -4564,323 +4266,150 @@ function raceHTML(
 
       </div>
 
-      <div class="ai-box">
+      <div class="bet-grid">
 
-        <div class="ai-top">
+        ${
+          ticketColumnHTML(
+            `本線 ${t.main.length}点`,
+            'main',
+            t.main,
+            a
+          )
+        }
 
-          <div>
-            <small>
-              AI総合評価
-            </small>
+        ${
+          ticketColumnHTML(
+            `狙い ${t.cover.length}点`,
+            'cover',
+            t.cover,
+            a
+          )
+        }
 
-            <div class="ai-score">
-              ${a.rating}
-            </div>
-          </div>
+        ${
+          ticketColumnHTML(
+            `穴 ${t.hole.length}点`,
+            'hole',
+            t.hole,
+            a
+          )
+        }
 
-          <div>
-            <small>
-              買い目
-            </small>
+      </div>
 
-            <b>
-              ${totalCount}点
-            </b>
-          </div>
-
-        </div>
-
-        <div class="candidate-grid">
-
-          ${
-            a.boats
-            .slice(0,3)
-            .map(
-              (x,i)=>`
-                <div class="candidate">
-
-                  <small>
-                    AI ${i+1}位
-                  </small>
-
-                  <b>
-                    ${x.boat}号艇
-                  </b>
-
-                </div>
-              `
-            )
-            .join('')
-          }
-
-        </div>
-
-        <div class="weather-grid">
-
-          <div class="weather-item">
-            <small>天候</small>
-            <b>
-              ${
-                WEATHER_NAMES[
-                  a.weather.weather
-                ]||
-                '-'
-              }
-            </b>
-          </div>
-
-          <div class="weather-item">
-            <small>風速</small>
-            <b>
-              ${a.weather.windSpeed}m
-            </b>
-          </div>
-
-          <div class="weather-item">
-            <small>波高</small>
-            <b>
-              ${a.weather.wave}cm
-            </b>
-          </div>
-
-        </div>
-
-        ${scenarioHTML(a)}
-
+      <div class="bet-total">
+        合計${total}点
       </div>
 
       <button
-        class="toggle"
-        onclick="
-          const d=this.nextElementSibling;
-          d.style.display=
-            d.style.display==='block'
-            ?'none'
-            :'block';
-          this.textContent=
-            d.style.display==='block'
-            ?'買い目を閉じる'
-            :'買い目を見る';
-        "
+        class="toggle ai-toggle"
+        id="${btnId}"
+        data-ai-target="${id}"
       >
-        買い目を見る
+        AI分析を見る ▼
       </button>
 
-      <div class="detail">
-
-        <div class="bet-grid">
-
-          <div class="bet-col main-col">
-
-            <div class="bet-head main">
-              本線 ${mainCount}点
-            </div>
-
-            ${
-              ticketRows(
-                tickets,
-                'main'
-              )
-            }
-
-          </div>
-
-          <div class="bet-col cover-col">
-
-            <div class="bet-head cover">
-              狙い ${coverCount}点
-            </div>
-
-            ${
-              ticketRows(
-                tickets,
-                'cover'
-              )
-            }
-
-          </div>
-
-          <div class="bet-col hole-col">
-
-            <div class="bet-head hole">
-              穴 ${holeCount}点
-            </div>
-
-            ${
-              ticketRows(
-                tickets,
-                'hole'
-              )
-            }
-
-          </div>
-
-        </div>
-
-        <div class="total">
-
-          <span>
-            合計
-          </span>
-
-          <span>
-            ${totalMoney.toLocaleString()}円
-          </span>
-
-        </div>
-
-        <div class="reason">
-          ${
-            a.reasons
-            .join('<br>')
-          }
-        </div>
-
+      <div
+        class="ai-detail"
+        id="${id}"
+      >
+        ${aiDetailHTML(a)}
       </div>
 
-    </section>
+    </article>
   `;
 }
 
 
 /* ========================================
-   画面表示
+   AI分析 開閉ボタン
 ======================================== */
 
-function display(
-  arr
-){
+function bindAIToggles(){
+
+  document
+  .querySelectorAll(
+    '.ai-toggle'
+  )
+  .forEach(
+    btn=>{
+
+      btn.onclick=
+        ()=>{
+
+          const id=
+            btn.dataset
+            .aiTarget;
+
+          const box=
+            document
+            .getElementById(id);
+
+          if(!box){
+            return;
+          }
+
+          const open=
+            box.style.display===
+            'block';
+
+          box.style.display=
+            open
+            ?'none'
+            :'block';
+
+          btn.textContent=
+            open
+            ?'AI分析を見る ▼'
+            :'AI分析を閉じる ▲';
+        };
+    }
+  );
+}
+
+
+/* ========================================
+   予想画面描画
+======================================== */
+
+function renderAnalyses(){
 
   const root=
     $('results');
 
+  if(!root){
+    return;
+  }
+
+  const target=
+    analyses.filter(
+      x=>
+        x.grade==='S' &&
+        !x.skip
+    );
+
   if(
-    !arr.length
+    !target.length
   ){
 
     root.innerHTML=
       `
-      <div class="empty">
-        現在、AI基準を満たす
-        S評価レースはありません。
-      </div>
+        <div class="empty">
+          現在、AI勝負条件を満たすレースはありません。
+        </div>
       `;
 
     return;
   }
 
   root.innerHTML=
-    arr.map(
-      x=>
-        raceHTML(
-          x.analysis,
-          x.tickets
-        )
+    target
+    .map(
+      raceHTML
     )
     .join('');
-}
 
-
-/* ========================================
-   データ更新判定
-======================================== */
-
-function dataSignature(
-  races,
-  oddsData
-){
-
-  const raceSig=
-    races.map(
-      r=>[
-        r.stadium_number,
-        r.race_number,
-        r?.preview?.updated_at||'',
-        r?.updated_at||'',
-        r?.result?.updated_at||'',
-        r?.result?.payouts?.trifecta?.[0]?.combination||'',
-        r?.result?.payouts?.trifecta?.[0]?.amount||''
-      ]
-      .join(':')
-    )
-    .join('|');
-
-  return[
-    raceSig,
-    oddsData?.updated_at||'',
-    oddsData?.odds?.length||0
-  ]
-  .join('::');
-}
-
-
-/* ========================================
-   AI分析
-======================================== */
-
-function analyzeRaces(
-  races,
-  oddsData
-){
-
-  const out=[];
-
-  for(
-    const r
-    of races
-  ){
-
-    if(
-      !upcoming(r) ||
-      !previewReady(r)
-    ){
-      continue;
-    }
-
-    const a=
-      evaluate(
-        r,
-        oddsData
-      );
-
-    if(
-      !a ||
-      a.skip ||
-      a.grade!=='S'
-    ){
-      continue;
-    }
-
-    const t=
-      makeTickets(a);
-
-    const tickets=
-      allocate(
-        t,
-        EVALUATION_STAKE,
-        a
-      );
-
-    savePrediction(
-      a,
-      tickets
-    );
-
-    out.push({
-      analysis:a,
-      tickets
-    });
-  }
-
-  out.sort(
-    (x,y)=>
-      y.analysis.rating-
-      x.analysis.rating
-  );
-
-  analyses=out;
-
-  return out;
+  bindAIToggles();
 }
 
 
@@ -4898,13 +4427,7 @@ async function autoRefresh(
 
   autoUpdateBusy=true;
 
-  const st=
-    $('status');
-
   try{
-
-    st.textContent=
-      '最新データ・3連単オッズ・レース結果を取得しています…';
 
     const [
       data,
@@ -4918,87 +4441,350 @@ async function autoRefresh(
     lastOddsData=
       oddsData;
 
-
-    /* 終了済みレースの成績を先に確定 */
-
     settle(data);
-
-    backfillLearningRecords();
 
     const races=
       flatten(data);
 
-    const sig=
-      dataSignature(
-        races,
-        oddsData
+    const evaluated=
+      races
+      .filter(
+        upcoming
+      )
+      .map(
+        r=>
+          evaluate(
+            r,
+            oddsData
+          )
+      )
+      .filter(Boolean);
+
+    const signature=
+      JSON.stringify(
+        evaluated.map(
+          x=>[
+            x.race
+            .stadium_number,
+
+            x.race
+            .race_number,
+
+            x.rating,
+
+            x.grade,
+
+            x.oddsCoverage
+          ]
+        )
       );
 
     if(
       force ||
-      sig!==
+      signature!==
       lastDataSignature
     ){
 
+      analyses=
+        evaluated;
+
       lastDataSignature=
-        sig;
+        signature;
 
-      const arr=
-        analyzeRaces(
-          races,
-          oddsData
-        );
+      for(
+        const a
+        of analyses
+      ){
+        savePrediction(a);
+      }
 
-      display(arr);
+      renderAnalyses();
     }
 
-    const oddsRaceCount=
-      oddsData?.odds?.length||0;
-
-    const settledToday=
-      records()
-      .filter(
-        x=>
-          x.date===todayJST() &&
-          x.done
-      )
-      .length;
-
-    st.innerHTML=
-      `
-      更新完了：
-      ${new Date().toLocaleTimeString('ja-JP')}
-      <br>
-      対象
-      ${races.length}レース
-      ／
-      買い目
-      ${analyses.length}レース
-      <br>
-      成績確定
-      ${settledToday}レース
-      ${
-        oddsData
-        ?`<br>✅ オッズ連動ON（${oddsRaceCount}R取得）`
-        :'<br>⚠️ オッズ取得待ち'
-      }
-      `;
-
     renderStats();
+
+    const sCount=
+      analyses.filter(
+        x=>
+          x.grade==='S' &&
+          !x.skip
+      ).length;
+
+    const oddsReady=
+      oddsData
+      ?'3連単オッズ取得済'
+      :'3連単オッズ未取得';
+
+    $('status').innerHTML=
+      `
+        データ更新：
+        ${new Date().toLocaleTimeString('ja-JP')}
+        <br>
+        AI勝負レース：
+        <b>${sCount}R</b>
+        ／
+        ${oddsReady}
+      `;
 
   }catch(e){
 
     console.error(e);
 
-    st.textContent=
-      'データ取得に失敗しました。しばらくして再読み込みしてください。';
+    $('status').textContent=
+      'データ取得中にエラーが発生しました。少し待って再読み込みしてください。';
 
   }finally{
 
     autoUpdateBusy=false;
+
   }
 }
-  /* ========================================
+
+
+/* ========================================
+   学習分析
+======================================== */
+
+function renderLearningStats(rs){
+
+  const root=
+    $('learningStats');
+
+  if(!root){
+    return;
+  }
+
+  const done=
+    rs.filter(
+      x=>x.done
+    );
+
+  const misses=
+    done.filter(
+      x=>!x.hit
+    );
+
+  const exact=
+    done.filter(
+      x=>
+        num(
+          x.proximity
+          ?.score
+        )>=100
+    ).length;
+
+  const near=
+    misses.filter(
+      x=>
+        num(
+          x.proximity
+          ?.score
+        )>=80
+    ).length;
+
+  const mid=
+    misses.filter(
+      x=>{
+
+        const s=
+          num(
+            x.proximity
+            ?.score
+          );
+
+        return(
+          s>=55 &&
+          s<80
+        );
+      }
+    ).length;
+
+  const first=
+    misses.filter(
+      x=>
+        String(
+          x.proximity
+          ?.label||
+          ''
+        )
+        .includes(
+          '1着一致'
+        )
+    ).length;
+
+  root.innerHTML=
+    `
+      <div class="learning-grid">
+
+        <div class="learning-card">
+          <small>完全一致</small>
+          <b class="green">
+            ${exact}R
+          </b>
+        </div>
+
+        <div class="learning-card">
+          <small>接近度80点以上</small>
+          <b>
+            ${near}R
+          </b>
+        </div>
+
+        <div class="learning-card">
+          <small>接近度55〜79点</small>
+          <b>
+            ${mid}R
+          </b>
+        </div>
+
+        <div class="learning-card">
+          <small>1着一致型</small>
+          <b>
+            ${first}R
+          </b>
+        </div>
+
+      </div>
+
+      <div class="learning-summary">
+        不的中レースも「どこまで正解に接近したか」を保存し、
+        会場ごとの結果蓄積に利用します。
+      </div>
+    `;
+}
+
+
+/* ========================================
+   会場別 学習進捗
+======================================== */
+
+function renderLearningProgress(rs){
+
+  const root=
+    $('learningProgress');
+
+  if(!root){
+    return;
+  }
+
+  const done=
+    rs.filter(
+      x=>x.done
+    );
+
+  const rows=
+    Object
+    .values(
+      STADIUMS
+    )
+    .map(
+      venue=>{
+
+        const count=
+          done.filter(
+            x=>
+              x.venue===
+              venue
+          )
+          .length;
+
+        return{
+          venue,
+          count,
+          percent:
+            clamp(
+              count,
+              0,
+              100
+            )
+        };
+      }
+    )
+    .filter(
+      x=>x.count>0
+    )
+    .sort(
+      (a,b)=>
+        b.count-
+        a.count
+    );
+
+  if(
+    !rows.length
+  ){
+
+    root.innerHTML=
+      `
+        <div class="empty">
+          学習データはまだありません。
+        </div>
+      `;
+
+    return;
+  }
+
+  root.innerHTML=
+    `
+      <div class="progress-list">
+
+        ${
+          rows.map(
+            x=>{
+
+              const cls=
+                x.count>=100
+                ?'learn-ready'
+                :x.count>=50
+                ?'learn-mid'
+                :'learn-low';
+
+              const label=
+                x.count>=100
+                ?'学習100%'
+                :`${x.count}%`;
+
+              return`
+                <div class="progress-item">
+
+                  <div class="progress-top">
+
+                    <b>
+                      ${x.venue}
+                    </b>
+
+                    <span class="${cls}">
+                      ${x.count}R / 100R
+                      ・${label}
+                    </span>
+
+                  </div>
+
+                  <div class="progress-track">
+
+                    <div
+                      class="progress-fill"
+                      style="width:${x.percent}%"
+                    ></div>
+
+                  </div>
+
+                </div>
+              `;
+            }
+          )
+          .join('')
+        }
+
+      </div>
+
+      <div class="learning-note">
+        各会場100Rを学習基準として表示しています。
+      </div>
+    `;
+}
+
+
+/* ========================================
    成績集計
 ======================================== */
 
@@ -5131,60 +4917,62 @@ function renderStats(){
 
   root.innerHTML=
     `
-    <div class="stats-grid">
+      <div class="stats-grid">
 
-      <div class="stat">
-        <small>確定レース</small>
-        <b>${s.count}R</b>
+        <div class="stat">
+          <small>確定レース</small>
+          <b>
+            ${s.count}R
+          </b>
+        </div>
+
+        <div class="stat">
+          <small>的中</small>
+          <b class="green">
+            ${s.hits}R
+          </b>
+        </div>
+
+        <div class="stat">
+          <small>的中率</small>
+          <b>
+            ${s.hitRate.toFixed(1)}%
+          </b>
+        </div>
+
+        <div class="stat">
+          <small>回収率</small>
+          <b class="${
+            s.roi>=100
+            ?'green'
+            :'red'
+          }">
+            ${s.roi.toFixed(1)}%
+          </b>
+        </div>
+
       </div>
 
-      <div class="stat">
-        <small>的中</small>
-        <b class="green">
-          ${s.hits}R
-        </b>
-      </div>
+      <div class="profit">
 
-      <div class="stat">
-        <small>的中率</small>
-        <b>
-          ${s.hitRate.toFixed(1)}%
-        </b>
-      </div>
+        <span>
+          収支
+        </span>
 
-      <div class="stat">
-        <small>回収率</small>
-        <b class="${
-          s.roi>=100
+        <strong class="${
+          s.profit>=0
           ?'green'
           :'red'
         }">
-          ${s.roi.toFixed(1)}%
-        </b>
+          ${
+            s.profit>=0
+            ?'+'
+            :''
+          }
+          ${s.profit.toLocaleString()}円
+        </strong>
+
       </div>
-
-    </div>
-
-    <div class="profit">
-
-      <span>
-        収支
-      </span>
-
-      <strong class="${
-        s.profit>=0
-        ?'green'
-        :'red'
-      }">
-        ${
-          s.profit>=0
-          ?'+'
-          :''
-        }
-        ${s.profit.toLocaleString()}円
-      </strong>
-
-    </div>
     `;
 
   renderLearningStats(rs);
@@ -5198,7 +4986,8 @@ function renderStats(){
 
 
 /* ========================================
-   履歴表示
+   的中・不的中履歴
+   ③ 新レイアウト
 ======================================== */
 
 function renderHistory(rs){
@@ -5210,14 +4999,14 @@ function renderHistory(rs){
     return;
   }
 
-  let done=
+  const periodDone=
     rs.filter(
       x=>x.done
     );
 
   const venues=[
     ...new Set(
-      done.map(
+      periodDone.map(
         x=>x.venue
       )
     )
@@ -5230,17 +5019,37 @@ function renderHistory(rs){
       )
   );
 
+  let venueDone=
+    periodDone;
+
   if(
     historyVenue!=='all'
   ){
 
-    done=
-      done.filter(
+    venueDone=
+      periodDone.filter(
         x=>
           x.venue===
           historyVenue
       );
   }
+
+  const allCount=
+    venueDone.length;
+
+  const hitCount=
+    venueDone.filter(
+      x=>x.hit
+    ).length;
+
+  const missCount=
+    venueDone.filter(
+      x=>!x.hit
+    ).length;
+
+  let done=[
+    ...venueDone
+  ];
 
   if(
     historyResult==='hit'
@@ -5282,205 +5091,182 @@ function renderHistory(rs){
 
   root.innerHTML=
     `
-    <div class="venue-tabs">
+      <div class="venue-tabs">
 
-      <button
-        class="venue-chip ${
-          historyVenue==='all'
-          ?'active'
-          :''
-        }"
-        data-history-venue="all"
-      >
-        全会場
-      </button>
+        <button
+          class="venue-chip ${
+            historyVenue==='all'
+            ?'active'
+            :''
+          }"
+          data-history-venue="all"
+        >
+          全会場
+        </button>
+
+        ${
+          venues.map(
+            v=>`
+              <button
+                class="venue-chip ${
+                  historyVenue===v
+                  ?'active'
+                  :''
+                }"
+                data-history-venue="${v}"
+              >
+                ${v}
+              </button>
+            `
+          )
+          .join('')
+        }
+
+      </div>
+
+      <div class="result-tabs">
+
+        <button
+          class="result-chip all ${
+            historyResult==='all'
+            ?'active'
+            :''
+          }"
+          data-history-result="all"
+        >
+          すべて ${allCount}R
+        </button>
+
+        <button
+          class="result-chip hit-only ${
+            historyResult==='hit'
+            ?'active'
+            :''
+          }"
+          data-history-result="hit"
+        >
+          的中 ${hitCount}R
+        </button>
+
+        <button
+          class="result-chip miss-only ${
+            historyResult==='miss'
+            ?'active'
+            :''
+          }"
+          data-history-result="miss"
+        >
+          不的中 ${missCount}R
+        </button>
+
+      </div>
+
+      <div class="history-caption">
+
+        <span>
+          表示 ${done.length}R
+        </span>
+
+        <span>
+          ← 左右にスクロールできます →
+        </span>
+
+      </div>
 
       ${
-        venues.map(
-          v=>`
-            <button
-              class="venue-chip ${
-                historyVenue===v
-                ?'active'
-                :''
-              }"
-              data-history-venue="${v}"
-            >
-              ${v}
-            </button>
-          `
-        )
-        .join('')
-      }
+        done.length
+        ?`
+          <div class="history-scroll">
 
-    </div>
+            <table class="history-table">
 
-    <div class="result-tabs">
+              <thead>
 
-      <button
-        class="result-chip all ${
-          historyResult==='all'
-          ?'active'
-          :''
-        }"
-        data-history-result="all"
-      >
-        すべて
-      </button>
+                <tr>
+                  <th>日付</th>
+                  <th>会場</th>
+                  <th>R</th>
+                  <th>結果</th>
+                  <th>順番</th>
+                  <th>オッズ</th>
+                  <th>接近度</th>
+                </tr>
 
-      <button
-        class="result-chip hit-only ${
-          historyResult==='hit'
-          ?'active'
-          :''
-        }"
-        data-history-result="hit"
-      >
-        的中
-      </button>
+              </thead>
 
-      <button
-        class="result-chip miss-only ${
-          historyResult==='miss'
-          ?'active'
-          :''
-        }"
-        data-history-result="miss"
-      >
-        不的中
-      </button>
+              <tbody>
 
-    </div>
+                ${
+                  done.map(
+                    x=>{
 
-    <div class="history-caption">
-      <span>
-        ${done.length}件
-      </span>
+                      const p=
+                        x.proximity;
 
-      <span>
-        横にスクロールできます
-      </span>
-    </div>
+                      return`
+                        <tr>
 
-    ${
-      done.length
-      ?`
-        <div class="history-scroll">
+                          <td>
+                            ${x.date}
+                          </td>
 
-          <table class="history-table">
+                          <td>
+                            ${x.venue}
+                          </td>
 
-            <thead>
-              <tr>
-                <th>日付</th>
-                <th>会場</th>
-                <th>R</th>
-                <th>結果</th>
-                <th>判定</th>
-                <th>接近度</th>
-                <th>最接近買い目</th>
-                <th>払戻</th>
-                <th>収支</th>
-              </tr>
-            </thead>
+                          <td>
+                            ${x.race}R
+                          </td>
 
-            <tbody>
-
-              ${
-                done.map(
-                  x=>{
-
-                    const p=
-                      x.proximity;
-
-                    return`
-                      <tr>
-
-                        <td>
-                          ${x.date}
-                        </td>
-
-                        <td>
-                          ${x.venue}
-                        </td>
-
-                        <td>
-                          ${x.race}R
-                        </td>
-
-                        <td class="odds">
-                          ${x.result||'-'}
-                        </td>
-
-                        <td class="${
-                          x.hit
-                          ?'hit'
-                          :'miss'
-                        }">
-                          ${
+                          <td class="${
                             x.hit
-                            ?'的中'
-                            :'不的中'
-                          }
-                        </td>
+                            ?'hit'
+                            :'miss'
+                          }">
+                            ${
+                              x.hit
+                              ?'的中'
+                              :'不的中'
+                            }
+                          </td>
 
-                        <td class="proximity ${
-                          proximityClass(p)
-                        }">
-                          ${
-                            p
-                            ?`${p.label} ${p.score}点`
-                            :'-'
-                          }
-                        </td>
+                          <td>
+                            ${resultOrderText(x)}
+                          </td>
 
-                        <td>
-                          ${
-                            p?.bestCombo||
-                            '-'
-                          }
-                          ${
-                            p?.bestGroup
-                            ?` (${groupLabel(p.bestGroup)})`
-                            :''
-                          }
-                        </td>
+                          <td class="odds">
+                            ${resultOddsText(x)}
+                          </td>
 
-                        <td>
-                          ${num(x.returnAmount).toLocaleString()}円
-                        </td>
+                          <td class="proximity ${
+                            proximityClass(p)
+                          }">
+                            ${
+                              p
+                              ?`${p.label} ${p.score}点`
+                              :'-'
+                            }
+                          </td>
 
-                        <td class="${
-                          num(x.profit)>=0
-                          ?'hit'
-                          :'miss'
-                        }">
-                          ${
-                            num(x.profit)>=0
-                            ?'+'
-                            :''
-                          }
-                          ${num(x.profit).toLocaleString()}円
-                        </td>
+                        </tr>
+                      `;
+                    }
+                  )
+                  .join('')
+                }
 
-                      </tr>
-                    `;
-                  }
-                )
-                .join('')
-              }
+              </tbody>
 
-            </tbody>
+            </table>
 
-          </table>
-
-        </div>
-      `
-      :`
-        <div class="empty">
-          条件に該当する履歴はありません。
-        </div>
-      `
-    }
+          </div>
+        `
+        :`
+          <div class="empty">
+            条件に該当する履歴はありません。
+          </div>
+        `
+      }
     `;
 
 
@@ -5578,9 +5364,9 @@ function renderVenue(rs){
 
     root.innerHTML=
       `
-      <div class="empty">
-        会場別成績はまだありません。
-      </div>
+        <div class="empty">
+          会場別成績はまだありません。
+        </div>
       `;
 
     return;
@@ -5588,53 +5374,51 @@ function renderVenue(rs){
 
   root.innerHTML=
     `
-    <div class="venue-row">
-      <b>会場</b>
-      <b>R</b>
-      <b>的中</b>
-      <b>的中率</b>
-      <b>回収率</b>
-    </div>
+      <div class="venue-row">
+        <b>会場</b>
+        <b>R</b>
+        <b>的中</b>
+        <b>的中率</b>
+        <b>回収率</b>
+      </div>
 
-    ${
-      rows.map(
-        x=>`
-          <div class="venue-row">
+      ${
+        rows.map(
+          x=>`
+            <div class="venue-row">
 
-            <span>
-              ${x.venue}
-            </span>
+              <span>
+                ${x.venue}
+              </span>
 
-            <span>
-              ${x.count}
-            </span>
+              <span>
+                ${x.count}
+              </span>
 
-            <span>
-              ${x.hits}
-            </span>
+              <span>
+                ${x.hits}
+              </span>
 
-            <span>
-              ${x.hitRate.toFixed(1)}%
-            </span>
+              <span>
+                ${x.hitRate.toFixed(1)}%
+              </span>
 
-            <span class="${
-              x.roi>=100
-              ?'green'
-              :'red'
-            }">
-              ${x.roi.toFixed(1)}%
-            </span>
+              <span class="${
+                x.roi>=100
+                ?'green'
+                :'red'
+              }">
+                ${x.roi.toFixed(1)}%
+              </span>
 
-          </div>
-        `
-      )
-      .join('')
-    }
+            </div>
+          `
+        )
+        .join('')
+      }
     `;
 }
-
-
-/* ========================================
+  /* ========================================
    成績画面
 ======================================== */
 
@@ -5642,6 +5426,10 @@ function showStats(){
 
   const sec=
     $('statsSection');
+
+  if(!sec){
+    return;
+  }
 
   sec.style.display=
     'block';
@@ -5656,7 +5444,7 @@ function showStats(){
 
 
 /* ========================================
-   ボタン操作
+   期間切り替え
 ======================================== */
 
 document
@@ -5688,14 +5476,27 @@ document
         );
 
         period=
-          btn.dataset.period;
+          btn.dataset
+          .period;
 
-        $('rangeBox')
-        .classList
-        .toggle(
-          'show',
-          period==='custom'
-        );
+        const rangeBox=
+          $('rangeBox');
+
+        if(rangeBox){
+
+          rangeBox
+          .classList
+          .toggle(
+            'show',
+            period==='custom'
+          );
+        }
+
+        /*
+          期間を変更した時は
+          的中・不的中一覧も
+          同じ期間で自動更新
+        */
 
         renderStats();
       }
@@ -5710,6 +5511,7 @@ $('fromDate')
   renderStats
 );
 
+
 $('toDate')
 ?.addEventListener(
   'change',
@@ -5717,124 +5519,295 @@ $('toDate')
 );
 
 
-$('statsOpen').onclick=
-  showStats;
+/* ========================================
+   AI成績ボタン
+======================================== */
+
+if(
+  $('statsOpen')
+){
+
+  $('statsOpen').onclick=
+    showStats;
+}
 
 
-$('historyOpen').onclick=
-  ()=>{
+/* ========================================
+   的中・不的中を開く
+======================================== */
 
-    showStats();
+if(
+  $('historyOpen')
+){
 
-    $('historyWrap')
-    .style.display=
-      'block';
+  $('historyOpen').onclick=
+    ()=>{
 
-    $('historyToggle')
-    .textContent=
-      '一覧を閉じる';
+      showStats();
 
-    setTimeout(
-      ()=>{
+      const w=
+        $('historyWrap');
 
-        $('historyWrap')
-        .scrollIntoView({
-          behavior:'smooth',
-          block:'start'
-        });
+      if(w){
 
-      },
-      250
-    );
-  };
+        w.style.display=
+          'block';
+      }
 
+      const btn=
+        $('historyToggle');
 
-$('venueOpen').onclick=
-  ()=>{
+      if(btn){
 
-    showStats();
+        btn.textContent=
+          '一覧を閉じる';
+      }
 
-    $('venueWrap')
-    .style.display=
-      'block';
+      setTimeout(
+        ()=>{
 
-    $('venueToggle')
-    .textContent=
-      '会場別成績を閉じる';
+          w?.scrollIntoView({
+            behavior:'smooth',
+            block:'start'
+          });
 
-    setTimeout(
-      ()=>{
-
-        $('venueWrap')
-        .scrollIntoView({
-          behavior:'smooth',
-          block:'start'
-        });
-
-      },
-      250
-    );
-  };
+        },
+        250
+      );
+    };
+}
 
 
-$('historyToggle').onclick=
-  ()=>{
+/* ========================================
+   会場別成績を開く
+======================================== */
 
-    const w=
-      $('historyWrap');
+if(
+  $('venueOpen')
+){
 
-    const open=
-      w.style.display===
-      'block';
+  $('venueOpen').onclick=
+    ()=>{
 
-    w.style.display=
-      open
-      ?'none'
-      :'block';
+      showStats();
 
-    $('historyToggle')
-    .textContent=
-      open
-      ?'一覧を表示'
-      :'一覧を閉じる';
-  };
+      const w=
+        $('venueWrap');
 
+      if(w){
 
-$('venueToggle').onclick=
-  ()=>{
+        w.style.display=
+          'block';
+      }
 
-    const w=
-      $('venueWrap');
+      const btn=
+        $('venueToggle');
 
-    const open=
-      w.style.display===
-      'block';
+      if(btn){
 
-    w.style.display=
-      open
-      ?'none'
-      :'block';
+        btn.textContent=
+          '会場別成績を閉じる';
+      }
 
-    $('venueToggle')
-    .textContent=
-      open
-      ?'会場別成績を表示'
-      :'会場別成績を閉じる';
-  };
+      setTimeout(
+        ()=>{
 
+          w?.scrollIntoView({
+            behavior:'smooth',
+            block:'start'
+          });
 
-$('qStats').onclick=
-  showStats;
+        },
+        250
+      );
+    };
+}
 
 
-$('qTop').onclick=
-  ()=>{
+/* ========================================
+   的中・不的中 開閉
+======================================== */
 
-    window.scrollTo({
-      top:0,
-      behavior:'smooth'
-    });
-  };
+if(
+  $('historyToggle')
+){
+
+  $('historyToggle').onclick=
+    ()=>{
+
+      const w=
+        $('historyWrap');
+
+      if(!w){
+        return;
+      }
+
+      const open=
+        w.style.display===
+        'block';
+
+      w.style.display=
+        open
+        ?'none'
+        :'block';
+
+      $('historyToggle')
+      .textContent=
+        open
+        ?'一覧を表示'
+        :'一覧を閉じる';
+    };
+}
+
+
+/* ========================================
+   会場別成績 開閉
+======================================== */
+
+if(
+  $('venueToggle')
+){
+
+  $('venueToggle').onclick=
+    ()=>{
+
+      const w=
+        $('venueWrap');
+
+      if(!w){
+        return;
+      }
+
+      const open=
+        w.style.display===
+        'block';
+
+      w.style.display=
+        open
+        ?'none'
+        :'block';
+
+      $('venueToggle')
+      .textContent=
+        open
+        ?'会場別成績を表示'
+        :'会場別成績を閉じる';
+    };
+}
+
+
+/* ========================================
+   ① 会場別学習進捗 開閉
+   初期状態は閉じる
+======================================== */
+
+if(
+  $('learningProgressToggle')
+){
+
+  $('learningProgressToggle').onclick=
+    ()=>{
+
+      const w=
+        $('learningProgressWrap');
+
+      if(!w){
+        return;
+      }
+
+      const open=
+        w.style.display===
+        'block';
+
+      w.style.display=
+        open
+        ?'none'
+        :'block';
+
+      $('learningProgressToggle')
+      .textContent=
+        open
+        ?'会場別 学習進捗を表示'
+        :'会場別 学習進捗を閉じる';
+    };
+}
+
+
+/* ========================================
+   クイックボタン
+======================================== */
+
+if(
+  $('qStats')
+){
+
+  $('qStats').onclick=
+    showStats;
+}
+
+
+if(
+  $('qTop')
+){
+
+  $('qTop').onclick=
+    ()=>{
+
+      window.scrollTo({
+        top:0,
+        behavior:'smooth'
+      });
+    };
+}
+
+
+/* ========================================
+   起動時設定
+======================================== */
+
+/*
+  ① 会場別学習進捗は
+  最初は閉じておく
+*/
+
+if(
+  $('learningProgressWrap')
+){
+
+  $('learningProgressWrap')
+  .style.display=
+    'none';
+}
+
+
+/*
+  的中・不的中一覧も
+  最初は閉じておく
+*/
+
+if(
+  $('historyWrap')
+){
+
+  $('historyWrap')
+  .style.display=
+    'none';
+}
+
+
+/*
+  会場別成績も
+  最初は閉じておく
+*/
+
+if(
+  $('venueWrap')
+){
+
+  $('venueWrap')
+  .style.display=
+    'none';
+}
 
 
 /* ========================================
@@ -5848,7 +5821,9 @@ renderStats();
 autoRefresh(true);
 
 
-/* 1分ごとに自動更新 */
+/* ========================================
+   1分ごとに自動更新
+======================================== */
 
 setInterval(
   ()=>{
@@ -5865,11 +5840,17 @@ setInterval(
 );
 
 
-/* 画面に戻った時も更新 */
+/* ========================================
+   画面に戻った時も更新
+======================================== */
 
 window.addEventListener(
   'focus',
-  ()=>autoRefresh(true)
+  ()=>{
+
+    autoRefresh(true);
+
+  }
 );
 
 
@@ -5890,3 +5871,4 @@ document.addEventListener(
 
 </body>
 </html>
+  
