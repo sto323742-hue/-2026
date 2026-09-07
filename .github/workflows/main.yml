@@ -47,7 +47,6 @@ jobs:
       # 4. BOATRACE AI LINE
       # =========================================================
       - name: BOATRACE AI LINE
-
         run: |
           cat > line_notify.py <<'PY'
 
@@ -519,8 +518,7 @@ jobs:
                       return False
 
               return True
-
-          def weather_info(race):
+                        def weather_info(race):
 
               preview = race.get(
                   "preview",
@@ -672,7 +670,8 @@ jobs:
                       (dict, list)
                   ):
                       continue
-                                        if isinstance(
+
+                  if isinstance(
                       sub,
                       dict
                   ):
@@ -1111,7 +1110,8 @@ jobs:
                   1,
                   7
               ):
-                                p = racers.get(
+
+                  p = racers.get(
                       str(boat),
                       {}
                   )
@@ -1218,8 +1218,7 @@ jobs:
                       })
 
               return changes
-
-          def scenario_forecast(
+                        def scenario_forecast(
               race,
               boats
           ):
@@ -1478,14 +1477,10 @@ jobs:
                   "grade": grade,
                   "weather": weather,
                   "scenario": scenario,
-                  "exhibition_rank":
-                      ex_rank,
-                  "start_rank":
-                      st_rank,
-                  "course_changes":
-                      changes,
-                  "reasons":
-                      reasons,
+                  "exhibition_rank": ex_rank,
+                  "start_rank": st_rank,
+                  "course_changes": changes,
+                  "reasons": reasons,
               }
 
           def all_combos():
@@ -1548,9 +1543,7 @@ jobs:
                   raw *= (
                       normalized
                       **
-                      order_weight[
-                          index
-                      ]
+                      order_weight[index]
                   )
 
               scenario = analysis.get(
@@ -1566,9 +1559,7 @@ jobs:
               scenario_map = {
                   x["boat"]:
                       num(
-                          x[
-                              "probability"
-                          ]
+                          x["probability"]
                       )
                   for x in candidates
               }
@@ -1708,8 +1699,8 @@ jobs:
 
               main_pool.sort(
                   key=lambda x: (
-                      x["probability"],
-                                            +
+                      x["probability"]
+                      +
                       x["ev"] * 0.002
                   ),
                   reverse=True
@@ -1802,8 +1793,7 @@ jobs:
                           len(hole_pool),
                   },
               }
-
-          def allocate_tickets(
+                        def allocate_tickets(
               ticket_set,
               budget=1000
           ):
@@ -1847,11 +1837,7 @@ jobs:
                   for row in rows:
 
                       item = dict(row)
-
-                      item[
-                          "group"
-                      ] = group_name
-
+                      item["group"] = group_name
                       tickets.append(item)
 
               if len(tickets) != 10:
@@ -1879,13 +1865,9 @@ jobs:
                   )
 
                   if t["group"] == "main":
-
-                      w = (
-                          p * 1.35
-                      )
+                      w = p * 1.35
 
                   elif t["group"] == "cover":
-
                       w = (
                           p * 1.10
                           +
@@ -1900,7 +1882,6 @@ jobs:
                       )
 
                   else:
-
                       w = (
                           p * 0.95
                           +
@@ -2218,23 +2199,17 @@ jobs:
               for t in rows:
 
                   combo = t["combo"]
-
-                  odds = num(
-                      t["odds"]
-                  )
-
+                  odds = num(t["odds"])
                   rank = int_num(
                       t.get(
                           "popularity"
                       )
                   )
-
                   money = int_num(
                       t.get(
                           "money"
                       )
                   )
-
                   prob = (
                       num(
                           t.get(
@@ -2483,10 +2458,8 @@ jobs:
                   results.append({
                       "analysis":
                           analysis,
-
                       "ticket_set":
                           ticket_set,
-
                       "tickets":
                           tickets,
                   })
@@ -2498,7 +2471,6 @@ jobs:
                       ][
                           "rating"
                       ],
-
                       int_num(
                           x[
                               "analysis"
@@ -2508,7 +2480,6 @@ jobs:
                               "stadium_number"
                           )
                       ),
-
                       int_num(
                           x[
                               "analysis"
@@ -2667,7 +2638,6 @@ jobs:
                   )
 
                   sent[key] = phash
-
                   new_count += 1
 
                   save_state(
@@ -2704,49 +2674,36 @@ jobs:
 
       # =========================================================
       # 5. Python実行
-      # ★ LINE Secretsをここで渡す
       # =========================================================
-
       - name: Run BOATRACE AI LINE
-
         env:
           LINE_CHANNEL_ACCESS_TOKEN: ${{ secrets.BOATAI }}
           LINE_USER_ID: ${{ secrets.LINE_USER_ID }}
-
         run: |
           python line_notify.py
 
       # =========================================================
       # 6. 通知済み状態をGitHubへ保存
       # =========================================================
-
       - name: Save notification state
-
         run: |
           if [ -f boatrace_line_state.json ]; then
 
             git config user.name "github-actions[bot]"
-
             git config user.email \
               "41898282+github-actions[bot]@users.noreply.github.com"
 
             git add boatrace_line_state.json
 
             if git diff --cached --quiet; then
-
               echo "通知状態に変更なし"
-
             else
-
               git commit \
                 -m "Update BOATRACE LINE notification state"
 
               git push
-
             fi
 
           else
-
             echo "state file not found"
-
           fi
