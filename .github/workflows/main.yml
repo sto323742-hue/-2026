@@ -49,6 +49,7 @@ jobs:
           ODDS_BASE = "https://lamrongol.github.io/BoatraceOdds/v3"
           MODEL_NAME = "gold-v4-stable"
           STATE_FILE = Path("boatrace_line_state.json")
+          LOCAL_ODDS_FILE = Path("odds_today.json")
 
           LINE_TOKEN = os.getenv("LINE_CHANNEL_ACCESS_TOKEN", "").strip()
           LINE_USER_ID = os.getenv("LINE_USER_ID", "").strip()
@@ -80,7 +81,7 @@ jobs:
                   r = requests.get(
                       f"{url}?t={int(time.time())}",
                       timeout=25,
-                      headers={"User-Agent": "BOATRACE-AI-LINE/4.0", "Cache-Control": "no-cache"},
+                      headers={"User-Agent": "BOATRACE-AI-LINE/4.1", "Cache-Control": "no-cache"},
                   )
                   print("GET", url, r.status_code)
                   if r.status_code == 200:
@@ -98,6 +99,17 @@ jobs:
               return data
 
           def fetch_odds():
+              # サイト本体が利用しているリポジトリ内の odds_today.json を最優先で使う
+              if LOCAL_ODDS_FILE.exists():
+                  try:
+                      data = json.loads(LOCAL_ODDS_FILE.read_text(encoding="utf-8"))
+                      if isinstance(data, (dict, list)):
+                          print("ODDS SOURCE local odds_today.json")
+                          return data, "odds_today.json"
+                  except Exception as e:
+                      print("LOCAL ODDS ERROR", repr(e))
+
+              # ローカルファイルが読めない場合だけ外部URLへフォールバック
               now = now_jst()
               urls = [
                   ("日付JSON", f"{ODDS_BASE}/{now:%Y}/{now:%Y%m%d}.json"),
@@ -228,6 +240,21 @@ jobs:
               }
 
           def find_odds_node(obj, stadium, race_no):
+              # odds_today.json の現在の構造を直接読む
+              if isinstance(obj, dict):
+                  stadiums = obj.get("stadiums")
+                  if isinstance(stadiums, dict):
+                      stadium_node = stadiums.get(str(stadium), stadiums.get(stadium))
+                      if isinstance(stadium_node, dict):
+                          races = stadium_node.get("races", {})
+                          if isinstance(races, dict):
+                              race_node = races.get(str(race_no), races.get(race_no))
+                              if isinstance(race_node, dict):
+                                  trifecta = race_node.get("trifecta")
+                                  if isinstance(trifecta, (dict, list)):
+                                      return trifecta
+
+              # 旧形式・外部データ形式にも対応
               if isinstance(obj, list):
                   for v in obj:
                       found = find_odds_node(v, stadium, race_no)
