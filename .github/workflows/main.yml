@@ -26,7 +26,6 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-
       # =========================================================
       # 2. Python
       # =========================================================
@@ -34,7 +33,6 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-
 
       # =========================================================
       # 3. 必要ライブラリ
@@ -44,7 +42,6 @@ jobs:
           python -m pip install --upgrade pip
           pip install requests playwright
           python -m playwright install --with-deps chromium
-
 
       # =========================================================
       # 4. BOATRACE AI LINE
@@ -70,29 +67,24 @@ jobs:
           from pathlib import Path
           from datetime import datetime, timedelta, timezone
 
-
           # =====================================================
           # 基本設定
           # =====================================================
 
           JST = timezone(timedelta(hours=9))
 
-
           API_BASE = (
               "https://boatraceopenapi.github.io/api/v1"
           )
-
 
           ODDS_BASE = (
               "https://lamrongol.github.io/"
               "BoatraceOdds/v3"
           )
 
-
           MODEL_NAME = (
               "gold-v3-odds-band-15-80"
           )
-
 
           LINE_CHANNEL_ACCESS_TOKEN = (
               os.getenv(
@@ -101,7 +93,6 @@ jobs:
               ).strip()
           )
 
-
           LINE_USER_ID = (
               os.getenv(
                   "LINE_USER_ID",
@@ -109,18 +100,15 @@ jobs:
               ).strip()
           )
 
-
           STATE_FILE = Path(
               "boatrace_line_state.json"
           )
-
 
           # =====================================================
           # 会場名
           # =====================================================
 
           STADIUMS = {
-
               1: "桐生",
               2: "戸田",
               3: "江戸川",
@@ -145,93 +133,69 @@ jobs:
               22: "福岡",
               23: "唐津",
               24: "大村",
-
           }
 
-
           WEATHER_NAMES = {
-
               1: "晴",
               2: "曇",
               3: "雨",
               4: "雪",
               5: "霧",
-
           }
-
 
           # =====================================================
           # 共通関数
           # =====================================================
 
           def now_jst():
-
               return datetime.now(JST)
 
-
           def today_jst():
-
               return now_jst().strftime(
                   "%Y-%m-%d"
               )
 
-
           def today_compact():
-
               return now_jst().strftime(
                   "%Y%m%d"
               )
 
-
           def today_year():
-
               return now_jst().strftime(
                   "%Y"
               )
-
 
           def num(
               value,
               default=0.0
           ):
-
               try:
-
                   return float(value)
-
               except (
                   TypeError,
                   ValueError
               ):
-
                   return float(default)
-
 
           def int_num(
               value,
               default=0
           ):
-
               try:
-
                   return int(
                       float(value)
                   )
-
               except (
                   TypeError,
                   ValueError
               ):
-
                   return int(default)
-
 
           def clamp(
               value,
               low,
               high
           ):
-
               return max(
                   low,
                   min(
@@ -240,13 +204,11 @@ jobs:
                   )
               )
 
-
           def safe_get(
               obj,
               *keys,
               default=None
           ):
-
               cur = obj
 
               for key in keys:
@@ -255,17 +217,14 @@ jobs:
                       cur,
                       dict
                   ):
-
                       return default
 
                   if key not in cur:
-
                       return default
 
                   cur = cur[key]
 
               return cur
-
 
           # =====================================================
           # URL
@@ -279,7 +238,6 @@ jobs:
                   f"{today_compact()}.json"
               )
 
-
           def odds_date_url():
 
               return (
@@ -288,13 +246,11 @@ jobs:
                   f"{today_compact()}.json"
               )
 
-
           def odds_today_url():
 
               return (
                   f"{ODDS_BASE}/today.json"
               )
-
 
           # =====================================================
           # HTTP GET
@@ -316,28 +272,20 @@ jobs:
 
                   "Cache-Control":
                       "no-cache",
-
               }
-
 
               final_url = (
                   f"{url}"
                   f"?t={int(time.time())}"
               )
 
-
               try:
 
                   response = requests.get(
-
                       final_url,
-
                       headers=headers,
-
                       timeout=timeout
-
                   )
-
 
                   print(
                       "GET",
@@ -345,18 +293,14 @@ jobs:
                       response.status_code
                   )
 
-
                   if (
                       response.status_code
                       !=
                       200
                   ):
-
                       return None
 
-
                   return response.json()
-
 
               except Exception as e:
 
@@ -368,7 +312,6 @@ jobs:
 
                   return None
 
-
           # =====================================================
           # BOATRACE当日データ取得
           # =====================================================
@@ -378,7 +321,6 @@ jobs:
               data = get_json(
                   race_data_url()
               )
-
 
               if not isinstance(
                   data,
@@ -390,17 +332,12 @@ jobs:
                       "取得できませんでした"
                   )
 
-
               return data
-
 
           # =====================================================
           # 3連単オッズ取得
-          #
           # ① 日付JSON
           # ② today.json
-          #
-          # Web版と同じフォールバック方式
           # =====================================================
 
           def fetch_odds_data():
@@ -416,9 +353,7 @@ jobs:
                       "today.json",
                       odds_today_url()
                   ),
-
               ]
-
 
               for (
                   source_name,
@@ -431,11 +366,9 @@ jobs:
                       url
                   )
 
-
                   data = get_json(
                       url
                   )
-
 
                   if isinstance(
                       data,
@@ -447,26 +380,21 @@ jobs:
                           source_name
                       )
 
-
                       return (
                           data,
                           source_name
                       )
-
 
               print(
                   "ODDS ERROR:"
                   " 3連単オッズ取得失敗"
               )
 
-
               return (
                   None,
                   "未取得"
               )
-
-
-          # =====================================================
+                        # =====================================================
           # 当日レースを配列化
           # =====================================================
 
@@ -475,7 +403,6 @@ jobs:
           ):
 
               output = []
-
 
               programs = (
                   data.get(
@@ -489,20 +416,16 @@ jobs:
                   else {}
               )
 
-
               stadiums = programs.get(
                   "stadiums",
                   {}
               )
 
-
               if not isinstance(
                   stadiums,
                   dict
               ):
-
                   return output
-
 
               for (
                   stadium_key,
@@ -513,26 +436,21 @@ jobs:
                       stadium_data,
                       dict
                   ):
-
                       continue
-
 
                   races = stadium_data.get(
                       "races",
                       {}
                   )
 
-
                   if not isinstance(
                       races,
                       dict
                   ):
-
                       continue
 
-
                   for (
-                      race_key,
+                      race_key_value,
                       race
                   ) in races.items():
 
@@ -540,44 +458,33 @@ jobs:
                           race,
                           dict
                       ):
-
                           continue
 
-
                       item = dict(race)
-
 
                       item[
                           "stadium_number"
                       ] = int_num(
-
                           race.get(
                               "stadium_number",
                               stadium_key
                           )
-
                       )
-
 
                       item[
                           "race_number"
                       ] = int_num(
-
                           race.get(
                               "race_number",
-                              race_key
+                              race_key_value
                           )
-
                       )
-
 
                       output.append(
                           item
                       )
 
-
               return output
-
 
           # =====================================================
           # レースキー
@@ -593,13 +500,11 @@ jobs:
                   today_jst()
               )
 
-
               stadium = int_num(
                   race.get(
                       "stadium_number"
                   )
               )
-
 
               race_no = int_num(
                   race.get(
@@ -607,13 +512,11 @@ jobs:
                   )
               )
 
-
               return (
                   f"{date}_"
                   f"{stadium}_"
                   f"{race_no}"
               )
-
 
           # =====================================================
           # 締切時刻
@@ -630,23 +533,18 @@ jobs:
                   )
               )
 
-
               match = re.search(
                   r"(\d{2}):(\d{2})",
                   value
               )
 
-
               if not match:
-
                   return "--:--"
-
 
               return (
                   f"{match.group(1)}:"
                   f"{match.group(2)}"
               )
-
 
           def close_datetime(
               race
@@ -659,24 +557,15 @@ jobs:
                   )
               ).strip()
 
-
               if not value:
-
                   return None
 
-
               formats = [
-
                   "%Y-%m-%d %H:%M:%S",
-
                   "%Y-%m-%d %H:%M",
-
                   "%Y/%m/%d %H:%M:%S",
-
                   "%Y/%m/%d %H:%M",
-
               ]
-
 
               for fmt in formats:
 
@@ -687,19 +576,14 @@ jobs:
                           fmt
                       )
 
-
                       return dt.replace(
                           tzinfo=JST
                       )
 
-
                   except ValueError:
-
                       pass
 
-
               return None
-
 
           def upcoming(
               race
@@ -709,17 +593,13 @@ jobs:
                   race
               )
 
-
               if dt is None:
-
                   return True
-
 
               return (
                   dt >
                   now_jst()
               )
-
 
           def remaining_text(
               race
@@ -729,11 +609,8 @@ jobs:
                   race
               )
 
-
               if dt is None:
-
                   return "--"
-
 
               seconds = int(
                   (
@@ -742,21 +619,16 @@ jobs:
                   ).total_seconds()
               )
 
-
               if seconds <= 0:
-
                   return "締切"
-
 
               hours = (
                   seconds // 3600
               )
 
-
               minutes = (
                   seconds % 3600
               ) // 60
-
 
               if hours > 0:
 
@@ -765,11 +637,9 @@ jobs:
                       f"{minutes}分"
                   )
 
-
               return (
                   f"{minutes}分"
               )
-
 
           # =====================================================
           # 展示データ確認
@@ -784,28 +654,22 @@ jobs:
                   {}
               )
 
-
               if not isinstance(
                   preview,
                   dict
               ):
-
                   return False
-
 
               racers = preview.get(
                   "racers",
                   {}
               )
 
-
               if not isinstance(
                   racers,
                   dict
               ):
-
                   return False
-
 
               for boat in range(
                   1,
@@ -816,14 +680,11 @@ jobs:
                       str(boat)
                   )
 
-
                   if not isinstance(
                       p,
                       dict
                   ):
-
                       return False
-
 
                   ex = num(
                       p.get(
@@ -832,7 +693,6 @@ jobs:
                       -1
                   )
 
-
                   st = num(
                       p.get(
                           "start_timing"
@@ -840,21 +700,15 @@ jobs:
                       999
                   )
 
-
                   if ex <= 0:
-
                       return False
-
 
                   if not math.isfinite(
                       st
                   ):
-
                       return False
 
-
               return True
-
 
           # =====================================================
           # 水面情報
@@ -868,7 +722,6 @@ jobs:
                   "preview",
                   {}
               )
-
 
               return {
 
@@ -913,14 +766,8 @@ jobs:
                               "water_temperature"
                           )
                       ),
-
               }
-
-
-          # =====================================================
-          # 次の②へ続きます
-          # =====================================================
-                    # =====================================================
+                        # =====================================================
           # 3連単オッズ探索
           # =====================================================
 
@@ -946,20 +793,15 @@ jobs:
                       )
 
                       if found is not None:
-
                           return found
 
-
                   return None
-
 
               if not isinstance(
                   obj,
                   dict
               ):
-
                   return None
-
 
               s = int_num(
                   obj.get(
@@ -977,7 +819,6 @@ jobs:
                   )
               )
 
-
               r = int_num(
                   obj.get(
                       "race_number",
@@ -991,7 +832,6 @@ jobs:
                   )
               )
 
-
               if (
                   s == stadium
                   and
@@ -1004,14 +844,11 @@ jobs:
                       ),
                       (dict, list)
                   ):
-
                       return obj
-
 
                   odds = obj.get(
                       "odds"
                   )
-
 
                   if (
                       isinstance(
@@ -1026,55 +863,36 @@ jobs:
                           (dict, list)
                       )
                   ):
-
                       return odds
 
-
               stadium_keys = [
-
                   str(stadium),
-
                   f"{stadium:02d}",
-
                   f"{stadium}場",
-
                   f"stadium_{stadium}",
-
               ]
-
 
               race_keys = [
-
                   str(race_no),
-
                   f"{race_no:02d}",
-
                   f"{race_no}R",
-
                   f"race_{race_no}",
-
               ]
-
 
               for sk in stadium_keys:
 
                   if sk not in obj:
-
                       continue
-
 
                   sub = obj.get(
                       sk
                   )
 
-
                   if not isinstance(
                       sub,
                       (dict, list)
                   ):
-
                       continue
-
 
                   if isinstance(
                       sub,
@@ -1084,14 +902,11 @@ jobs:
                       for rk in race_keys:
 
                           if rk not in sub:
-
                               continue
-
 
                           candidate = sub.get(
                               rk
                           )
-
 
                           found = (
                               find_race_odds_node(
@@ -1101,11 +916,8 @@ jobs:
                               )
                           )
 
-
                           if found is not None:
-
                               return found
-
 
                   found = (
                       find_race_odds_node(
@@ -1115,11 +927,8 @@ jobs:
                       )
                   )
 
-
                   if found is not None:
-
                       return found
-
 
               for value in obj.values():
 
@@ -1136,14 +945,10 @@ jobs:
                           )
                       )
 
-
                       if found is not None:
-
                           return found
 
-
               return None
-
 
           # =====================================================
           # 3連単オッズを
@@ -1157,7 +962,6 @@ jobs:
 
               result = {}
 
-
               if isinstance(
                   trifecta,
                   list
@@ -1169,9 +973,7 @@ jobs:
                           item,
                           dict
                       ):
-
                           continue
-
 
                       combo = str(
                           item.get(
@@ -1182,7 +984,6 @@ jobs:
                               )
                           )
                       )
-
 
                       odds = num(
                           item.get(
@@ -1197,7 +998,6 @@ jobs:
                           )
                       )
 
-
                       if (
                           re.fullmatch(
                               r"[1-6]-[1-6]-[1-6]",
@@ -1211,17 +1011,13 @@ jobs:
                               combo
                           ] = odds
 
-
                   return result
-
 
               if not isinstance(
                   trifecta,
                   dict
               ):
-
                   return result
-
 
               for key, value in (
                   trifecta.items()
@@ -1230,7 +1026,6 @@ jobs:
                   combo = str(
                       key
                   )
-
 
                   if re.fullmatch(
                       r"[1-6]-[1-6]-[1-6]",
@@ -1261,16 +1056,13 @@ jobs:
                               value
                           )
 
-
                       if odds > 0:
 
                           result[
                               combo
                           ] = odds
 
-
                       continue
-
 
                   if (
                       str(key).isdigit()
@@ -1286,7 +1078,6 @@ jobs:
                       first = int(
                           key
                       )
-
 
                       for key2, value2 in (
                           value.items()
@@ -1310,14 +1101,11 @@ jobs:
                                   dict
                               )
                           ):
-
                               continue
-
 
                           second = int(
                               key2
                           )
-
 
                           for key3, value3 in (
                               value2.items()
@@ -1328,14 +1116,11 @@ jobs:
                                       key3
                                   ).isdigit()
                               ):
-
                                   continue
-
 
                               third = int(
                                   key3
                               )
-
 
                               if not (
                                   1
@@ -1344,9 +1129,7 @@ jobs:
                                   <=
                                   6
                               ):
-
                                   continue
-
 
                               if len(
                                   {
@@ -1355,9 +1138,7 @@ jobs:
                                       third
                                   }
                               ) != 3:
-
                                   continue
-
 
                               odds = (
 
@@ -1382,9 +1163,7 @@ jobs:
                                   else num(
                                       value3
                                   )
-
                               )
-
 
                               if odds > 0:
 
@@ -1392,9 +1171,7 @@ jobs:
                                       f"{first}-{second}-{third}"
                                   ] = odds
 
-
               return result
-
 
           # =====================================================
           # 指定レースのオッズMAP
@@ -1407,9 +1184,7 @@ jobs:
           ):
 
               if odds_data is None:
-
                   return {}
-
 
               node = (
                   find_race_odds_node(
@@ -1419,26 +1194,21 @@ jobs:
                   )
               )
 
-
               if not isinstance(
                   node,
                   dict
               ):
-
                   return {}
-
 
               trifecta = node.get(
                   "trifecta"
               )
-
 
               if trifecta is None:
 
                   odds = node.get(
                       "odds"
                   )
-
 
                   if isinstance(
                       odds,
@@ -1451,13 +1221,11 @@ jobs:
                           )
                       )
 
-
               return (
                   flatten_trifecta(
                       trifecta
                   )
               )
-
 
           # =====================================================
           # 人気順位
@@ -1468,30 +1236,23 @@ jobs:
           ):
 
               valid = [
-
                   (
                       combo,
                       odds
                   )
-
                   for combo, odds
                   in odds_map.items()
-
                   if num(
                       odds
                   ) > 0
-
               ]
-
 
               valid.sort(
                   key=lambda x:
                       x[1]
               )
 
-
               ranking = {}
-
 
               for index, (
                   combo,
@@ -1505,9 +1266,7 @@ jobs:
                       combo
                   ] = index
 
-
               return ranking
-
 
           # =====================================================
           # 選手・展示スコア
@@ -1523,21 +1282,17 @@ jobs:
                   {}
               )
 
-
               racers = preview.get(
                   "racers",
                   {}
               )
-
 
               p = racers.get(
                   str(boat),
                   {}
               )
 
-
               score = 0.0
-
 
               exhibition = num(
                   p.get(
@@ -1546,14 +1301,12 @@ jobs:
                   99
               )
 
-
               start = num(
                   p.get(
                       "start_timing"
                   ),
                   1
               )
-
 
               course = int_num(
                   p.get(
@@ -1563,29 +1316,22 @@ jobs:
                   boat
               )
 
-
               racer = race.get(
                   "racers",
                   {}
               )
 
-
               racer_data = (
-
                   racer.get(
                       str(boat),
                       {}
                   )
-
                   if isinstance(
                       racer,
                       dict
                   )
-
                   else {}
-
               )
-
 
               win_rate = num(
                   racer_data.get(
@@ -1593,13 +1339,11 @@ jobs:
                   )
               )
 
-
               second_rate = num(
                   racer_data.get(
                       "second_place_rate"
                   )
               )
-
 
               motor_rate = num(
                   racer_data.get(
@@ -1607,56 +1351,45 @@ jobs:
                   )
               )
 
-
               boat_rate = num(
                   racer_data.get(
                       "boat_second_place_rate"
                   )
               )
 
-
               if exhibition < 99:
-
                   score += (
                       10.0 -
                       exhibition
                   ) * 22.0
-
 
               score += (
                   0.25 -
                   start
               ) * 42.0
 
-
               score += (
                   7 -
                   course
               ) * 3.8
 
-
               score += (
                   win_rate * 2.6
               )
-
 
               score += (
                   second_rate * 0.18
               )
 
-
               score += (
                   motor_rate * 0.16
               )
-
 
               score += (
                   boat_rate * 0.08
               )
 
-
               return {
-
                   "boat":
                       boat,
 
@@ -1677,9 +1410,7 @@ jobs:
 
                   "motor_rate":
                       motor_rate,
-
               }
-
 
           # =====================================================
           # 展示順位
@@ -1691,18 +1422,15 @@ jobs:
 
               rows = []
 
-
               preview = race.get(
                   "preview",
                   {}
               )
 
-
               racers = preview.get(
                   "racers",
                   {}
               )
-
 
               for boat in range(
                   1,
@@ -1714,9 +1442,7 @@ jobs:
                       {}
                   )
 
-
                   rows.append({
-
                       "boat":
                           boat,
 
@@ -1727,18 +1453,14 @@ jobs:
                               ),
                               99
                           )
-
                   })
-
 
               rows.sort(
                   key=lambda x:
                       x["time"]
               )
 
-
               return rows
-
 
           # =====================================================
           # ST順位
@@ -1750,18 +1472,15 @@ jobs:
 
               rows = []
 
-
               preview = race.get(
                   "preview",
                   {}
               )
 
-
               racers = preview.get(
                   "racers",
                   {}
               )
-
 
               for boat in range(
                   1,
@@ -1773,9 +1492,7 @@ jobs:
                       {}
                   )
 
-
                   rows.append({
-
                       "boat":
                           boat,
 
@@ -1786,18 +1503,14 @@ jobs:
                               ),
                               9
                           )
-
                   })
-
 
               rows.sort(
                   key=lambda x:
                       x["st"]
               )
 
-
               return rows
-
 
           # =====================================================
           # 進入変化
@@ -1812,15 +1525,12 @@ jobs:
                   {}
               )
 
-
               racers = preview.get(
                   "racers",
                   {}
               )
 
-
               changes = []
-
 
               for boat in range(
                   1,
@@ -1832,7 +1542,6 @@ jobs:
                       {}
                   )
 
-
                   course = int_num(
                       p.get(
                           "course_number",
@@ -1841,22 +1550,17 @@ jobs:
                       boat
                   )
 
-
                   if course != boat:
 
                       changes.append({
-
                           "boat":
                               boat,
 
                           "course":
                               course,
-
                       })
 
-
               return changes
-
 
           # =====================================================
           # 展開予測
@@ -1871,13 +1575,11 @@ jobs:
                   race
               )
 
-
               wind = num(
                   weather.get(
                       "wind_speed"
                   )
               )
-
 
               wave = num(
                   weather.get(
@@ -1885,109 +1587,77 @@ jobs:
                   )
               )
 
-
               candidates = []
 
-
               total_score = sum(
-
                   max(
                       0.1,
                       x["score"]
                   )
-
                   for x in boats
-
               )
 
-
               if total_score <= 0:
-
                   total_score = 1
-
 
               for x in boats:
 
                   boat = x["boat"]
 
-
                   course = x[
                       "course_number"
                   ]
 
-
                   st = x[
                       "start_timing"
                   ]
-
 
                   base = max(
                       0.1,
                       x["score"]
                   )
 
-
                   prob = (
                       base /
                       total_score
                   )
 
-
                   if course == 1:
-
                       tactic = "逃げ"
-
                       prob *= 1.16
-
 
                   elif course in (
                       2,
                       3
                   ):
-
                       tactic = "差し・まくり"
-
                       prob *= 1.05
-
 
                   elif course in (
                       4,
                       5
                   ):
-
                       tactic = "まくり差し"
-
                       prob *= 1.01
 
-
                   else:
-
                       tactic = "展開突き"
-
                       prob *= 0.92
 
-
                   if st <= 0.10:
-
                       prob *= 1.08
 
-
                   if wind >= 5:
-
                       prob *= (
                           1.02
                           if course >= 3
                           else 0.98
                       )
 
-
                   if wave >= 5:
-
                       prob *= 0.98
 
-
                   candidates.append({
-
                       "boat":
                           boat,
 
@@ -1999,25 +1669,17 @@ jobs:
 
                       "probability":
                           prob,
-
                   })
 
-
               total = sum(
-
                   x[
                       "probability"
                   ]
-
                   for x in candidates
-
               )
 
-
               if total <= 0:
-
                   total = 1
-
 
               for x in candidates:
 
@@ -2025,21 +1687,15 @@ jobs:
                       "probability"
                   ] /= total
 
-
               candidates.sort(
-
                   key=lambda x:
                       x[
                           "probability"
                       ],
-
                   reverse=True
-
               )
 
-
               return {
-
                   "top":
                       candidates[0]
                       if candidates
@@ -2047,100 +1703,45 @@ jobs:
 
                   "candidates":
                       candidates,
-
               }
-
-
-          # =====================================================
+                        # =====================================================
           # AI評価
           # =====================================================
 
-          def evaluate_race(
-              race
-          ):
+          def evaluate_race(race):
 
-              if not preview_ready(
-                  race
-              ):
-
+              if not preview_ready(race):
                   return None
 
-
               boats = [
-
-                  score_boat(
-                      race,
-                      boat
-                  )
-
-                  for boat in range(
-                      1,
-                      7
-                  )
-
+                  score_boat(race, boat)
+                  for boat in range(1, 7)
               ]
 
-
               boats.sort(
-
-                  key=lambda x:
-                      x["score"],
-
+                  key=lambda x: x["score"],
                   reverse=True
-
               )
 
-
-              ex_rank = (
-                  exhibition_rank(
-                      race
-                  )
+              ex_rank = exhibition_rank(race)
+              st_rank = start_rank(race)
+              changes = course_changes(race)
+              scenario = scenario_forecast(
+                  race,
+                  boats
               )
-
-
-              st_rank = (
-                  start_rank(
-                      race
-                  )
-              )
-
-
-              changes = (
-                  course_changes(
-                      race
-                  )
-              )
-
-
-              scenario = (
-                  scenario_forecast(
-                      race,
-                      boats
-                  )
-              )
-
-
-              weather = (
-                  weather_info(
-                      race
-                  )
-              )
-
+              weather = weather_info(race)
 
               top = boats[0]
-
-
               second = boats[1]
 
-
               score_gap = (
-                  top["score"] -
+                  top["score"]
+                  -
                   second["score"]
               )
 
-
               rating = 70
-
 
               rating += clamp(
                   score_gap * 0.7,
@@ -2148,84 +1749,53 @@ jobs:
                   10
               )
 
-
               if (
                   ex_rank
                   and
-                  ex_rank[0][
-                      "boat"
-                  ]
+                  ex_rank[0]["boat"]
                   ==
                   top["boat"]
               ):
-
                   rating += 4
-
 
               if (
                   st_rank
                   and
-                  st_rank[0][
-                      "boat"
-                  ]
+                  st_rank[0]["boat"]
                   ==
                   top["boat"]
               ):
-
                   rating += 4
 
-
               if (
-                  top[
-                      "course_number"
-                  ]
+                  top["course_number"]
                   ==
                   1
               ):
-
                   rating += 3
 
-
               wind = num(
-                  weather[
-                      "wind_speed"
-                  ]
+                  weather["wind_speed"]
               )
-
 
               wave = num(
-                  weather[
-                      "wave"
-                  ]
+                  weather["wave"]
               )
 
-
               if wind <= 4:
-
                   rating += 2
-
 
               if wave <= 4:
-
                   rating += 2
 
-
-              if len(
-                  changes
-              ) >= 2:
-
+              if len(changes) >= 2:
                   rating -= 3
 
-
               if wind >= 7:
-
                   rating -= 4
-
 
               if wave >= 8:
-
                   rating -= 4
-
 
               rating = int(
                   round(
@@ -2237,77 +1807,33 @@ jobs:
                   )
               )
 
-
               grade = (
-
                   "S"
                   if rating >= 82
-
                   else "A"
                   if rating >= 74
-
                   else "B"
-
               )
 
-
-              reasons = []
-
-
-              reasons.append(
-                  f"{top['boat']}号艇がAI総合1位"
-              )
-
-
-              reasons.append(
-                  f"展示1位は{ex_rank[0]['boat']}号艇"
-              )
-
-
-              reasons.append(
-                  f"ST1位は{st_rank[0]['boat']}号艇"
-              )
-
-
-              reasons.append(
-                  f"風速{wind:.1f}m・波高{wave:.1f}cm"
-              )
-
+              reasons = [
+                  f"{top['boat']}号艇がAI総合1位",
+                  f"展示1位は{ex_rank[0]['boat']}号艇",
+                  f"ST1位は{st_rank[0]['boat']}号艇",
+                  f"風速{wind:.1f}m・波高{wave:.1f}cm",
+              ]
 
               return {
-
-                  "race":
-                      race,
-
-                  "boats":
-                      boats,
-
-                  "rating":
-                      rating,
-
-                  "grade":
-                      grade,
-
-                  "weather":
-                      weather,
-
-                  "scenario":
-                      scenario,
-
-                  "exhibition_rank":
-                      ex_rank,
-
-                  "start_rank":
-                      st_rank,
-
-                  "course_changes":
-                      changes,
-
-                  "reasons":
-                      reasons,
-
+                  "race": race,
+                  "boats": boats,
+                  "rating": rating,
+                  "grade": grade,
+                  "weather": weather,
+                  "scenario": scenario,
+                  "exhibition_rank": ex_rank,
+                  "start_rank": st_rank,
+                  "course_changes": changes,
+                  "reasons": reasons,
               }
-
 
           # =====================================================
           # 3連単120通り
@@ -2316,20 +1842,13 @@ jobs:
           def all_combos():
 
               return [
-
                   f"{a}-{b}-{c}"
-
                   for a, b, c
                   in itertools.permutations(
-                      range(
-                          1,
-                          7
-                      ),
+                      range(1, 7),
                       3
                   )
-
               ]
-
 
           # =====================================================
           # AI確率
@@ -2341,62 +1860,33 @@ jobs:
           ):
 
               parts = [
-
                   int(x)
-
-                  for x in (
-                      combo.split(
-                          "-"
-                      )
-                  )
-
+                  for x in combo.split("-")
               ]
 
-
-              if len(
-                  parts
-              ) != 3:
-
+              if len(parts) != 3:
                   return 0.0
 
-
               score_map = {
-
-                  x["boat"]:
-                      x["score"]
-
-                  for x in (
-                      analysis[
-                          "boats"
-                      ]
-                  )
-
+                  x["boat"]: x["score"]
+                  for x in analysis["boats"]
               }
 
-
               scores = [
-
                   score_map.get(
                       boat,
                       0
                   )
-
                   for boat in parts
-
               ]
 
-
               order_weight = (
-
                   1.00,
                   0.72,
                   0.48
-
               )
 
-
               raw = 1.0
-
 
               for index, score in enumerate(
                   scores
@@ -2407,37 +1897,29 @@ jobs:
                       score + 50
                   )
 
-
                   raw *= (
                       normalized
                       **
                       order_weight[index]
                   )
 
-
               scenario = analysis.get(
                   "scenario",
                   {}
               )
-
 
               candidates = scenario.get(
                   "candidates",
                   []
               )
 
-
               scenario_map = {
-
                   x["boat"]:
                       num(
                           x["probability"]
                       )
-
                   for x in candidates
-
               }
-
 
               first_boat_prob = (
                   scenario_map.get(
@@ -2445,7 +1927,6 @@ jobs:
                       0.05
                   )
               )
-
 
               raw *= (
                   1
@@ -2455,9 +1936,7 @@ jobs:
                   2.2
               )
 
-
               return raw
-
 
           # =====================================================
           # 120通りを確率化
@@ -2469,45 +1948,34 @@ jobs:
 
               raw = {}
 
-
               for combo in all_combos():
 
-                  raw[
-                      combo
-                  ] = (
+                  raw[combo] = (
                       combo_probability(
                           analysis,
                           combo
                       )
                   )
 
-
               total = sum(
                   raw.values()
               )
 
-
               if total <= 0:
-
                   total = 1
 
-
               return {
-
                   combo:
                       value / total
-
                   for combo, value
                   in raw.items()
-
               }
-
 
           # =====================================================
           # 買い目作成
           #
           # 本命 15倍以下 3本
-          # 狙い 15〜80倍未満 4本
+          # 狙い 15倍超〜80倍未満 4本
           # 穴   80倍以上 3本
           # =====================================================
 
@@ -2519,34 +1987,18 @@ jobs:
               if not odds_map:
 
                   return {
-
-                      "has_odds":
-                          False,
-
-                      "valid343":
-                          False,
-
-                      "main":
-                          [],
-
-                      "cover":
-                          [],
-
-                      "hole":
-                          [],
-
-                      "odds_count":
-                          0,
-
-                      "band_count":
-                          {
-                              "main": 0,
-                              "cover": 0,
-                              "hole": 0,
-                          },
-
+                      "has_odds": False,
+                      "valid343": False,
+                      "main": [],
+                      "cover": [],
+                      "hole": [],
+                      "odds_count": 0,
+                      "band_count": {
+                          "main": 0,
+                          "cover": 0,
+                          "hole": 0,
+                      },
                   }
-
 
               probabilities = (
                   probability_map(
@@ -2554,30 +2006,20 @@ jobs:
                   )
               )
 
-
-              ranking = (
-                  odds_ranking(
-                      odds_map
-                  )
+              ranking = odds_ranking(
+                  odds_map
               )
 
-
               rows = []
-
 
               for combo, odds in (
                   odds_map.items()
               ):
 
-                  odds = num(
-                      odds
-                  )
-
+                  odds = num(odds)
 
                   if odds <= 0:
-
                       continue
-
 
                   probability = num(
                       probabilities.get(
@@ -2586,97 +2028,61 @@ jobs:
                       )
                   )
 
-
                   ev = (
-                      probability *
+                      probability
+                      *
                       odds
                   )
 
-
                   rows.append({
-
-                      "combo":
-                          combo,
-
-                      "odds":
-                          odds,
-
+                      "combo": combo,
+                      "odds": odds,
                       "probability":
                           probability,
-
-                      "ev":
-                          ev,
-
+                      "ev": ev,
                       "popularity":
                           int_num(
                               ranking.get(
                                   combo
                               )
                           ),
-
                   })
 
-
               main_pool = [
-
-                  x for x in rows
-
-                  if (
-                      x["odds"] <= 15
-                  )
-
+                  x
+                  for x in rows
+                  if x["odds"] <= 15
               ]
 
-
               cover_pool = [
-
-                  x for x in rows
-
+                  x
+                  for x in rows
                   if (
                       x["odds"] > 15
                       and
                       x["odds"] < 80
                   )
-
               ]
-
 
               hole_pool = [
-
-                  x for x in rows
-
-                  if (
-                      x["odds"] >= 80
-                  )
-
+                  x
+                  for x in rows
+                  if x["odds"] >= 80
               ]
 
-
               main_pool.sort(
-
                   key=lambda x: (
-
                       x["probability"]
                       +
-                      x["ev"]
-                      * 0.002
-
+                      x["ev"] * 0.002
                   ),
-
                   reverse=True
-
               )
 
-
               cover_pool.sort(
-
                   key=lambda x: (
-
                       x["probability"]
-                      * 1.00
-
                       +
-
                       min(
                           x["odds"],
                           80
@@ -2685,28 +2091,18 @@ jobs:
                       80
                       *
                       0.012
-
                       +
-
                       x["ev"]
-                      * 0.006
-
+                      *
+                      0.006
                   ),
-
                   reverse=True
-
               )
 
-
               hole_pool.sort(
-
                   key=lambda x: (
-
                       x["probability"]
-                      * 1.00
-
                       +
-
                       min(
                           x["odds"],
                           200
@@ -2715,128 +2111,63 @@ jobs:
                       200
                       *
                       0.010
-
                       +
-
                       min(
                           x["ev"],
                           3
                       )
-                      * 0.008
-
+                      *
+                      0.008
                   ),
-
                   reverse=True
-
               )
 
-
-              main = (
-                  main_pool[:3]
-              )
-
-
-              cover = (
-                  cover_pool[:4]
-              )
-
-
-              hole = (
-                  hole_pool[:3]
-              )
-
+              main = main_pool[:3]
+              cover = cover_pool[:4]
+              hole = hole_pool[:3]
 
               all_selected = (
-
                   main
                   +
                   cover
                   +
                   hole
-
               )
-
 
               combos = [
-
                   x["combo"]
-
-                  for x in (
-                      all_selected
-                  )
-
+                  for x in all_selected
               ]
 
-
               valid343 = (
-
                   len(main) == 3
-
                   and
-
                   len(cover) == 4
-
                   and
-
                   len(hole) == 3
-
                   and
-
-                  len(
-                      set(
-                          combos
-                      )
-                  ) == 10
-
+                  len(set(combos)) == 10
               )
 
-
               return {
-
-                  "has_odds":
-                      True,
-
-                  "valid343":
-                      valid343,
-
-                  "main":
-                      main,
-
-                  "cover":
-                      cover,
-
-                  "hole":
-                      hole,
-
+                  "has_odds": True,
+                  "valid343": valid343,
+                  "main": main,
+                  "cover": cover,
+                  "hole": hole,
                   "odds_count":
                       len(rows),
-
                   "band_count": {
-
                       "main":
-                          len(
-                              main_pool
-                          ),
-
+                          len(main_pool),
                       "cover":
-                          len(
-                              cover_pool
-                          ),
-
+                          len(cover_pool),
                       "hole":
-                          len(
-                              hole_pool
-                          ),
-
+                          len(hole_pool),
                   },
-
               }
 
-
           # =====================================================
-          # 次の③へ続きます
-          # =====================================================
-                    # =====================================================
           # 購入金額配分
           # =====================================================
 
@@ -2853,9 +2184,7 @@ jobs:
                   )
               )
 
-
               groups = [
-
                   (
                       "main",
                       ticket_set.get(
@@ -2863,7 +2192,6 @@ jobs:
                           []
                       )
                   ),
-
                   (
                       "cover",
                       ticket_set.get(
@@ -2871,7 +2199,6 @@ jobs:
                           []
                       )
                   ),
-
                   (
                       "hole",
                       ticket_set.get(
@@ -2879,12 +2206,9 @@ jobs:
                           []
                       )
                   ),
-
               ]
 
-
               tickets = []
-
 
               for (
                   group_name,
@@ -2893,9 +2217,7 @@ jobs:
 
                   for row in rows:
 
-                      item = dict(
-                          row
-                      )
+                      item = dict(row)
 
                       item[
                           "group"
@@ -2905,23 +2227,15 @@ jobs:
                           item
                       )
 
-
-              if len(
-                  tickets
-              ) != 10:
-
+              if len(tickets) != 10:
                   return []
 
-
-              # 100円単位
               units = max(
                   10,
                   budget // 100
               )
 
-
               weights = []
-
 
               for t in tickets:
 
@@ -2931,26 +2245,19 @@ jobs:
                       )
                   )
 
-
                   odds = num(
                       t.get(
                           "odds"
                       )
                   )
 
-
-                  if t[
-                      "group"
-                  ] == "main":
+                  if t["group"] == "main":
 
                       w = (
                           p * 1.35
                       )
 
-
-                  elif t[
-                      "group"
-                  ] == "cover":
+                  elif t["group"] == "cover":
 
                       w = (
                           p * 1.10
@@ -2964,7 +2271,6 @@ jobs:
                           *
                           0.012
                       )
-
 
                   else:
 
@@ -2981,7 +2287,6 @@ jobs:
                           0.010
                       )
 
-
                   weights.append(
                       max(
                           w,
@@ -2989,79 +2294,52 @@ jobs:
                       )
                   )
 
-
               total_weight = sum(
                   weights
               )
 
-
               if total_weight <= 0:
-
                   total_weight = 1
 
-
               unit_alloc = [
-
                   1
                   for _ in tickets
-
               ]
-
 
               remaining = (
                   units
                   -
-                  len(
-                      tickets
-                  )
+                  len(tickets)
               )
 
-
               if remaining < 0:
-
                   return []
 
-
               raw_add = [
-
                   remaining
                   *
                   (
                       w /
                       total_weight
                   )
-
                   for w in weights
-
               ]
-
 
               floor_add = [
-
                   int(
-                      math.floor(
-                          x
-                      )
+                      math.floor(x)
                   )
-
                   for x in raw_add
-
               ]
-
 
               for i, add in enumerate(
                   floor_add
               ):
-
-                  unit_alloc[
-                      i
-                  ] += add
-
+                  unit_alloc[i] += add
 
               used = sum(
                   floor_add
               )
-
 
               left = (
                   remaining
@@ -3069,45 +2347,30 @@ jobs:
                   used
               )
 
-
               remainders = [
-
                   (
                       i,
                       raw_add[i]
                       -
                       floor_add[i]
                   )
-
                   for i in range(
-                      len(
-                          tickets
-                      )
+                      len(tickets)
                   )
-
               ]
 
-
               remainders.sort(
-
                   key=lambda x:
                       x[1],
-
                   reverse=True
-
               )
 
-
-              for i in range(
-                  left
-              ):
+              for i in range(left):
 
                   idx = (
                       remainders[
                           i %
-                          len(
-                              remainders
-                          )
+                          len(remainders)
                       ][0]
                   )
 
@@ -3115,30 +2378,23 @@ jobs:
                       idx
                   ] += 1
 
-
               for i, t in enumerate(
                   tickets
               ):
 
-                  t[
-                      "money"
-                  ] = (
+                  t["money"] = (
                       unit_alloc[i]
                       *
                       100
                   )
 
-
               return tickets
-
 
           # =====================================================
           # LINE Push
           # =====================================================
 
-          def line_push(
-              text
-          ):
+          def line_push(text):
 
               if not (
                   LINE_CHANNEL_ACCESS_TOKEN
@@ -3151,15 +2407,12 @@ jobs:
                       "設定されていません"
                   )
 
-
               url = (
                   "https://api.line.me/"
                   "v2/bot/message/push"
               )
 
-
               headers = {
-
                   "Authorization":
                       "Bearer "
                       +
@@ -3167,44 +2420,27 @@ jobs:
 
                   "Content-Type":
                       "application/json",
-
               }
 
-
               payload = {
-
                   "to":
                       LINE_USER_ID,
 
                   "messages": [
-
                       {
-
-                          "type":
-                              "text",
-
+                          "type": "text",
                           "text":
                               text[:5000],
-
                       }
-
                   ],
-
               }
 
-
               response = requests.post(
-
                   url,
-
                   headers=headers,
-
                   json=payload,
-
                   timeout=25
-
               )
-
 
               print(
                   "LINE PUSH:",
@@ -3212,10 +2448,12 @@ jobs:
                   response.text[:300]
               )
 
-
-              if response.status_code not in (
-                  200,
-                  201
+              if (
+                  response.status_code
+                  not in (
+                      200,
+                      201
+                  )
               ):
 
                   raise RuntimeError(
@@ -3223,9 +2461,7 @@ jobs:
                       f"{response.status_code}"
                   )
 
-
               return True
-
 
           # =====================================================
           # 通知済み状態
@@ -3236,15 +2472,10 @@ jobs:
               if not STATE_FILE.exists():
 
                   return {
-
-                      "sent":
-                          {},
-
+                      "sent": {},
                       "last_date":
                           today_jst(),
-
                   }
-
 
               try:
 
@@ -3254,31 +2485,25 @@ jobs:
                       )
                   )
 
-
                   if not isinstance(
                       data,
                       dict
                   ):
-
                       raise ValueError(
                           "state invalid"
                       )
-
 
                   data.setdefault(
                       "sent",
                       {}
                   )
 
-
                   data.setdefault(
                       "last_date",
                       today_jst()
                   )
 
-
                   return data
-
 
               except Exception as e:
 
@@ -3287,41 +2512,25 @@ jobs:
                       repr(e)
                   )
 
-
                   return {
-
-                      "sent":
-                          {},
-
+                      "sent": {},
                       "last_date":
                           today_jst(),
-
                   }
 
-
-          def save_state(
-              state
-          ):
+          def save_state(state):
 
               STATE_FILE.write_text(
-
                   json.dumps(
                       state,
                       ensure_ascii=False,
                       indent=2
                   ),
-
                   encoding="utf-8"
-
               )
-
 
           # =====================================================
           # 予想内容ハッシュ
-          #
-          # 同じレースでも
-          # 買い目が変わった場合は
-          # 再通知できるようにする
           # =====================================================
 
           def prediction_hash(
@@ -3330,76 +2539,50 @@ jobs:
           ):
 
               payload = {
-
                   "key":
                       race_key(
-                          analysis[
-                              "race"
-                          ]
+                          analysis["race"]
                       ),
 
                   "rating":
-                      analysis[
-                          "rating"
-                      ],
+                      analysis["rating"],
 
                   "tickets": [
-
                       {
-
                           "combo":
-                              t[
-                                  "combo"
-                              ],
+                              t["combo"],
 
                           "group":
-                              t[
-                                  "group"
-                              ],
+                              t["group"],
 
                           "odds":
                               round(
                                   num(
-                                      t[
-                                          "odds"
-                                      ]
+                                      t["odds"]
                                   ),
                                   1
                               ),
 
                           "money":
                               int_num(
-                                  t[
-                                      "money"
-                                  ]
+                                  t["money"]
                               ),
-
                       }
-
                       for t in tickets
-
                   ],
-
               }
 
-
               raw = json.dumps(
-
                   payload,
-
                   ensure_ascii=False,
-
                   sort_keys=True
-
               )
-
 
               return hashlib.sha256(
                   raw.encode(
                       "utf-8"
                   )
               ).hexdigest()
-
 
           # =====================================================
           # 買い目表示
@@ -3411,54 +2594,32 @@ jobs:
           ):
 
               labels = {
-
-                  "main":
-                      "本命🚤",
-
-                  "cover":
-                      "狙い🚤",
-
-                  "hole":
-                      "穴🚤",
-
+                  "main": "本命🚤",
+                  "cover": "狙い🚤",
+                  "hole": "穴🚤",
               }
 
-
               rows = [
-
                   t
-
                   for t in tickets
-
-                  if t[
-                      "group"
-                  ] == group_name
-
+                  if (
+                      t["group"]
+                      ==
+                      group_name
+                  )
               ]
-
 
               lines = [
-
-                  labels[
-                      group_name
-                  ]
-
+                  labels[group_name]
               ]
-
 
               for t in rows:
 
-                  combo = t[
-                      "combo"
-                  ]
-
+                  combo = t["combo"]
 
                   odds = num(
-                      t[
-                          "odds"
-                      ]
+                      t["odds"]
                   )
-
 
                   rank = int_num(
                       t.get(
@@ -3466,13 +2627,11 @@ jobs:
                       )
                   )
 
-
                   money = int_num(
                       t.get(
                           "money"
                       )
                   )
-
 
                   prob = (
                       num(
@@ -3484,33 +2643,23 @@ jobs:
                       100
                   )
 
-
                   rank_text = (
-
                       f"人気{rank}位"
-
                       if rank > 0
-
                       else "人気順位なし"
-
                   )
 
-
                   lines.append(
-
                       f"{combo} "
                       f"{money:,}円 "
                       f"／ {odds:.1f}倍 "
                       f"／ {rank_text} "
                       f"／ AI{prob:.1f}%"
-
                   )
-
 
               return "\n".join(
                   lines
               )
-
 
           # =====================================================
           # LINE通知本文
@@ -3523,10 +2672,7 @@ jobs:
               odds_source
           ):
 
-              race = analysis[
-                  "race"
-              ]
-
+              race = analysis["race"]
 
               stadium = int_num(
                   race.get(
@@ -3534,177 +2680,132 @@ jobs:
                   )
               )
 
-
               race_no = int_num(
                   race.get(
                       "race_number"
                   )
               )
 
-
               venue = STADIUMS.get(
                   stadium,
                   f"会場{stadium}"
               )
 
-
               weather = analysis[
                   "weather"
               ]
-
 
               scenario = analysis.get(
                   "scenario",
                   {}
               )
 
-
-              top = scenario.get(
-                  "top"
-              ) or {}
-
+              top = (
+                  scenario.get("top")
+                  or
+                  {}
+              )
 
               total_money = sum(
-
                   int_num(
                       t.get(
                           "money"
                       )
                   )
-
                   for t in tickets
-
               )
 
-
               lines = [
-
                   "🚤 BOAT RACE AI予想",
-
                   "",
-
-                  f"🔥 勝負度S",
-
+                  "🔥 勝負度S",
                   f"{venue} {race_no}R",
-
                   "",
-
-                  f"AI信頼スコア："
-                  f"{analysis['rating']}",
-
+                  (
+                      "AI信頼スコア："
+                      f"{analysis['rating']}"
+                  ),
                   "",
-
-                  f"締切予定："
-                  f"{close_time_text(race)}",
-
-                  f"残り時間："
-                  f"{remaining_text(race)}",
-
+                  (
+                      "締切予定："
+                      f"{close_time_text(race)}"
+                  ),
+                  (
+                      "残り時間："
+                      f"{remaining_text(race)}"
+                  ),
                   "",
-
                   (
                       "展開予測："
                       f"{top.get('boat','-')}号艇 "
                       f"{top.get('tactic','-')}"
                   ),
-
                   "",
-
                   (
                       "水面："
                       f"{WEATHER_NAMES.get(int_num(weather.get('weather')),'-')} "
                       f"／ 風速{num(weather.get('wind_speed')):.1f}m "
                       f"／ 波高{num(weather.get('wave')):.1f}cm"
                   ),
-
                   "",
-
                   ticket_lines(
                       tickets,
                       "main"
                   ),
-
                   "",
-
                   ticket_lines(
                       tickets,
                       "cover"
                   ),
-
                   "",
-
                   ticket_lines(
                       tickets,
                       "hole"
                   ),
-
                   "",
-
-                  f"合計："
-                  f"{total_money:,}円",
-
+                  f"合計：{total_money:,}円",
                   "",
-
                   "判断基準",
-
               ]
 
-
-              for reason in (
-                  analysis.get(
-                      "reasons",
-                      []
-                  )
+              for reason in analysis.get(
+                  "reasons",
+                  []
               ):
 
                   lines.append(
                       f"・{reason}"
                   )
 
-
               lines.extend([
-
                   (
                       "・3連単オッズ："
                       f"{ticket_set.get('odds_count',0)}通り取得"
                   ),
-
                   (
                       "・本命候補："
                       f"{ticket_set.get('band_count',{}).get('main',0)}通り"
                   ),
-
                   (
                       "・狙い候補："
                       f"{ticket_set.get('band_count',{}).get('cover',0)}通り"
                   ),
-
                   (
                       "・穴候補："
                       f"{ticket_set.get('band_count',{}).get('hole',0)}通り"
                   ),
-
                   "",
-
                   "本命🚤：15倍以下",
-
                   "狙い🚤：15倍超〜80倍未満",
-
                   "穴🚤：80倍以上",
-
                   "",
-
                   f"オッズ取得：{odds_source}",
-
                   f"Model：{MODEL_NAME}",
-
               ])
-
 
               return "\n".join(
                   lines
               )
-
 
           # =====================================================
           # 通知対象分析
@@ -3717,42 +2818,29 @@ jobs:
           ):
 
               results = []
-
-
               raw_s_count = 0
-
-
               odds_ok_count = 0
-
 
               for race in races:
 
-                  if not upcoming(
-                      race
-                  ):
-
+                  if not upcoming(race):
                       continue
-
 
                   analysis = evaluate_race(
                       race
                   )
 
-
                   if analysis is None:
-
                       continue
 
-
-                  if analysis[
-                      "grade"
-                  ] != "S":
-
+                  if (
+                      analysis["grade"]
+                      !=
+                      "S"
+                  ):
                       continue
-
 
                   raw_s_count += 1
-
 
                   stadium = int_num(
                       race.get(
@@ -3760,70 +2848,41 @@ jobs:
                       )
                   )
 
-
                   race_no = int_num(
                       race.get(
                           "race_number"
                       )
                   )
 
-
                   odds_map = get_odds_map(
-
                       odds_data,
-
                       stadium,
-
                       race_no
-
                   )
-
 
                   ticket_set = make_tickets(
-
                       analysis,
-
                       odds_map
-
                   )
-
 
                   if not (
-                      ticket_set[
-                          "has_odds"
-                      ]
+                      ticket_set["has_odds"]
                       and
-                      ticket_set[
-                          "valid343"
-                      ]
+                      ticket_set["valid343"]
                   ):
-
                       continue
 
-
-                  tickets = (
-                      allocate_tickets(
-
-                          ticket_set,
-
-                          budget
-
-                      )
+                  tickets = allocate_tickets(
+                      ticket_set,
+                      budget
                   )
 
-
-                  if len(
-                      tickets
-                  ) != 10:
-
+                  if len(tickets) != 10:
                       continue
-
 
                   odds_ok_count += 1
 
-
                   results.append({
-
                       "analysis":
                           analysis,
 
@@ -3832,14 +2891,10 @@ jobs:
 
                       "tickets":
                           tickets,
-
                   })
 
-
               results.sort(
-
                   key=lambda x: (
-
                       -x[
                           "analysis"
                       ][
@@ -3851,8 +2906,7 @@ jobs:
                               "analysis"
                           ][
                               "race"
-                          ]
-                          .get(
+                          ].get(
                               "stadium_number"
                           )
                       ),
@@ -3862,27 +2916,18 @@ jobs:
                               "analysis"
                           ][
                               "race"
-                          ]
-                          .get(
+                          ].get(
                               "race_number"
                           )
                       ),
-
                   )
-
               )
-
 
               return (
-
                   results,
-
                   raw_s_count,
-
                   odds_ok_count
-
               )
-
 
           # =====================================================
           # メイン処理
@@ -3907,30 +2952,23 @@ jobs:
                   "======================================"
               )
 
-
               race_data = (
                   fetch_race_data()
               )
-
 
               races = flatten_races(
                   race_data
               )
 
-
               print(
                   "RACES:",
-                  len(
-                      races
-                  )
+                  len(races)
               )
-
 
               (
                   odds_data,
                   odds_source
               ) = fetch_odds_data()
-
 
               if odds_data is None:
 
@@ -3941,68 +2979,53 @@ jobs:
 
                   return
 
-
               (
                   predictions,
                   raw_s_count,
                   odds_ok_count
               ) = collect_predictions(
-
                   races,
-
                   odds_data,
-
                   budget=1000
-
               )
-
 
               print(
                   "AI S評価:",
                   raw_s_count
               )
 
-
               print(
                   "オッズ条件通過:",
                   odds_ok_count
               )
 
-
               print(
                   "通知候補:",
-                  len(
-                      predictions
-                  )
+                  len(predictions)
               )
-
 
               state = load_state()
 
-
-              if state.get(
-                  "last_date"
-              ) != today_jst():
+              if (
+                  state.get(
+                      "last_date"
+                  )
+                  !=
+                  today_jst()
+              ):
 
                   state = {
-
-                      "sent":
-                          {},
-
+                      "sent": {},
                       "last_date":
                           today_jst(),
-
                   }
-
 
               sent = state.setdefault(
                   "sent",
                   {}
               )
 
-
               new_count = 0
-
 
               for item in predictions:
 
@@ -4010,37 +3033,26 @@ jobs:
                       "analysis"
                   ]
 
-
                   ticket_set = item[
                       "ticket_set"
                   ]
-
 
                   tickets = item[
                       "tickets"
                   ]
 
-
                   key = race_key(
-                      analysis[
-                          "race"
-                      ]
+                      analysis["race"]
                   )
-
 
                   phash = prediction_hash(
-
                       analysis,
-
                       tickets
-
                   )
-
 
                   old_hash = sent.get(
                       key
                   )
-
 
                   if old_hash == phash:
 
@@ -4051,53 +3063,35 @@ jobs:
 
                       continue
 
-
                   message = build_message(
-
                       analysis,
-
                       ticket_set,
-
                       tickets,
-
                       odds_source
-
                   )
-
 
                   line_push(
                       message
                   )
 
-
-                  sent[
-                      key
-                  ] = phash
-
+                  sent[key] = phash
 
                   new_count += 1
-
 
                   save_state(
                       state
                   )
 
-
-                  time.sleep(
-                      1
-                  )
-
+                  time.sleep(1)
 
               print(
                   "NEW LINE:",
                   new_count
               )
 
-
               save_state(
                   state
               )
-
 
               print(
                   "======================================"
@@ -4111,38 +3105,28 @@ jobs:
                   "======================================"
               )
 
-
           # =====================================================
           # Python実行
           # =====================================================
 
           if __name__ == "__main__":
-
               main()
 
-
-          # =====================================================
-          # 次の④へ続きます
-          # =====================================================
-                    PY
-
+          PY
 
       # =========================================================
       # 5. Python実行
       # =========================================================
+
       - name: Run BOATRACE AI LINE
 
         run: |
           python line_notify.py
 
-
       # =========================================================
       # 6. 通知済み状態をGitHubへ保存
-      #
-      # boatrace_line_state.json を保存することで
-      # 5分ごとのActions実行でも
-      # 同じ買い目の重複通知を防止します
       # =========================================================
+
       - name: Save notification state
 
         run: |
