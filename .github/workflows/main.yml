@@ -2,9 +2,7 @@ name: BOATRACE AI LINE Notification
 
 on:
   workflow_dispatch:
-
   schedule:
-    # 5分ごとに自動実行
     - cron: "*/5 * * * *"
 
 permissions:
@@ -17,39 +15,23 @@ concurrency:
 jobs:
   notify:
     runs-on: ubuntu-latest
-
     steps:
-
-      # =========================================================
-      # 1. リポジトリ取得
-      # =========================================================
       - name: Checkout
         uses: actions/checkout@v4
 
-      # =========================================================
-      # 2. Python
-      # =========================================================
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
 
-      # =========================================================
-      # 3. 必要ライブラリ
-      # =========================================================
       - name: Install packages
         run: |
           python -m pip install --upgrade pip
-          pip install requests playwright
-          python -m playwright install --with-deps chromium
+          pip install requests
 
-      # =========================================================
-      # 4. BOATRACE AI LINE
-      # =========================================================
-      - name: BOATRACE AI LINE
+      - name: Create BOATRACE AI script
         run: |
           cat > line_notify.py <<'PY'
-
           import os
           import re
           import json
@@ -57,2653 +39,415 @@ jobs:
           import time
           import hashlib
           import itertools
-          import requests
-
           from pathlib import Path
           from datetime import datetime, timedelta, timezone
 
+          import requests
+
           JST = timezone(timedelta(hours=9))
+          API_BASE = "https://boatraceopenapi.github.io/api/v1"
+          ODDS_BASE = "https://lamrongol.github.io/BoatraceOdds/v3"
+          MODEL_NAME = "gold-v4-stable"
+          STATE_FILE = Path("boatrace_line_state.json")
 
-          API_BASE = (
-              "https://boatraceopenapi.github.io/api/v1"
-          )
-
-          ODDS_BASE = (
-              "https://lamrongol.github.io/"
-              "BoatraceOdds/v3"
-          )
-
-          MODEL_NAME = "gold-v3-odds-band-15-80"
-
-          LINE_CHANNEL_ACCESS_TOKEN = (
-              os.getenv(
-                  "LINE_CHANNEL_ACCESS_TOKEN",
-                  ""
-              ).strip()
-          )
-
-          LINE_USER_ID = (
-              os.getenv(
-                  "LINE_USER_ID",
-                  ""
-              ).strip()
-          )
-
-          STATE_FILE = Path(
-              "boatrace_line_state.json"
-          )
+          LINE_TOKEN = os.getenv("LINE_CHANNEL_ACCESS_TOKEN", "").strip()
+          LINE_USER_ID = os.getenv("LINE_USER_ID", "").strip()
 
           STADIUMS = {
-              1: "桐生",
-              2: "戸田",
-              3: "江戸川",
-              4: "平和島",
-              5: "多摩川",
-              6: "浜名湖",
-              7: "蒲郡",
-              8: "常滑",
-              9: "津",
-              10: "三国",
-              11: "びわこ",
-              12: "住之江",
-              13: "尼崎",
-              14: "鳴門",
-              15: "丸亀",
-              16: "児島",
-              17: "宮島",
-              18: "徳山",
-              19: "下関",
-              20: "若松",
-              21: "芦屋",
-              22: "福岡",
-              23: "唐津",
-              24: "大村",
-          }
-
-          WEATHER_NAMES = {
-              1: "晴",
-              2: "曇",
-              3: "雨",
-              4: "雪",
-              5: "霧",
+              1: "桐生", 2: "戸田", 3: "江戸川", 4: "平和島", 5: "多摩川", 6: "浜名湖",
+              7: "蒲郡", 8: "常滑", 9: "津", 10: "三国", 11: "びわこ", 12: "住之江",
+              13: "尼崎", 14: "鳴門", 15: "丸亀", 16: "児島", 17: "宮島", 18: "徳山",
+              19: "下関", 20: "若松", 21: "芦屋", 22: "福岡", 23: "唐津", 24: "大村",
           }
 
           def now_jst():
               return datetime.now(JST)
 
-          def today_jst():
-              return now_jst().strftime("%Y-%m-%d")
-
-          def today_compact():
-              return now_jst().strftime("%Y%m%d")
-
-          def today_year():
-              return now_jst().strftime("%Y")
-
-          def num(value, default=0.0):
+          def n(v, default=0.0):
               try:
-                  return float(value)
+                  return float(v)
               except (TypeError, ValueError):
                   return float(default)
 
-          def int_num(value, default=0):
+          def i(v, default=0):
               try:
-                  return int(float(value))
+                  return int(float(v))
               except (TypeError, ValueError):
                   return int(default)
 
-          def clamp(value, low, high):
-              return max(low, min(high, value))
-
-          def race_data_url():
-              return (
-                  f"{API_BASE}/"
-                  f"{today_year()}/"
-                  f"{today_compact()}.json"
-              )
-
-          def odds_date_url():
-              return (
-                  f"{ODDS_BASE}/"
-                  f"{today_year()}/"
-                  f"{today_compact()}.json"
-              )
-
-          def odds_today_url():
-              return f"{ODDS_BASE}/today.json"
-
-          def get_json(url, timeout=25):
-
-              headers = {
-                  "User-Agent":
-                      "Mozilla/5.0 (BOATRACE-AI-LINE)",
-                  "Accept":
-                      "application/json,text/plain,*/*",
-                  "Cache-Control":
-                      "no-cache",
-              }
-
-              final_url = (
-                  f"{url}?t={int(time.time())}"
-              )
-
+          def get_json(url):
               try:
-                  response = requests.get(
-                      final_url,
-                      headers=headers,
-                      timeout=timeout
+                  r = requests.get(
+                      f"{url}?t={int(time.time())}",
+                      timeout=25,
+                      headers={"User-Agent": "BOATRACE-AI-LINE/4.0", "Cache-Control": "no-cache"},
                   )
-
-                  print(
-                      "GET",
-                      url,
-                      response.status_code
-                  )
-
-                  if response.status_code != 200:
-                      return None
-
-                  return response.json()
-
+                  print("GET", url, r.status_code)
+                  if r.status_code == 200:
+                      return r.json()
               except Exception as e:
-                  print(
-                      "GET ERROR",
-                      url,
-                      repr(e)
-                  )
-                  return None
+                  print("GET ERROR", url, repr(e))
+              return None
 
-          def fetch_race_data():
-
-              data = get_json(
-                  race_data_url()
-              )
-
+          def fetch_races():
+              now = now_jst()
+              url = f"{API_BASE}/{now:%Y}/{now:%Y%m%d}.json"
+              data = get_json(url)
               if not isinstance(data, dict):
-                  raise RuntimeError(
-                      "BOATRACEデータを取得できませんでした"
-                  )
-
+                  raise RuntimeError("BOATRACEデータを取得できませんでした")
               return data
 
-          def fetch_odds_data():
-
+          def fetch_odds():
+              now = now_jst()
               urls = [
-                  (
-                      "日付JSON",
-                      odds_date_url()
-                  ),
-                  (
-                      "today.json",
-                      odds_today_url()
-                  ),
+                  ("日付JSON", f"{ODDS_BASE}/{now:%Y}/{now:%Y%m%d}.json"),
+                  ("today.json", f"{ODDS_BASE}/today.json"),
               ]
-
-              for source_name, url in urls:
-
-                  print(
-                      "ODDS TRY:",
-                      source_name,
-                      url
-                  )
-
+              for name, url in urls:
                   data = get_json(url)
-
-                  if isinstance(
-                      data,
-                      (dict, list)
-                  ):
-                      print(
-                          "ODDS SUCCESS:",
-                          source_name
-                      )
-
-                      return data, source_name
-
-              print(
-                  "ODDS ERROR: 3連単オッズ取得失敗"
-              )
-
+                  if isinstance(data, (dict, list)):
+                      print("ODDS SOURCE", name)
+                      return data, name
               return None, "未取得"
 
           def flatten_races(data):
-
-              output = []
-
-              programs = (
-                  data.get("programs", {})
-                  if isinstance(data, dict)
-                  else {}
-              )
-
-              stadiums = programs.get(
-                  "stadiums",
-                  {}
-              )
-
-              if not isinstance(
-                  stadiums,
-                  dict
-              ):
-                  return output
-
+              out = []
+              programs = data.get("programs", {}) if isinstance(data, dict) else {}
+              stadiums = programs.get("stadiums", {}) if isinstance(programs, dict) else {}
+              if not isinstance(stadiums, dict):
+                  return out
               for stadium_key, stadium_data in stadiums.items():
-
-                  if not isinstance(
-                      stadium_data,
-                      dict
-                  ):
+                  if not isinstance(stadium_data, dict):
                       continue
-
-                  races = stadium_data.get(
-                      "races",
-                      {}
-                  )
-
-                  if not isinstance(
-                      races,
-                      dict
-                  ):
+                  races = stadium_data.get("races", {})
+                  if not isinstance(races, dict):
                       continue
-
-                  for race_key_value, race in races.items():
-
-                      if not isinstance(
-                          race,
-                          dict
-                      ):
+                  for race_key, race in races.items():
+                      if not isinstance(race, dict):
                           continue
+                      x = dict(race)
+                      x["stadium_number"] = i(race.get("stadium_number", stadium_key))
+                      x["race_number"] = i(race.get("race_number", race_key))
+                      out.append(x)
+              return out
 
-                      item = dict(race)
-
-                      item["stadium_number"] = int_num(
-                          race.get(
-                              "stadium_number",
-                              stadium_key
-                          )
-                      )
-
-                      item["race_number"] = int_num(
-                          race.get(
-                              "race_number",
-                              race_key_value
-                          )
-                      )
-
-                      output.append(item)
-
-              return output
-
-          def race_key(race):
-
-              date = str(
-                  race.get("date")
-                  or race.get("race_date")
-                  or today_jst()
-              ).strip()
-
-              try:
-                  stadium = int(
-                      race.get("stadium_number")
-                      or race.get("stadium")
-                      or race.get("place_no")
-                      or 0
-                  )
-              except (TypeError, ValueError):
-                  stadium = 0
-
-              try:
-                  race_no = int(
-                      race.get("race_number")
-                      or race.get("race_no")
-                      or race.get("race")
-                      or 0
-                  )
-              except (TypeError, ValueError):
-                  race_no = 0
-
-              return f"{date}_{stadium}_{race_no}"
-
-          def close_time_text(race):
-
-              value = str(
-                  race.get(
-                      "closed_at",
-                      ""
-                  )
-              )
-
-              match = re.search(
-                  r"(\d{2}):(\d{2})",
-                  value
-              )
-
-              if not match:
-                  return "--:--"
-
-              return (
-                  f"{match.group(1)}:"
-                  f"{match.group(2)}"
-              )
-
-          def close_datetime(race):
-
-              value = str(
-                  race.get(
-                      "closed_at",
-                      ""
-                  )
-              ).strip()
-
-              if not value:
-                  return None
-
-              formats = [
-                  "%Y-%m-%d %H:%M:%S",
-                  "%Y-%m-%d %H:%M",
-                  "%Y/%m/%d %H:%M:%S",
-                  "%Y/%m/%d %H:%M",
-              ]
-
-              for fmt in formats:
-
+          def close_dt(race):
+              raw = str(race.get("closed_at", "")).strip()
+              for fmt in ("%Y-%m-%d %H:%M:%S", "%Y-%m-%d %H:%M", "%Y/%m/%d %H:%M:%S", "%Y/%m/%d %H:%M"):
                   try:
-                      dt = datetime.strptime(
-                          value,
-                          fmt
-                      )
-
-                      return dt.replace(
-                          tzinfo=JST
-                      )
-
+                      return datetime.strptime(raw, fmt).replace(tzinfo=JST)
                   except ValueError:
                       pass
-
               return None
 
-          def upcoming(race):
+          def future_race(race):
+              dt = close_dt(race)
+              return dt is None or dt > now_jst()
 
-              dt = close_datetime(race)
+          def preview_racers(race):
+              preview = race.get("preview", {})
+              if not isinstance(preview, dict):
+                  return {}
+              racers = preview.get("racers", {})
+              return racers if isinstance(racers, dict) else {}
 
-              if dt is None:
-                  return True
-
-              return dt > now_jst()
-
-          def remaining_text(race):
-
-              dt = close_datetime(race)
-
-              if dt is None:
-                  return "--"
-
-              seconds = int(
-                  (
-                      dt - now_jst()
-                  ).total_seconds()
-              )
-
-              if seconds <= 0:
-                  return "締切"
-
-              hours = seconds // 3600
-
-              minutes = (
-                  seconds % 3600
-              ) // 60
-
-              if hours > 0:
-                  return (
-                      f"{hours}時間"
-                      f"{minutes}分"
-                  )
-
-              return f"{minutes}分"
-
-          def preview_ready(race):
-
-              preview = race.get(
-                  "preview",
-                  {}
-              )
-
-              if not isinstance(
-                  preview,
-                  dict
-              ):
-                  return False
-
-              racers = preview.get(
-                  "racers",
-                  {}
-              )
-
-              if not isinstance(
-                  racers,
-                  dict
-              ):
-                  return False
-
+          def ready(race):
+              racers = preview_racers(race)
               for boat in range(1, 7):
-
-                  p = racers.get(
-                      str(boat)
-                  )
-
-                  if not isinstance(
-                      p,
-                      dict
-                  ):
+                  p = racers.get(str(boat), {})
+                  if not isinstance(p, dict):
                       return False
-
-                  ex = num(
-                      p.get(
-                          "exhibition_time"
-                      ),
-                      -1
-                  )
-
-                  st = num(
-                      p.get(
-                          "start_timing"
-                      ),
-                      999
-                  )
-
-                  if ex <= 0:
+                  if n(p.get("exhibition_time"), -1) <= 0:
                       return False
-
-                  if not math.isfinite(st):
+                  st = n(p.get("start_timing"), 999)
+                  if not math.isfinite(st) or st >= 999:
                       return False
-
               return True
-                        def weather_info(race):
 
-              preview = race.get(
-                  "preview",
-                  {}
-              )
-
-              return {
-                  "wind_speed":
-                      num(
-                          preview.get(
-                              "wind_speed"
-                          )
-                      ),
-                  "wind_direction":
-                      int_num(
-                          preview.get(
-                              "wind_direction_number"
-                          )
-                      ),
-                  "wave":
-                      num(
-                          preview.get(
-                              "wave_height"
-                          )
-                      ),
-                  "weather":
-                      int_num(
-                          preview.get(
-                              "weather_number"
-                          )
-                      ),
-                  "air":
-                      num(
-                          preview.get(
-                              "air_temperature"
-                          )
-                      ),
-                  "water":
-                      num(
-                          preview.get(
-                              "water_temperature"
-                          )
-                      ),
-              }
-
-          def find_race_odds_node(
-              obj,
-              stadium,
-              race_no
-          ):
-
-              if isinstance(obj, list):
-
-                  for item in obj:
-
-                      found = find_race_odds_node(
-                          item,
-                          stadium,
-                          race_no
-                      )
-
-                      if found is not None:
-                          return found
-
-                  return None
-
-              if not isinstance(
-                  obj,
-                  dict
-              ):
-                  return None
-
-              s = int_num(
-                  obj.get(
-                      "stadium_number",
-                      obj.get(
-                          "stadium",
-                          obj.get(
-                              "place",
-                              obj.get(
-                                  "place_no",
-                                  0
-                              )
-                          )
-                      )
-                  )
-              )
-
-              r = int_num(
-                  obj.get(
-                      "race_number",
-                      obj.get(
-                          "race",
-                          obj.get(
-                              "race_no",
-                              0
-                          )
-                      )
-                  )
-              )
-
-              if (
-                  s == stadium
-                  and
-                  r == race_no
-              ):
-
-                  if isinstance(
-                      obj.get("trifecta"),
-                      (dict, list)
-                  ):
-                      return obj
-
-                  odds = obj.get("odds")
-
-                  if (
-                      isinstance(odds, dict)
-                      and
-                      isinstance(
-                          odds.get("trifecta"),
-                          (dict, list)
-                      )
-                  ):
-                      return odds
-
-              stadium_keys = [
-                  str(stadium),
-                  f"{stadium:02d}",
-                  f"{stadium}場",
-                  f"stadium_{stadium}",
-              ]
-
-              race_keys = [
-                  str(race_no),
-                  f"{race_no:02d}",
-                  f"{race_no}R",
-                  f"race_{race_no}",
-              ]
-
-              for sk in stadium_keys:
-
-                  if sk not in obj:
-                      continue
-
-                  sub = obj.get(sk)
-
-                  if not isinstance(
-                      sub,
-                      (dict, list)
-                  ):
-                      continue
-
-                  if isinstance(
-                      sub,
-                      dict
-                  ):
-
-                      for rk in race_keys:
-
-                          if rk not in sub:
-                              continue
-
-                          candidate = sub.get(rk)
-
-                          found = find_race_odds_node(
-                              candidate,
-                              stadium,
-                              race_no
-                          )
-
-                          if found is not None:
-                              return found
-
-                  found = find_race_odds_node(
-                      sub,
-                      stadium,
-                      race_no
-                  )
-
-                  if found is not None:
-                      return found
-
-              for value in obj.values():
-
-                  if isinstance(
-                      value,
-                      (dict, list)
-                  ):
-
-                      found = find_race_odds_node(
-                          value,
-                          stadium,
-                          race_no
-                      )
-
-                      if found is not None:
-                          return found
-
-              return None
-
-          def flatten_trifecta(
-              trifecta
-          ):
-
-              result = {}
-
-              if isinstance(
-                  trifecta,
-                  list
-              ):
-
-                  for item in trifecta:
-
-                      if not isinstance(
-                          item,
-                          dict
-                      ):
-                          continue
-
-                      combo = str(
-                          item.get(
-                              "combination",
-                              item.get(
-                                  "combo",
-                                  ""
-                              )
-                          )
-                      )
-
-                      odds = num(
-                          item.get(
-                              "odds",
-                              item.get(
-                                  "rate",
-                                  item.get(
-                                      "value",
-                                      0
-                                  )
-                              )
-                          )
-                      )
-
-                      if (
-                          re.fullmatch(
-                              r"[1-6]-[1-6]-[1-6]",
-                              combo
-                          )
-                          and
-                          odds > 0
-                      ):
-                          result[combo] = odds
-
-                  return result
-
-              if not isinstance(
-                  trifecta,
-                  dict
-              ):
-                  return result
-
-              for key, value in trifecta.items():
-
-                  combo = str(key)
-
-                  if re.fullmatch(
-                      r"[1-6]-[1-6]-[1-6]",
-                      combo
-                  ):
-
-                      if isinstance(
-                          value,
-                          dict
-                      ):
-                          odds = num(
-                              value.get(
-                                  "odds",
-                                  value.get(
-                                      "rate",
-                                      value.get(
-                                          "value",
-                                          0
-                                      )
-                                  )
-                              )
-                          )
-                      else:
-                          odds = num(value)
-
-                      if odds > 0:
-                          result[combo] = odds
-
-                      continue
-
-                  if (
-                      str(key).isdigit()
-                      and
-                      1 <= int(key) <= 6
-                      and
-                      isinstance(value, dict)
-                  ):
-
-                      first = int(key)
-
-                      for key2, value2 in value.items():
-
-                          if (
-                              not str(
-                                  key2
-                              ).isdigit()
-                              or
-                              not (
-                                  1 <= int(key2) <= 6
-                              )
-                              or
-                              not isinstance(
-                                  value2,
-                                  dict
-                              )
-                          ):
-                              continue
-
-                          second = int(key2)
-
-                          for key3, value3 in value2.items():
-
-                              if not str(
-                                  key3
-                              ).isdigit():
-                                  continue
-
-                              third = int(key3)
-
-                              if not (
-                                  1 <= third <= 6
-                              ):
-                                  continue
-
-                              if len({
-                                  first,
-                                  second,
-                                  third
-                              }) != 3:
-                                  continue
-
-                              odds = (
-                                  num(
-                                      value3.get(
-                                          "odds",
-                                          value3.get(
-                                              "rate",
-                                              value3.get(
-                                                  "value",
-                                                  0
-                                              )
-                                          )
-                                      )
-                                  )
-                                  if isinstance(
-                                      value3,
-                                      dict
-                                  )
-                                  else num(
-                                      value3
-                                  )
-                              )
-
-                              if odds > 0:
-                                  result[
-                                      f"{first}-{second}-{third}"
-                                  ] = odds
-
-              return result
-
-          def get_odds_map(
-              odds_data,
-              stadium,
-              race_no
-          ):
-
-              if odds_data is None:
+          def racer_stats(race, boat):
+              racers = race.get("racers", {})
+              if not isinstance(racers, dict):
                   return {}
-
-              node = find_race_odds_node(
-                  odds_data,
-                  stadium,
-                  race_no
-              )
-
-              if not isinstance(
-                  node,
-                  dict
-              ):
-                  return {}
-
-              trifecta = node.get(
-                  "trifecta"
-              )
-
-              if trifecta is None:
-
-                  odds = node.get("odds")
-
-                  if isinstance(
-                      odds,
-                      dict
-                  ):
-                      trifecta = odds.get(
-                          "trifecta"
-                      )
-
-              return flatten_trifecta(
-                  trifecta
-              )
-
-          def odds_ranking(
-              odds_map
-          ):
-
-              valid = [
-                  (combo, odds)
-                  for combo, odds
-                  in odds_map.items()
-                  if num(odds) > 0
-              ]
-
-              valid.sort(
-                  key=lambda x: x[1]
-              )
-
-              ranking = {}
-
-              for index, (
-                  combo,
-                  odds
-              ) in enumerate(
-                  valid,
-                  start=1
-              ):
-                  ranking[combo] = index
-
-              return ranking
-
-          def score_boat(
-              race,
-              boat
-          ):
-
-              preview = race.get(
-                  "preview",
-                  {}
-              )
-
-              racers = preview.get(
-                  "racers",
-                  {}
-              )
-
-              p = racers.get(
-                  str(boat),
-                  {}
-              )
-
-              score = 0.0
-
-              exhibition = num(
-                  p.get(
-                      "exhibition_time"
-                  ),
-                  99
-              )
-
-              start = num(
-                  p.get(
-                      "start_timing"
-                  ),
-                  1
-              )
-
-              course = int_num(
-                  p.get(
-                      "course_number",
-                      boat
-                  ),
-                  boat
-              )
-
-              racer = race.get(
-                  "racers",
-                  {}
-              )
-
-              racer_data = (
-                  racer.get(
-                      str(boat),
-                      {}
-                  )
-                  if isinstance(
-                      racer,
-                      dict
-                  )
-                  else {}
-              )
-
-              win_rate = num(
-                  racer_data.get(
-                      "win_rate"
-                  )
-              )
-
-              second_rate = num(
-                  racer_data.get(
-                      "second_place_rate"
-                  )
-              )
-
-              motor_rate = num(
-                  racer_data.get(
-                      "motor_second_place_rate"
-                  )
-              )
-
-              boat_rate = num(
-                  racer_data.get(
-                      "boat_second_place_rate"
-                  )
-              )
-
-              if exhibition < 99:
-                  score += (
-                      10.0 - exhibition
-                  ) * 22.0
-
-              score += (
-                  0.25 - start
-              ) * 42.0
-
-              score += (
-                  7 - course
-              ) * 3.8
-
-              score += (
-                  win_rate * 2.6
-              )
-
-              score += (
-                  second_rate * 0.18
-              )
-
-              score += (
-                  motor_rate * 0.16
-              )
-
-              score += (
-                  boat_rate * 0.08
-              )
-
-              return {
-                  "boat": boat,
-                  "score": score,
-                  "exhibition_time":
-                      exhibition,
-                  "start_timing":
-                      start,
-                  "course_number":
-                      course,
-                  "win_rate":
-                      win_rate,
-                  "motor_rate":
-                      motor_rate,
-              }
-
-          def exhibition_rank(
-              race
-          ):
-
-              rows = []
-
-              preview = race.get(
-                  "preview",
-                  {}
-              )
-
-              racers = preview.get(
-                  "racers",
-                  {}
-              )
-
-              for boat in range(
-                  1,
-                  7
-              ):
-
-                  p = racers.get(
-                      str(boat),
-                      {}
-                  )
-
-                  rows.append({
-                      "boat": boat,
-                      "time": num(
-                          p.get(
-                              "exhibition_time"
-                          ),
-                          99
-                      )
-                  })
-
-              rows.sort(
-                  key=lambda x:
-                      x["time"]
-              )
-
-              return rows
-
-          def start_rank(
-              race
-          ):
-
-              rows = []
-
-              preview = race.get(
-                  "preview",
-                  {}
-              )
-
-              racers = preview.get(
-                  "racers",
-                  {}
-              )
-
-              for boat in range(
-                  1,
-                  7
-              ):
-
-                  p = racers.get(
-                      str(boat),
-                      {}
-                  )
-
-                  rows.append({
-                      "boat": boat,
-                      "st": num(
-                          p.get(
-                              "start_timing"
-                          ),
-                          9
-                      )
-                  })
-
-              rows.sort(
-                  key=lambda x:
-                      x["st"]
-              )
-
-              return rows
-
-          def course_changes(
-              race
-          ):
-
-              preview = race.get(
-                  "preview",
-                  {}
-              )
-
-              racers = preview.get(
-                  "racers",
-                  {}
-              )
-
-              changes = []
-
-              for boat in range(
-                  1,
-                  7
-              ):
-
-                  p = racers.get(
-                      str(boat),
-                      {}
-                  )
-
-                  course = int_num(
-                      p.get(
-                          "course_number",
-                          boat
-                      ),
-                      boat
-                  )
-
-                  if course != boat:
-
-                      changes.append({
-                          "boat": boat,
-                          "course": course,
-                      })
-
-              return changes
-                        def scenario_forecast(
-              race,
-              boats
-          ):
-
-              weather = weather_info(
-                  race
-              )
-
-              wind = num(
-                  weather.get(
-                      "wind_speed"
-                  )
-              )
-
-              wave = num(
-                  weather.get(
-                      "wave"
-                  )
-              )
-
-              candidates = []
-
-              total_score = sum(
-                  max(
-                      0.1,
-                      x["score"]
-                  )
-                  for x in boats
-              )
-
-              if total_score <= 0:
-                  total_score = 1
-
-              for x in boats:
-
-                  boat = x["boat"]
-                  course = x[
-                      "course_number"
-                  ]
-                  st = x[
-                      "start_timing"
-                  ]
-
-                  base = max(
-                      0.1,
-                      x["score"]
-                  )
-
-                  prob = (
-                      base /
-                      total_score
-                  )
-
-                  if course == 1:
-                      tactic = "逃げ"
-                      prob *= 1.16
-
-                  elif course in (
-                      2,
-                      3
-                  ):
-                      tactic = "差し・まくり"
-                      prob *= 1.05
-
-                  elif course in (
-                      4,
-                      5
-                  ):
-                      tactic = "まくり差し"
-                      prob *= 1.01
-
-                  else:
-                      tactic = "展開突き"
-                      prob *= 0.92
-
-                  if st <= 0.10:
-                      prob *= 1.08
-
-                  if wind >= 5:
-                      prob *= (
-                          1.02
-                          if course >= 3
-                          else 0.98
-                      )
-
-                  if wave >= 5:
-                      prob *= 0.98
-
-                  candidates.append({
-                      "boat": boat,
-                      "course": course,
-                      "tactic": tactic,
-                      "probability": prob,
-                  })
-
-              total = sum(
-                  x["probability"]
-                  for x in candidates
-              )
-
-              if total <= 0:
-                  total = 1
-
-              for x in candidates:
-                  x["probability"] /= total
-
-              candidates.sort(
-                  key=lambda x:
-                      x["probability"],
-                  reverse=True
-              )
-
-              return {
-                  "top":
-                      candidates[0]
-                      if candidates
-                      else None,
-                  "candidates":
-                      candidates,
-              }
-
-          def evaluate_race(race):
-
-              if not preview_ready(race):
+              x = racers.get(str(boat), {})
+              return x if isinstance(x, dict) else {}
+
+          def analyze(race):
+              if not ready(race):
                   return None
+              preview = race.get("preview", {})
+              pr = preview_racers(race)
+              rows = []
+              for boat in range(1, 7):
+                  p = pr.get(str(boat), {})
+                  s = racer_stats(race, boat)
+                  ex = n(p.get("exhibition_time"), 99)
+                  st = n(p.get("start_timing"), 1)
+                  course = i(p.get("course_number", boat), boat)
+                  score = 0.0
+                  score += (10.0 - ex) * 22.0
+                  score += (0.25 - st) * 42.0
+                  score += (7 - course) * 3.8
+                  score += n(s.get("win_rate")) * 2.6
+                  score += n(s.get("second_place_rate")) * 0.18
+                  score += n(s.get("motor_second_place_rate")) * 0.16
+                  score += n(s.get("boat_second_place_rate")) * 0.08
+                  rows.append({"boat": boat, "score": score, "ex": ex, "st": st, "course": course})
 
-              boats = [
-                  score_boat(
-                      race,
-                      boat
-                  )
-                  for boat in range(1, 7)
-              ]
+              rows.sort(key=lambda x: x["score"], reverse=True)
+              ex_rank = sorted(rows, key=lambda x: x["ex"])
+              st_rank = sorted(rows, key=lambda x: x["st"])
+              top, second = rows[0], rows[1]
 
-              boats.sort(
-                  key=lambda x:
-                      x["score"],
-                  reverse=True
-              )
-
-              ex_rank = exhibition_rank(
-                  race
-              )
-
-              st_rank = start_rank(
-                  race
-              )
-
-              changes = course_changes(
-                  race
-              )
-
-              scenario = scenario_forecast(
-                  race,
-                  boats
-              )
-
-              weather = weather_info(
-                  race
-              )
-
-              top = boats[0]
-              second = boats[1]
-
-              score_gap = (
-                  top["score"]
-                  -
-                  second["score"]
-              )
+              weather = preview if isinstance(preview, dict) else {}
+              wind = n(weather.get("wind_speed"))
+              wave = n(weather.get("wave_height"))
+              changes = sum(1 for x in rows if x["course"] != x["boat"])
 
               rating = 70
-
-              rating += clamp(
-                  score_gap * 0.7,
-                  0,
-                  10
-              )
-
-              if (
-                  ex_rank
-                  and
-                  ex_rank[0]["boat"]
-                  ==
-                  top["boat"]
-              ):
-                  rating += 4
-
-              if (
-                  st_rank
-                  and
-                  st_rank[0]["boat"]
-                  ==
-                  top["boat"]
-              ):
-                  rating += 4
-
-              if (
-                  top["course_number"]
-                  ==
-                  1
-              ):
-                  rating += 3
-
-              wind = num(
-                  weather["wind_speed"]
-              )
-
-              wave = num(
-                  weather["wave"]
-              )
-
-              if wind <= 4:
-                  rating += 2
-
-              if wave <= 4:
-                  rating += 2
-
-              if len(changes) >= 2:
-                  rating -= 3
-
-              if wind >= 7:
-                  rating -= 4
-
-              if wave >= 8:
-                  rating -= 4
-
-              rating = int(
-                  round(
-                      clamp(
-                          rating,
-                          0,
-                          100
-                      )
-                  )
-              )
-
-              grade = (
-                  "S"
-                  if rating >= 82
-                  else "A"
-                  if rating >= 74
-                  else "B"
-              )
-
-              reasons = [
-                  f"{top['boat']}号艇がAI総合1位",
-                  f"展示1位は{ex_rank[0]['boat']}号艇",
-                  f"ST1位は{st_rank[0]['boat']}号艇",
-                  f"風速{wind:.1f}m・波高{wave:.1f}cm",
-              ]
+              rating += max(0, min(10, (top["score"] - second["score"]) * 0.7))
+              rating += 4 if ex_rank[0]["boat"] == top["boat"] else 0
+              rating += 4 if st_rank[0]["boat"] == top["boat"] else 0
+              rating += 3 if top["course"] == 1 else 0
+              rating += 2 if wind <= 4 else 0
+              rating += 2 if wave <= 4 else 0
+              rating -= 3 if changes >= 2 else 0
+              rating -= 4 if wind >= 7 else 0
+              rating -= 4 if wave >= 8 else 0
+              rating = int(round(max(0, min(100, rating))))
 
               return {
                   "race": race,
-                  "boats": boats,
+                  "boats": rows,
                   "rating": rating,
-                  "grade": grade,
-                  "weather": weather,
-                  "scenario": scenario,
-                  "exhibition_rank": ex_rank,
-                  "start_rank": st_rank,
-                  "course_changes": changes,
-                  "reasons": reasons,
+                  "grade": "S" if rating >= 82 else ("A" if rating >= 74 else "B"),
+                  "wind": wind,
+                  "wave": wave,
+                  "ex1": ex_rank[0]["boat"],
+                  "st1": st_rank[0]["boat"],
+                  "top": top,
               }
 
-          def all_combos():
+          def find_odds_node(obj, stadium, race_no):
+              if isinstance(obj, list):
+                  for v in obj:
+                      found = find_odds_node(v, stadium, race_no)
+                      if found is not None:
+                          return found
+                  return None
+              if not isinstance(obj, dict):
+                  return None
 
-              return [
-                  f"{a}-{b}-{c}"
-                  for a, b, c
-                  in itertools.permutations(
-                      range(1, 7),
-                      3
-                  )
-              ]
+              s = i(obj.get("stadium_number", obj.get("stadium", obj.get("place_no", 0))))
+              r = i(obj.get("race_number", obj.get("race", obj.get("race_no", 0))))
+              if s == stadium and r == race_no:
+                  if isinstance(obj.get("trifecta"), (dict, list)):
+                      return obj.get("trifecta")
+                  odds = obj.get("odds")
+                  if isinstance(odds, dict) and isinstance(odds.get("trifecta"), (dict, list)):
+                      return odds.get("trifecta")
 
-          def combo_probability(
-              analysis,
-              combo
-          ):
+              for v in obj.values():
+                  if isinstance(v, (dict, list)):
+                      found = find_odds_node(v, stadium, race_no)
+                      if found is not None:
+                          return found
+              return None
 
-              parts = [
-                  int(x)
-                  for x in combo.split("-")
-              ]
+          def flatten_odds(node):
+              out = {}
+              if isinstance(node, list):
+                  for x in node:
+                      if not isinstance(x, dict):
+                          continue
+                      combo = str(x.get("combination", x.get("combo", "")))
+                      odds = n(x.get("odds", x.get("rate", x.get("value", 0))))
+                      if re.fullmatch(r"[1-6]-[1-6]-[1-6]", combo) and odds > 0:
+                          out[combo] = odds
+                  return out
+              if not isinstance(node, dict):
+                  return out
+              for k, v in node.items():
+                  key = str(k)
+                  if re.fullmatch(r"[1-6]-[1-6]-[1-6]", key):
+                      odds = n(v.get("odds", v.get("rate", v.get("value", 0)))) if isinstance(v, dict) else n(v)
+                      if odds > 0:
+                          out[key] = odds
+                  elif key.isdigit() and isinstance(v, dict):
+                      a = int(key)
+                      for k2, v2 in v.items():
+                          if not str(k2).isdigit() or not isinstance(v2, dict):
+                              continue
+                          b = int(k2)
+                          for k3, v3 in v2.items():
+                              if not str(k3).isdigit():
+                                  continue
+                              c = int(k3)
+                              if len({a, b, c}) != 3 or not all(1 <= z <= 6 for z in (a, b, c)):
+                                  continue
+                              odds = n(v3.get("odds", v3.get("rate", v3.get("value", 0)))) if isinstance(v3, dict) else n(v3)
+                              if odds > 0:
+                                  out[f"{a}-{b}-{c}"] = odds
+              return out
 
-              if len(parts) != 3:
-                  return 0.0
-
-              score_map = {
-                  x["boat"]:
-                      x["score"]
-                  for x in analysis[
-                      "boats"
-                  ]
-              }
-
-              scores = [
-                  score_map.get(
-                      boat,
-                      0
-                  )
-                  for boat in parts
-              ]
-
-              order_weight = (
-                  1.00,
-                  0.72,
-                  0.48
-              )
-
-              raw = 1.0
-
-              for index, score in enumerate(
-                  scores
-              ):
-
-                  normalized = max(
-                      0.1,
-                      score + 50
-                  )
-
-                  raw *= (
-                      normalized
-                      **
-                      order_weight[index]
-                  )
-
-              scenario = analysis.get(
-                  "scenario",
-                  {}
-              )
-
-              candidates = scenario.get(
-                  "candidates",
-                  []
-              )
-
-              scenario_map = {
-                  x["boat"]:
-                      num(
-                          x["probability"]
-                      )
-                  for x in candidates
-              }
-
-              first_boat_prob = (
-                  scenario_map.get(
-                      parts[0],
-                      0.05
-                  )
-              )
-
-              raw *= (
-                  1
-                  +
-                  first_boat_prob
-                  *
-                  2.2
-              )
-
-              return raw
-
-          def probability_map(
-              analysis
-          ):
-
+          def probabilities(analysis):
+              score = {x["boat"]: max(0.1, x["score"] + 50) for x in analysis["boats"]}
               raw = {}
+              for a, b, c in itertools.permutations(range(1, 7), 3):
+                  key = f"{a}-{b}-{c}"
+                  raw[key] = score[a] * (score[b] ** 0.72) * (score[c] ** 0.48)
+              total = sum(raw.values()) or 1
+              return {k: v / total for k, v in raw.items()}
 
-              for combo in all_combos():
-
-                  raw[combo] = (
-                      combo_probability(
-                          analysis,
-                          combo
-                      )
-                  )
-
-              total = sum(
-                  raw.values()
-              )
-
-              if total <= 0:
-                  total = 1
-
-              return {
-                  combo:
-                      value / total
-                  for combo, value
-                  in raw.items()
-              }
-
-          def make_tickets(
-              analysis,
-              odds_map
-          ):
-
+          def tickets_for(analysis, odds_map):
               if not odds_map:
-
-                  return {
-                      "has_odds": False,
-                      "valid343": False,
-                      "main": [],
-                      "cover": [],
-                      "hole": [],
-                      "odds_count": 0,
-                      "band_count": {
-                          "main": 0,
-                          "cover": 0,
-                          "hole": 0,
-                      },
-                  }
-
-              probabilities = probability_map(
-                  analysis
-              )
-
-              ranking = odds_ranking(
-                  odds_map
-              )
-
+                  return []
+              probs = probabilities(analysis)
               rows = []
-
               for combo, odds in odds_map.items():
+                  p = probs.get(combo, 0.0)
+                  rows.append({"combo": combo, "odds": odds, "p": p, "ev": p * odds})
 
-                  odds = num(odds)
-
-                  if odds <= 0:
-                      continue
-
-                  probability = num(
-                      probabilities.get(
-                          combo,
-                          0
-                      )
-                  )
-
-                  ev = (
-                      probability
-                      *
-                      odds
-                  )
-
-                  rows.append({
-                      "combo": combo,
-                      "odds": odds,
-                      "probability":
-                          probability,
-                      "ev": ev,
-                      "popularity":
-                          int_num(
-                              ranking.get(
-                                  combo
-                              )
-                          ),
-                  })
-
-              main_pool = [
-                  x
-                  for x in rows
-                  if x["odds"] <= 15
-              ]
-
-              cover_pool = [
-                  x
-                  for x in rows
-                  if (
-                      x["odds"] > 15
-                      and
-                      x["odds"] < 80
-                  )
-              ]
-
-              hole_pool = [
-                  x
-                  for x in rows
-                  if x["odds"] >= 80
-              ]
-
-              main_pool.sort(
-                  key=lambda x: (
-                      x["probability"]
-                      +
-                      x["ev"] * 0.002
-                  ),
-                  reverse=True
-              )
-
-              cover_pool.sort(
-                  key=lambda x: (
-                      x["probability"]
-                      +
-                      min(
-                          x["odds"],
-                          80
-                      )
-                      /
-                      80
-                      *
-                      0.012
-                      +
-                      x["ev"]
-                      *
-                      0.006
-                  ),
-                  reverse=True
-              )
-
-              hole_pool.sort(
-                  key=lambda x: (
-                      x["probability"]
-                      +
-                      min(
-                          x["odds"],
-                          200
-                      )
-                      /
-                      200
-                      *
-                      0.010
-                      +
-                      min(
-                          x["ev"],
-                          3
-                      )
-                      *
-                      0.008
-                  ),
-                  reverse=True
-              )
-
-              main = main_pool[:3]
-              cover = cover_pool[:4]
-              hole = hole_pool[:3]
-
-              all_selected = (
-                  main
-                  +
-                  cover
-                  +
-                  hole
-              )
-
-              combos = [
-                  x["combo"]
-                  for x in all_selected
-              ]
-
-              valid343 = (
-                  len(main) == 3
-                  and
-                  len(cover) == 4
-                  and
-                  len(hole) == 3
-                  and
-                  len(set(combos)) == 10
-              )
-
-              return {
-                  "has_odds": True,
-                  "valid343": valid343,
-                  "main": main,
-                  "cover": cover,
-                  "hole": hole,
-                  "odds_count":
-                      len(rows),
-                  "band_count": {
-                      "main":
-                          len(main_pool),
-                      "cover":
-                          len(cover_pool),
-                      "hole":
-                          len(hole_pool),
-                  },
-              }
-                        def allocate_tickets(
-              ticket_set,
-              budget=1000
-          ):
-
-              budget = max(
-                  100,
-                  int_num(
-                      budget,
-                      1000
-                  )
-              )
-
-              groups = [
-                  (
-                      "main",
-                      ticket_set.get(
-                          "main",
-                          []
-                      )
-                  ),
-                  (
-                      "cover",
-                      ticket_set.get(
-                          "cover",
-                          []
-                      )
-                  ),
-                  (
-                      "hole",
-                      ticket_set.get(
-                          "hole",
-                          []
-                      )
-                  ),
-              ]
-
-              tickets = []
-
-              for group_name, rows in groups:
-
-                  for row in rows:
-
-                      item = dict(row)
-                      item["group"] = group_name
-                      tickets.append(item)
-
-              if len(tickets) != 10:
+              main = sorted((x for x in rows if x["odds"] <= 15), key=lambda x: (x["p"], x["ev"]), reverse=True)[:3]
+              cover = sorted((x for x in rows if 15 < x["odds"] < 80), key=lambda x: (x["p"], x["ev"]), reverse=True)[:4]
+              hole = sorted((x for x in rows if x["odds"] >= 80), key=lambda x: (x["p"], x["ev"]), reverse=True)[:3]
+              if not (len(main) == 3 and len(cover) == 4 and len(hole) == 3):
                   return []
+              result = []
+              for group, arr in (("本命", main), ("狙い", cover), ("穴", hole)):
+                  for x in arr:
+                      y = dict(x)
+                      y["group"] = group
+                      y["money"] = 100
+                      result.append(y)
+              return result
 
-              units = max(
-                  10,
-                  budget // 100
-              )
-
-              weights = []
-
-              for t in tickets:
-
-                  p = num(
-                      t.get(
-                          "probability"
-                      )
-                  )
-
-                  odds = num(
-                      t.get(
-                          "odds"
-                      )
-                  )
-
-                  if t["group"] == "main":
-                      w = p * 1.35
-
-                  elif t["group"] == "cover":
-                      w = (
-                          p * 1.10
-                          +
-                          min(
-                              odds,
-                              80
-                          )
-                          /
-                          80
-                          *
-                          0.012
-                      )
-
-                  else:
-                      w = (
-                          p * 0.95
-                          +
-                          min(
-                              odds,
-                              200
-                          )
-                          /
-                          200
-                          *
-                          0.010
-                      )
-
-                  weights.append(
-                      max(
-                          w,
-                          0.0001
-                      )
-                  )
-
-              total_weight = sum(
-                  weights
-              )
-
-              if total_weight <= 0:
-                  total_weight = 1
-
-              unit_alloc = [
-                  1
-                  for _ in tickets
-              ]
-
-              remaining = (
-                  units
-                  -
-                  len(tickets)
-              )
-
-              if remaining < 0:
-                  return []
-
-              raw_add = [
-                  remaining
-                  *
-                  (
-                      w /
-                      total_weight
-                  )
-                  for w in weights
-              ]
-
-              floor_add = [
-                  int(
-                      math.floor(x)
-                  )
-                  for x in raw_add
-              ]
-
-              for i, add in enumerate(
-                  floor_add
-              ):
-                  unit_alloc[i] += add
-
-              used = sum(
-                  floor_add
-              )
-
-              left = (
-                  remaining
-                  -
-                  used
-              )
-
-              remainders = [
-                  (
-                      i,
-                      raw_add[i]
-                      -
-                      floor_add[i]
-                  )
-                  for i in range(
-                      len(tickets)
-                  )
-              ]
-
-              remainders.sort(
-                  key=lambda x:
-                      x[1],
-                  reverse=True
-              )
-
-              for i in range(left):
-
-                  idx = (
-                      remainders[
-                          i %
-                          len(remainders)
-                      ][0]
-                  )
-
-                  unit_alloc[idx] += 1
-
-              for i, t in enumerate(
-                  tickets
-              ):
-
-                  t["money"] = (
-                      unit_alloc[i]
-                      *
-                      100
-                  )
-
-              return tickets
-
-          def line_push(text):
-
-              if not (
-                  LINE_CHANNEL_ACCESS_TOKEN
-                  and
-                  LINE_USER_ID
-              ):
-
-                  raise RuntimeError(
-                      "LINEのSecretsが設定されていません"
-                  )
-
-              url = (
-                  "https://api.line.me/"
-                  "v2/bot/message/push"
-              )
-
-              headers = {
-                  "Authorization":
-                      "Bearer "
-                      +
-                      LINE_CHANNEL_ACCESS_TOKEN,
-
-                  "Content-Type":
-                      "application/json",
-              }
-
-              payload = {
-                  "to":
-                      LINE_USER_ID,
-
-                  "messages": [
-                      {
-                          "type": "text",
-                          "text": text[:5000],
-                      }
-                  ],
-              }
-
-              response = requests.post(
-                  url,
-                  headers=headers,
-                  json=payload,
-                  timeout=25
-              )
-
-              print(
-                  "LINE PUSH:",
-                  response.status_code,
-                  response.text[:300]
-              )
-
-              if response.status_code not in (
-                  200,
-                  201
-              ):
-
-                  raise RuntimeError(
-                      "LINE送信失敗 "
-                      f"{response.status_code}"
-                  )
-
-              return True
-
-          def load_state():
-
+          def state_load():
               if not STATE_FILE.exists():
-
-                  return {
-                      "sent": {},
-                      "last_date":
-                          today_jst(),
-                  }
-
+                  return {"date": now_jst().strftime("%Y-%m-%d"), "sent": {}}
               try:
+                  x = json.loads(STATE_FILE.read_text(encoding="utf-8"))
+                  if not isinstance(x, dict):
+                      raise ValueError
+                  return x
+              except Exception:
+                  return {"date": now_jst().strftime("%Y-%m-%d"), "sent": {}}
 
-                  data = json.loads(
-                      STATE_FILE.read_text(
-                          encoding="utf-8"
-                      )
-                  )
+          def state_save(state):
+              STATE_FILE.write_text(json.dumps(state, ensure_ascii=False, indent=2), encoding="utf-8")
 
-                  if not isinstance(
-                      data,
-                      dict
-                  ):
-                      raise ValueError(
-                          "state invalid"
-                      )
+          def race_key(race):
+              return f"{now_jst():%Y-%m-%d}_{i(race.get('stadium_number'))}_{i(race.get('race_number'))}"
 
-                  data.setdefault(
-                      "sent",
-                      {}
-                  )
-
-                  data.setdefault(
-                      "last_date",
-                      today_jst()
-                  )
-
-                  return data
-
-              except Exception as e:
-
-                  print(
-                      "STATE READ ERROR:",
-                      repr(e)
-                  )
-
-                  return {
-                      "sent": {},
-                      "last_date":
-                          today_jst(),
-                  }
-
-          def save_state(state):
-
-              STATE_FILE.write_text(
-                  json.dumps(
-                      state,
-                      ensure_ascii=False,
-                      indent=2
-                  ),
-                  encoding="utf-8"
-              )
-
-          def prediction_hash(
-              analysis,
-              tickets
-          ):
-
-              payload = {
-                  "key":
-                      race_key(
-                          analysis["race"]
-                      ),
-
-                  "rating":
-                      analysis["rating"],
-
-                  "tickets": [
-                      {
-                          "combo":
-                              t["combo"],
-
-                          "group":
-                              t["group"],
-
-                          "odds":
-                              round(
-                                  num(
-                                      t["odds"]
-                                  ),
-                                  1
-                              ),
-
-                          "money":
-                              int_num(
-                                  t["money"]
-                              ),
-                      }
-                      for t in tickets
-                  ],
-              }
-
-              raw = json.dumps(
-                  payload,
-                  ensure_ascii=False,
-                  sort_keys=True
-              )
-
-              return hashlib.sha256(
-                  raw.encode(
-                      "utf-8"
-                  )
-              ).hexdigest()
-
-          def ticket_lines(
-              tickets,
-              group_name
-          ):
-
-              labels = {
-                  "main": "本命🚤",
-                  "cover": "狙い🚤",
-                  "hole": "穴🚤",
-              }
-
-              rows = [
-                  t
-                  for t in tickets
-                  if t["group"]
-                  ==
-                  group_name
-              ]
-
-              lines = [
-                  labels[group_name]
-              ]
-
-              for t in rows:
-
-                  combo = t["combo"]
-                  odds = num(t["odds"])
-                  rank = int_num(
-                      t.get(
-                          "popularity"
-                      )
-                  )
-                  money = int_num(
-                      t.get(
-                          "money"
-                      )
-                  )
-                  prob = (
-                      num(
-                          t.get(
-                              "probability"
-                          )
-                      )
-                      *
-                      100
-                  )
-
-                  rank_text = (
-                      f"人気{rank}位"
-                      if rank > 0
-                      else "人気順位なし"
-                  )
-
-                  lines.append(
-                      f"{combo} "
-                      f"{money:,}円 "
-                      f"／ {odds:.1f}倍 "
-                      f"／ {rank_text} "
-                      f"／ AI{prob:.1f}%"
-                  )
-
-              return "\n".join(
-                  lines
-              )
-
-          def build_message(
-              analysis,
-              ticket_set,
-              tickets,
-              odds_source
-          ):
-
+          def message_for(analysis, tickets, odds_source):
               race = analysis["race"]
-
-              stadium = int_num(
-                  race.get(
-                      "stadium_number"
-                  )
-              )
-
-              race_no = int_num(
-                  race.get(
-                      "race_number"
-                  )
-              )
-
-              venue = STADIUMS.get(
-                  stadium,
-                  f"会場{stadium}"
-              )
-
-              weather = analysis[
-                  "weather"
-              ]
-
-              scenario = analysis.get(
-                  "scenario",
-                  {}
-              )
-
-              top = (
-                  scenario.get("top")
-                  or
-                  {}
-              )
-
-              total_money = sum(
-                  int_num(
-                      t.get(
-                          "money"
-                      )
-                  )
-                  for t in tickets
-              )
-
+              stadium = i(race.get("stadium_number"))
+              race_no = i(race.get("race_number"))
+              venue = STADIUMS.get(stadium, f"会場{stadium}")
+              close = close_dt(race)
+              close_text = close.strftime("%H:%M") if close else "--:--"
+              top = analysis["top"]
               lines = [
                   "🚤 BOAT RACE AI予想",
                   "",
                   "🔥 勝負度S",
                   f"{venue} {race_no}R",
+                  f"AI信頼スコア：{analysis['rating']}",
+                  f"締切予定：{close_text}",
+                  f"展開中心：{top['boat']}号艇",
+                  f"展示1位：{analysis['ex1']}号艇 / ST1位：{analysis['st1']}号艇",
+                  f"風速：{analysis['wind']:.1f}m / 波高：{analysis['wave']:.1f}cm",
                   "",
-                  (
-                      "AI信頼スコア："
-                      f"{analysis['rating']}"
-                  ),
-                  "",
-                  (
-                      "締切予定："
-                      f"{close_time_text(race)}"
-                  ),
-                  (
-                      "残り時間："
-                      f"{remaining_text(race)}"
-                  ),
-                  "",
-                  (
-                      "展開予測："
-                      f"{top.get('boat','-')}号艇 "
-                      f"{top.get('tactic','-')}"
-                  ),
-                  "",
-                  (
-                      "水面："
-                      f"{WEATHER_NAMES.get(int_num(weather.get('weather')),'-')} "
-                      f"／ 風速{num(weather.get('wind_speed')):.1f}m "
-                      f"／ 波高{num(weather.get('wave')):.1f}cm"
-                  ),
-                  "",
-                  ticket_lines(
-                      tickets,
-                      "main"
-                  ),
-                  "",
-                  ticket_lines(
-                      tickets,
-                      "cover"
-                  ),
-                  "",
-                  ticket_lines(
-                      tickets,
-                      "hole"
-                  ),
-                  "",
-                  f"合計：{total_money:,}円",
-                  "",
-                  "判断基準",
               ]
+              for group in ("本命", "狙い", "穴"):
+                  lines.append(f"{group}🚤")
+                  for t in (x for x in tickets if x["group"] == group):
+                      lines.append(f"{t['combo']} 100円 / {t['odds']:.1f}倍 / AI{t['p']*100:.1f}%")
+                  lines.append("")
+              lines += ["合計：1,000円", f"オッズ取得：{odds_source}", f"Model：{MODEL_NAME}"]
+              return "\n".join(lines)
 
-              for reason in analysis.get(
-                  "reasons",
-                  []
-              ):
-
-                  lines.append(
-                      f"・{reason}"
-                  )
-
-              lines.extend([
-                  (
-                      "・3連単オッズ："
-                      f"{ticket_set.get('odds_count',0)}通り取得"
-                  ),
-                  (
-                      "・本命候補："
-                      f"{ticket_set.get('band_count',{}).get('main',0)}通り"
-                  ),
-                  (
-                      "・狙い候補："
-                      f"{ticket_set.get('band_count',{}).get('cover',0)}通り"
-                  ),
-                  (
-                      "・穴候補："
-                      f"{ticket_set.get('band_count',{}).get('hole',0)}通り"
-                  ),
-                  "",
-                  "本命🚤：15倍以下",
-                  "狙い🚤：15倍超〜80倍未満",
-                  "穴🚤：80倍以上",
-                  "",
-                  f"オッズ取得：{odds_source}",
-                  f"Model：{MODEL_NAME}",
-              ])
-
-              return "\n".join(
-                  lines
+          def line_push(text):
+              if not LINE_TOKEN or not LINE_USER_ID:
+                  raise RuntimeError("GitHub Secrets BOATAI または LINE_USER_ID が未設定です")
+              r = requests.post(
+                  "https://api.line.me/v2/bot/message/push",
+                  headers={"Authorization": f"Bearer {LINE_TOKEN}", "Content-Type": "application/json"},
+                  json={"to": LINE_USER_ID, "messages": [{"type": "text", "text": text[:5000]}]},
+                  timeout=25,
               )
-
-          def collect_predictions(
-              races,
-              odds_data,
-              budget=1000
-          ):
-
-              results = []
-              raw_s_count = 0
-              odds_ok_count = 0
-
-              for race in races:
-
-                  if not upcoming(race):
-                      continue
-
-                  analysis = evaluate_race(
-                      race
-                  )
-
-                  if analysis is None:
-                      continue
-
-                  if (
-                      analysis["grade"]
-                      !=
-                      "S"
-                  ):
-                      continue
-
-                  raw_s_count += 1
-
-                  stadium = int_num(
-                      race.get(
-                          "stadium_number"
-                      )
-                  )
-
-                  race_no = int_num(
-                      race.get(
-                          "race_number"
-                      )
-                  )
-
-                  odds_map = get_odds_map(
-                      odds_data,
-                      stadium,
-                      race_no
-                  )
-
-                  ticket_set = make_tickets(
-                      analysis,
-                      odds_map
-                  )
-
-                  if not (
-                      ticket_set[
-                          "has_odds"
-                      ]
-                      and
-                      ticket_set[
-                          "valid343"
-                      ]
-                  ):
-                      continue
-
-                  tickets = allocate_tickets(
-                      ticket_set,
-                      budget
-                  )
-
-                  if len(tickets) != 10:
-                      continue
-
-                  odds_ok_count += 1
-
-                  results.append({
-                      "analysis":
-                          analysis,
-                      "ticket_set":
-                          ticket_set,
-                      "tickets":
-                          tickets,
-                  })
-
-              results.sort(
-                  key=lambda x: (
-                      -x[
-                          "analysis"
-                      ][
-                          "rating"
-                      ],
-                      int_num(
-                          x[
-                              "analysis"
-                          ][
-                              "race"
-                          ].get(
-                              "stadium_number"
-                          )
-                      ),
-                      int_num(
-                          x[
-                              "analysis"
-                          ][
-                              "race"
-                          ].get(
-                              "race_number"
-                          )
-                      ),
-                  )
-              )
-
-              return (
-                  results,
-                  raw_s_count,
-                  odds_ok_count
-              )
+              print("LINE", r.status_code, r.text[:300])
+              if r.status_code != 200:
+                  raise RuntimeError(f"LINE送信失敗: HTTP {r.status_code}")
 
           def main():
-
-              print(
-                  "======================================"
-              )
-
-              print(
-                  "BOATRACE AI LINE START"
-              )
-
-              print(
-                  "JST:",
-                  now_jst().isoformat()
-              )
-
-              print(
-                  "======================================"
-              )
-
-              race_data = fetch_race_data()
-
-              races = flatten_races(
-                  race_data
-              )
-
-              print(
-                  "RACES:",
-                  len(races)
-              )
-
-              (
-                  odds_data,
-                  odds_source
-              ) = fetch_odds_data()
-
+              print("BOATRACE AI LINE START", now_jst().isoformat())
+              races = flatten_races(fetch_races())
+              odds_data, odds_source = fetch_odds()
               if odds_data is None:
-
-                  print(
-                      "オッズ未取得のため"
-                      "通知判定を見送ります"
-                  )
-
+                  print("オッズ未取得。今回は通知しません。")
                   return
 
-              (
-                  predictions,
-                  raw_s_count,
-                  odds_ok_count
-              ) = collect_predictions(
-                  races,
-                  odds_data,
-                  budget=1000
-              )
+              state = state_load()
+              today = now_jst().strftime("%Y-%m-%d")
+              if state.get("date") != today:
+                  state = {"date": today, "sent": {}}
+              sent = state.setdefault("sent", {})
 
-              print(
-                  "AI S評価:",
-                  raw_s_count
-              )
-
-              print(
-                  "オッズ条件通過:",
-                  odds_ok_count
-              )
-
-              print(
-                  "通知候補:",
-                  len(predictions)
-              )
-
-              state = load_state()
-
-              if (
-                  state.get(
-                      "last_date"
-                  )
-                  !=
-                  today_jst()
-              ):
-
-                  state = {
-                      "sent": {},
-                      "last_date":
-                          today_jst(),
-                  }
-
-              sent = state.setdefault(
-                  "sent",
-                  {}
-              )
-
-              new_count = 0
-
-              for item in predictions:
-
-                  analysis = item[
-                      "analysis"
-                  ]
-
-                  ticket_set = item[
-                      "ticket_set"
-                  ]
-
-                  tickets = item[
-                      "tickets"
-                  ]
-
-                  key = race_key(
-                      analysis["race"]
-                  )
-
-                  phash = prediction_hash(
-                      analysis,
-                      tickets
-                  )
-
-                  old_hash = sent.get(
-                      key
-                  )
-
-                  if old_hash == phash:
-
-                      print(
-                          "SKIP SENT:",
-                          key
-                      )
-
+              candidates = []
+              for race in races:
+                  if not future_race(race):
                       continue
+                  analysis = analyze(race)
+                  if not analysis or analysis["grade"] != "S":
+                      continue
+                  stadium = i(race.get("stadium_number"))
+                  race_no = i(race.get("race_number"))
+                  odds_map = flatten_odds(find_odds_node(odds_data, stadium, race_no))
+                  tickets = tickets_for(analysis, odds_map)
+                  if len(tickets) == 10:
+                      candidates.append((analysis, tickets))
 
-                  message = build_message(
-                      analysis,
-                      ticket_set,
-                      tickets,
-                      odds_source
-                  )
+              candidates.sort(key=lambda x: x[0]["rating"], reverse=True)
+              print("S通知候補", len(candidates))
 
-                  line_push(
-                      message
-                  )
-
-                  sent[key] = phash
-                  new_count += 1
-
-                  save_state(
-                      state
-                  )
-
+              for analysis, tickets in candidates:
+                  key = race_key(analysis["race"])
+                  signature = hashlib.sha256(
+                      json.dumps([(x["combo"], round(x["odds"], 1)) for x in tickets], ensure_ascii=False).encode("utf-8")
+                  ).hexdigest()
+                  if sent.get(key) == signature:
+                      print("SKIP", key)
+                      continue
+                  line_push(message_for(analysis, tickets, odds_source))
+                  sent[key] = signature
+                  state_save(state)
                   time.sleep(1)
 
-              print(
-                  "NEW LINE:",
-                  new_count
-              )
-
-              save_state(
-                  state
-              )
-
-              print(
-                  "======================================"
-              )
-
-              print(
-                  "BOATRACE AI LINE END"
-              )
-
-              print(
-                  "======================================"
-              )
+              state_save(state)
+              print("BOATRACE AI LINE END")
 
           if __name__ == "__main__":
               main()
-
           PY
 
-      # =========================================================
-      # 5. Python実行
-      # =========================================================
       - name: Run BOATRACE AI LINE
         env:
           LINE_CHANNEL_ACCESS_TOKEN: ${{ secrets.BOATAI }}
           LINE_USER_ID: ${{ secrets.LINE_USER_ID }}
-        run: |
-          python line_notify.py
+        run: python line_notify.py
 
-      # =========================================================
-      # 6. 通知済み状態をGitHubへ保存
-      # =========================================================
       - name: Save notification state
         run: |
           if [ -f boatrace_line_state.json ]; then
-
             git config user.name "github-actions[bot]"
-            git config user.email \
-              "41898282+github-actions[bot]@users.noreply.github.com"
-
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
             git add boatrace_line_state.json
-
             if git diff --cached --quiet; then
               echo "通知状態に変更なし"
             else
-              git commit \
-                -m "Update BOATRACE LINE notification state"
-
+              git commit -m "Update BOATRACE LINE notification state"
               git push
             fi
-
           else
             echo "state file not found"
           fi
