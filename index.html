@@ -871,24 +871,15 @@ select,input[type=date]{
 
   <div class="tabs">
 
-    <button
-      class="tab active"
-      data-period="day"
-    >
+    <button class="tab active" data-period="day">
       今日
     </button>
 
-    <button
-      class="tab"
-      data-period="custom"
-    >
+    <button class="tab" data-period="custom">
       期間指定
     </button>
 
-    <button
-      class="tab"
-      data-period="all"
-    >
+    <button class="tab" data-period="all">
       全期間
     </button>
 
@@ -896,15 +887,9 @@ select,input[type=date]{
 
   <div class="range" id="rangeBox">
 
-    <input
-      type="date"
-      id="fromDate"
-    >
+    <input type="date" id="fromDate">
 
-    <input
-      type="date"
-      id="toDate"
-    >
+    <input type="date" id="toDate">
 
   </div>
 
@@ -926,17 +911,11 @@ select,input[type=date]{
     的中・不的中レース
   </div>
 
-  <button
-    class="toggle"
-    id="historyToggle"
-  >
+  <button class="toggle" id="historyToggle">
     一覧を表示
   </button>
 
-  <div
-    class="history-wrap"
-    id="historyWrap"
-  >
+  <div class="history-wrap" id="historyWrap">
     <div id="history"></div>
   </div>
 
@@ -944,17 +923,11 @@ select,input[type=date]{
     会場別成績
   </div>
 
-  <button
-    class="toggle"
-    id="venueToggle"
-  >
+  <button class="toggle" id="venueToggle">
     会場別成績を表示
   </button>
 
-  <div
-    class="venue-wrap"
-    id="venueWrap"
-  >
+  <div class="venue-wrap" id="venueWrap">
     <div id="venueStats"></div>
   </div>
 
@@ -1271,7 +1244,9 @@ async function fetchOddsToday(){
     return null;
   }
 }
-  async function fetchToday(){
+
+
+async function fetchToday(){
 
   const r=
     await fetch(
@@ -2883,11 +2858,6 @@ function makeTickets(a){
   }
 
 
-  /*
-    オッズ取得済み時は
-    人気上位を穴補完に使わない
-  */
-
   if(
     withOdds &&
     hole.length<3
@@ -2936,11 +2906,6 @@ function makeTickets(a){
     }
   }
 
-
-  /*
-    オッズ未取得時だけ
-    AI確率順で穴を補完
-  */
 
   if(
     !withOdds
@@ -3974,6 +3939,7 @@ function savePrediction(a,tickets){
 
   const rec={
     key,
+
     date:
       a.race.date||
       todayJST(),
@@ -4039,8 +4005,10 @@ function savePrediction(a,tickets){
         ?{
           boat:
             a.scenario.top.boat,
+
           tactic:
             a.scenario.top.tactic,
+
           probability:
             a.scenario.top.probability
         }
@@ -4081,6 +4049,7 @@ function savePrediction(a,tickets){
 
 /* ========================================
    払戻データ
+   現行 api/v1 対応
 ======================================== */
 
 function payouts(data){
@@ -4088,7 +4057,7 @@ function payouts(data){
   const out={};
 
   const ss=
-    data?.results
+    data?.programs
     ?.stadiums||{};
 
   for(
@@ -4096,15 +4065,23 @@ function payouts(data){
     of Object.entries(ss)
   ){
 
+    const races=
+      sd?.races||{};
+
     for(
       const [rk,r]
-      of Object.entries(
-        sd?.races||{}
-      )
+      of Object.entries(races)
     ){
 
+      const result=
+        r?.result;
+
+      if(!result){
+        continue;
+      }
+
       const p=
-        r?.payouts
+        result?.payouts
         ?.trifecta;
 
       if(!p){
@@ -4114,12 +4091,22 @@ function payouts(data){
       let combo='';
       let amount=0;
 
+
+      /* 配列形式 */
+
       if(
         Array.isArray(p)
       ){
 
         const first=
-          p[0];
+          p.find(
+            x=>
+              x &&
+              (
+                x.combination ||
+                x.combo
+              )
+          );
 
         if(first){
 
@@ -4130,12 +4117,16 @@ function payouts(data){
 
           amount=
             num(
-              first.payout||
-              first.amount
+              first.amount ??
+              first.payout
             );
         }
+      }
 
-      }else if(
+
+      /* オブジェクト形式にも対応 */
+
+      else if(
         typeof p==='object'
       ){
 
@@ -4146,13 +4137,11 @@ function payouts(data){
 
         amount=
           num(
-            p.payout||
-            p.amount
+            p.amount ??
+            p.payout
           );
 
-        if(
-          !combo
-        ){
+        if(!combo){
 
           const entries=
             Object.entries(p);
@@ -4163,7 +4152,7 @@ function payouts(data){
           ){
 
             if(
-              /^\d-\d-\d$/
+              /^[1-6]-[1-6]-[1-6]$/
               .test(k)
             ){
 
@@ -4172,8 +4161,10 @@ function payouts(data){
               amount=
                 num(
                   typeof v==='object'
-                  ?v.payout||
-                   v.amount
+                  ?(
+                    v.amount ??
+                    v.payout
+                  )
                   :v
                 );
 
@@ -4183,24 +4174,36 @@ function payouts(data){
         }
       }
 
+
+      /* 組み合わせ表記を 1-2-3 に統一 */
+
       if(combo){
 
-        out[
-          `${sk}_${rk}`
-        ]={
-          combo:
-            String(combo)
-            .replace(
-              /[^\d]+/g,
-              '-'
-            )
-            .replace(
-              /^-|-$/g,
-              ''),
+        combo=
+          String(combo)
+          .replace(
+            /[^\d]+/g,
+            '-'
+          )
+          .replace(
+            /^-|-$/g,
+            ''
+          );
 
-          payout:
-            amount
-        };
+
+        if(
+          /^[1-6]-[1-6]-[1-6]$/
+          .test(combo)
+        ){
+
+          out[
+            `${Number(sk)}_${Number(rk)}`
+          ]={
+            combo,
+            payout:
+              num(amount)
+          };
+        }
       }
     }
   }
@@ -4238,7 +4241,7 @@ function settle(
 
     const p=
       pm[
-        `${rec.stadium}_${rec.race}`
+        `${Number(rec.stadium)}_${Number(rec.race)}`
       ];
 
     if(!p){
@@ -4253,6 +4256,9 @@ function settle(
     rec.payout=
       p.payout;
 
+
+    /* 的中買い目確認 */
+
     const hitTicket=
       (
         rec.tickets||
@@ -4260,18 +4266,21 @@ function settle(
       )
       .find(
         x=>
-          x.combo===
-          p.combo
+          String(x.combo)===
+          String(p.combo)
       );
 
     rec.hit=
       !!hitTicket;
 
+
+    /* 払戻金 */
+
     if(hitTicket){
 
       rec.returnAmount=
         Math.round(
-          p.payout*
+          num(p.payout)*
           (
             num(
               hitTicket.money
@@ -4283,6 +4292,9 @@ function settle(
 
       rec.returnAmount=0;
     }
+
+
+    /* 投資額 */
 
     const stake=
       (
@@ -4298,9 +4310,15 @@ function settle(
         0
       );
 
+
+    /* 収支 */
+
     rec.profit=
       rec.returnAmount-
       stake;
+
+
+    /* 不的中接近度 */
 
     rec.proximity=
       analyzePredictionCloseness(
@@ -4311,8 +4329,11 @@ function settle(
     changed=true;
   }
 
+
   if(changed){
+
     save(rs);
+
   }
 }
 
@@ -4775,7 +4796,10 @@ function dataSignature(
         r.stadium_number,
         r.race_number,
         r?.preview?.updated_at||'',
-        r?.updated_at||''
+        r?.updated_at||'',
+        r?.result?.updated_at||'',
+        r?.result?.payouts?.trifecta?.[0]?.combination||'',
+        r?.result?.payouts?.trifecta?.[0]?.amount||''
       ]
       .join(':')
     )
@@ -4880,7 +4904,7 @@ async function autoRefresh(
   try{
 
     st.textContent=
-      '最新データ・3連単オッズを取得しています…';
+      '最新データ・3連単オッズ・レース結果を取得しています…';
 
     const [
       data,
@@ -4893,6 +4917,9 @@ async function autoRefresh(
 
     lastOddsData=
       oddsData;
+
+
+    /* 終了済みレースの成績を先に確定 */
 
     settle(data);
 
@@ -4928,6 +4955,15 @@ async function autoRefresh(
     const oddsRaceCount=
       oddsData?.odds?.length||0;
 
+    const settledToday=
+      records()
+      .filter(
+        x=>
+          x.date===todayJST() &&
+          x.done
+      )
+      .length;
+
     st.innerHTML=
       `
       更新完了：
@@ -4938,6 +4974,9 @@ async function autoRefresh(
       ／
       買い目
       ${analyses.length}レース
+      <br>
+      成績確定
+      ${settledToday}レース
       ${
         oddsData
         ?`<br>✅ オッズ連動ON（${oddsRaceCount}R取得）`
@@ -4959,9 +4998,7 @@ async function autoRefresh(
     autoUpdateBusy=false;
   }
 }
-
-
-/* ========================================
+  /* ========================================
    成績集計
 ======================================== */
 
@@ -5071,6 +5108,10 @@ function calc(rs){
 }
 
 
+/* ========================================
+   AI成績表示
+======================================== */
+
 function renderStats(){
 
   const rs=
@@ -5147,8 +5188,11 @@ function renderStats(){
     `;
 
   renderLearningStats(rs);
+
   renderLearningProgress(rs);
+
   renderHistory(rs);
+
   renderVenue(rs);
 }
 
@@ -5439,6 +5483,7 @@ function renderHistory(rs){
     }
     `;
 
+
   root
   .querySelectorAll(
     '[data-history-venue]'
@@ -5446,16 +5491,18 @@ function renderHistory(rs){
   .forEach(
     btn=>{
 
-      btn.onclick=()=>{
+      btn.onclick=
+        ()=>{
 
-        historyVenue=
-          btn.dataset
-          .historyVenue;
+          historyVenue=
+            btn.dataset
+            .historyVenue;
 
-        renderHistory(rs);
-      };
+          renderHistory(rs);
+        };
     }
   );
+
 
   root
   .querySelectorAll(
@@ -5464,14 +5511,15 @@ function renderHistory(rs){
   .forEach(
     btn=>{
 
-      btn.onclick=()=>{
+      btn.onclick=
+        ()=>{
 
-        historyResult=
-          btn.dataset
-          .historyResult;
+          historyResult=
+            btn.dataset
+            .historyResult;
 
-        renderHistory(rs);
-      };
+          renderHistory(rs);
+        };
     }
   );
 }
@@ -5688,11 +5736,13 @@ $('historyOpen').onclick=
 
     setTimeout(
       ()=>{
+
         $('historyWrap')
         .scrollIntoView({
           behavior:'smooth',
           block:'start'
         });
+
       },
       250
     );
@@ -5714,11 +5764,13 @@ $('venueOpen').onclick=
 
     setTimeout(
       ()=>{
+
         $('venueWrap')
         .scrollIntoView({
           behavior:'smooth',
           block:'start'
         });
+
       },
       250
     );
