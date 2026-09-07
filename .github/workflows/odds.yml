@@ -1,0 +1,558 @@
+name: BOATRACE Odds Collector
+
+on:
+  workflow_dispatch:
+
+  schedule:
+    - cron: "*/5 * * * *"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: boatrace-odds
+  cancel-in-progress: false
+
+jobs:
+  collect-odds:
+
+    runs-on: ubuntu-latest
+
+    steps:
+
+      - name: Checkout
+        uses: actions/checkout@v4
+
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.5"
+          tools: composer
+
+
+      - name: Install BOATRACE scraper
+        run: |
+          composer require bvp/scraper --no-interaction --no-progress
+
+
+      - name: Collect trifecta odds
+        run: |
+
+          cat > collect_odds.php <<'PHP'
+
+          <?php
+
+          require __DIR__ . '/vendor/autoload.php';
+
+          use BVP\Scraper\Scraper;
+
+          date_default_timezone_set(
+              'Asia/Tokyo'
+          );
+
+          $today = date(
+              'Y-m-d'
+          );
+
+          $todayCompact = date(
+              'Ymd'
+          );
+
+          echo "DATE: {$today}\n";
+
+
+          $scraper = new Scraper();
+
+
+          /*
+          =====================================================
+          当日開催場取得
+          =====================================================
+          */
+
+          try {
+
+              $stadiums =
+                  $scraper->scrapeStadium(
+                      $today
+                  );
+
+          } catch (Throwable $e) {
+
+              echo "STADIUM ERROR: "
+                  . $e->getMessage()
+                  . "\n";
+
+              exit(1);
+
+          }
+
+
+          echo "STADIUMS:\n";
+
+          print_r(
+              $stadiums
+          );
+
+
+          /*
+          =====================================================
+          保存形式
+
+          {
+            "date":"20260907",
+            "updated_at":"...",
+            "stadiums":{
+              "1":{
+                "races":{
+                  "1":{
+                    "trifecta":{
+                      "1-2-3":12.5
+                    }
+                  }
+                }
+              }
+            }
+          }
+          =====================================================
+          */
+
+          $output = [
+
+              'date' =>
+                  $todayCompact,
+
+              'updated_at' =>
+                  date(
+                      DATE_ATOM
+                  ),
+
+              'stadiums' =>
+                  []
+
+          ];
+
+
+          /*
+          =====================================================
+          開催場を順番に取得
+          =====================================================
+          */
+
+          foreach (
+              $stadiums
+              as $stadium
+          ) {
+
+              /*
+              scrapeStadium の戻り値が
+              数値でも配列でも対応
+              */
+
+              if (
+                  is_array($stadium)
+              ) {
+
+                  $stadiumNumber =
+
+                      $stadium[
+                          'stadium_number'
+                      ]
+
+                      ??
+
+                      $stadium[
+                          'number'
+                      ]
+
+                      ??
+
+                      null;
+
+              } else {
+
+                  $stadiumNumber =
+                      $stadium;
+
+              }
+
+
+              $stadiumNumber =
+                  (int)$stadiumNumber;
+
+
+              if (
+                  $stadiumNumber < 1
+                  ||
+                  $stadiumNumber > 24
+              ) {
+
+                  continue;
+
+              }
+
+
+              echo "\n====================\n";
+
+              echo
+                  "STADIUM "
+                  . $stadiumNumber
+                  . "\n";
+
+
+              $stadiumKey =
+                  (string)$stadiumNumber;
+
+
+              $output[
+                  'stadiums'
+              ][
+                  $stadiumKey
+              ] = [
+
+                  'races' => []
+
+              ];
+
+
+              /*
+              =================================================
+              1R～12R
+              =================================================
+              */
+
+              for (
+                  $raceNumber = 1;
+                  $raceNumber <= 12;
+                  $raceNumber++
+              ) {
+
+                  echo
+                      "GET "
+                      . $stadiumNumber
+                      . "場 "
+                      . $raceNumber
+                      . "R\n";
+
+
+                  try {
+
+                      $data =
+                          $scraper
+                          ->scrapeTrifecta(
+
+                              $today,
+
+                              $stadiumNumber,
+
+                              $raceNumber
+
+                          );
+
+                  } catch (
+                      Throwable $e
+                  ) {
+
+                      echo
+                          "SKIP: "
+                          . $e->getMessage()
+                          . "\n";
+
+                      continue;
+
+                  }
+
+
+                  if (
+                      !is_array($data)
+                  ) {
+
+                      continue;
+
+                  }
+
+
+                  $map = [];
+
+
+                  /*
+                  =================================================
+                  3連単データ整形
+                  =================================================
+                  */
+
+                  foreach (
+                      $data
+                      as $row
+                  ) {
+
+                      if (
+                          !is_array($row)
+                      ) {
+
+                          continue;
+
+                      }
+
+
+                      $combo =
+
+                          $row[
+                              'combination'
+                          ]
+
+                          ??
+
+                          $row[
+                              'combination_source'
+                          ]
+
+                          ??
+
+                          null;
+
+
+                      $odds =
+
+                          $row[
+                              'odds'
+                          ]
+
+                          ??
+
+                          $row[
+                              'odds_source'
+                          ]
+
+                          ??
+
+                          null;
+
+
+                      if (
+                          !$combo
+                      ) {
+
+                          continue;
+
+                      }
+
+
+                      $combo =
+                          preg_replace(
+
+                              '/[^1-6]/',
+
+                              '-',
+
+                              (string)$combo
+
+                          );
+
+
+                      $combo =
+                          preg_replace(
+
+                              '/-+/',
+
+                              '-',
+
+                              $combo
+
+                          );
+
+
+                      $combo =
+                          trim(
+                              $combo,
+                              '-'
+                          );
+
+
+                      if (
+                          !preg_match(
+                              '/^[1-6]-[1-6]-[1-6]$/',
+                              $combo
+                          )
+                      ) {
+
+                          continue;
+
+                      }
+
+
+                      if (
+                          !is_numeric(
+                              $odds
+                          )
+                      ) {
+
+                          continue;
+
+                      }
+
+
+                      $odds =
+                          (float)$odds;
+
+
+                      if (
+                          $odds <= 0
+                      ) {
+
+                          continue;
+
+                      }
+
+
+                      $map[
+                          $combo
+                      ] = $odds;
+
+                  }
+
+
+                  /*
+                  取得できたレースだけ保存
+                  */
+
+                  if (
+                      count($map) > 0
+                  ) {
+
+                      $output[
+                          'stadiums'
+                      ][
+                          $stadiumKey
+                      ][
+                          'races'
+                      ][
+                          (string)$raceNumber
+                      ] = [
+
+                          'trifecta' =>
+                              $map,
+
+                          'count' =>
+                              count(
+                                  $map
+                              )
+
+                      ];
+
+
+                      echo
+                          "OK: "
+                          . count($map)
+                          . "通り\n";
+
+                  } else {
+
+                      echo
+                          "NO ODDS\n";
+
+                  }
+
+
+                  /*
+                  サイトへ負荷をかけすぎない
+                  */
+
+                  usleep(
+                      500000
+                  );
+
+              }
+
+          }
+
+
+          /*
+          =====================================================
+          JSON保存
+          =====================================================
+          */
+
+          $json =
+              json_encode(
+
+                  $output,
+
+                  JSON_UNESCAPED_UNICODE
+                  |
+                  JSON_UNESCAPED_SLASHES
+                  |
+                  JSON_PRETTY_PRINT
+
+              );
+
+
+          if (
+              $json === false
+          ) {
+
+              echo
+                  "JSON ERROR\n";
+
+              exit(1);
+
+          }
+
+
+          file_put_contents(
+
+              'odds_today.json',
+
+              $json
+
+          );
+
+
+          echo
+              "\nSAVE odds_today.json\n";
+
+
+          PHP
+
+
+          php collect_odds.php
+
+
+      - name: Show result
+        run: |
+          ls -lh odds_today.json
+          head -40 odds_today.json
+
+
+      - name: Commit odds file
+        run: |
+
+          git config user.name \
+            "github-actions[bot]"
+
+          git config user.email \
+            "41898282+github-actions[bot]@users.noreply.github.com"
+
+
+          git add \
+            odds_today.json
+
+
+          if git diff \
+            --cached \
+            --quiet
+          then
+
+            echo \
+              "No odds changes"
+
+          else
+
+            git commit \
+              -m \
+              "Update BOATRACE trifecta odds"
+
+            git push
+
+          fi
