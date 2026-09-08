@@ -43,7 +43,6 @@ jobs:
           import json
           import math
           import time
-          import hashlib
           import itertools
           from pathlib import Path
           from datetime import datetime, timedelta, timezone
@@ -679,14 +678,21 @@ jobs:
 
               for analysis, tickets in candidates:
                   key = race_key(analysis["race"])
-                  signature = hashlib.sha256(
-                      json.dumps([(x["combo"], round(x["odds"], 1)) for x in tickets], ensure_ascii=False).encode("utf-8")
-                  ).hexdigest()
-                  if sent.get(key) == signature:
-                      print("SKIP", key)
+
+                  # 同じ日・同じ会場・同じRは最初の1回だけ通知する。
+                  # 締切時刻、オッズ、買い目、AI評価が後から変わっても再通知しない。
+                  if key in sent:
+                      print("SKIP already notified", key)
                       continue
+
                   line_push(flex_message_for(analysis, tickets, odds_source))
-                  sent[key] = signature
+
+                  # 通知済みフラグだけ保存。
+                  # 値は確認用の通知時刻で、重複判定はキーの存在だけを見る。
+                  sent[key] = {
+                      "notified_at": now_jst().isoformat(),
+                      "once_only": True
+                  }
                   state_save(state)
                   time.sleep(1)
 
