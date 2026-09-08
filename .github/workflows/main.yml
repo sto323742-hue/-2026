@@ -2,6 +2,7 @@ name: BOATRACE AI LINE Notification
 # Unified workflow:
 # - BOATRACE Odds Collector 完了後に即時実行
 # - 5分ごとのバックアップ実行
+# - 予想がまだ揃っていない場合は1分ごとに最大8回再確認
 # - 同じ日・同じ会場・同じRは1回だけ通知
 # IMPORTANT: .github/workflows/notify_after_odds.yml は削除してください。
 
@@ -650,20 +651,7 @@ jobs:
               if r.status_code != 200:
                   raise RuntimeError(f"LINE送信失敗: HTTP {r.status_code}")
 
-          def main():
-              print("BOATRACE AI LINE START", now_jst().isoformat())
-              races = flatten_races(fetch_races())
-              odds_data, odds_source = fetch_odds()
-              if odds_data is None:
-                  print("オッズ未取得。今回は通知しません。")
-                  return
-
-              state = state_load()
-              today = now_jst().strftime("%Y-%m-%d")
-              if state.get("date") != today:
-                  state = {"date": today, "sent": {}}
-              sent = state.setdefault("sent", {})
-
+          def collect_candidates(races, odds_data):
               candidates = []
               for race in races:
                   if not future_race(race):
@@ -677,29 +665,56 @@ jobs:
                   tickets = tickets_for(analysis, odds_map)
                   if len(tickets) == 10:
                       candidates.append((analysis, tickets))
-
               candidates.sort(key=lambda x: x[0]["rating"], reverse=True)
-              print("S通知候補", len(candidates))
+              return candidates
 
-              for analysis, tickets in candidates:
-                  key = race_key(analysis["race"])
+          def main():
+              print("BOATRACE AI LINE START", now_jst().isoformat())
 
-                  # 同じ日・同じ会場・同じRは最初の1回だけ通知する。
-                  # 締切時刻、オッズ、買い目、AI評価が後から変わっても再通知しない。
-                  if key in sent:
-                      print("SKIP already notified", key)
-                      continue
+              odds_data, odds_source = fetch_odds()
+              if odds_data is None:
+                  print("オッズ未取得。今回は通知しません。")
+                  return
 
-                  line_push(flex_message_for(analysis, tickets, odds_source))
+              state = state_load()
+              today = now_jst().strftime("%Y-%m-%d")
+              if state.get("date") != today:
+                  state = {"date": today, "sent": {}}
+              sent = state.setdefault("sent", {})
 
-                  # 通知済みフラグだけ保存。
-                  # 値は確認用の通知時刻で、重複判定はキーの存在だけを見る。
-                  sent[key] = {
-                      "notified_at": now_jst().isoformat(),
-                      "once_only": True
-                  }
-                  state_save(state)
-                  time.sleep(1)
+              max_attempts = 8
+              wait_seconds = 60
+
+              for attempt in range(1, max_attempts + 1):
+                  print(f"CHECK attempt {attempt}/{max_attempts}", now_jst().isoformat())
+                  races = flatten_races(fetch_races())
+                  candidates = collect_candidates(races, odds_data)
+
+                  unsent = []
+                  for analysis, tickets in candidates:
+                      key = race_key(analysis["race"])
+                      if key in sent:
+                          print("SKIP already notified", key)
+                          continue
+                      unsent.append((analysis, tickets))
+
+                  print("S通知候補", len(candidates), "未通知", len(unsent))
+
+                  if unsent:
+                      for analysis, tickets in unsent:
+                          key = race_key(analysis["race"])
+                          line_push(flex_message_for(analysis, tickets, odds_source))
+                          sent[key] = {
+                              "notified_at": now_jst().isoformat(),
+                              "once_only": True
+                          }
+                          state_save(state)
+                          time.sleep(1)
+                      break
+
+                  if attempt < max_attempts:
+                      print(f"まだ新規S予想なし。{wait_seconds}秒後に再確認します。")
+                      time.sleep(wait_seconds)
 
               state_save(state)
               print("BOATRACE AI LINE END")
