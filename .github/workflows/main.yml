@@ -1,10 +1,4 @@
 name: BOATRACE AI LINE Notification
-# Unified workflow:
-# - BOATRACE Odds Collector 完了後に即時実行
-# - 5分ごとのバックアップ実行
-# - 予想がまだ揃っていない場合は1分ごとに最大8回再確認
-# - 同じ日・同じ会場・同じRは1回だけ通知
-# IMPORTANT: .github/workflows/notify_after_odds.yml は削除してください。
 
 on:
   workflow_dispatch:
@@ -13,8 +7,6 @@ on:
       - "BOATRACE Odds Collector"
     types:
       - completed
-  schedule:
-    - cron: "*/5 * * * *"
 
 permissions:
   contents: write
@@ -27,714 +19,411 @@ jobs:
   notify:
     if: ${{ github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
-      - name: Setup Python
-        uses: actions/setup-python@v5
         with:
-          python-version: "3.12"
+          fetch-depth: 0
 
-      - name: Install packages
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install Playwright
         run: |
-          python -m pip install --upgrade pip
-          pip install requests
+          npm install playwright
+          npx playwright install --with-deps chromium
 
-      - name: Create BOATRACE AI script
+      - name: Create WEB-synced LINE notifier
         run: |
-          cat > line_notify.py <<'PY'
-          import os
-          import re
-          import json
-          import math
-          import time
-          import itertools
-          from pathlib import Path
-          from datetime import datetime, timedelta, timezone
+          cat > line_notify_web.js <<'JS'
+          const fs = require("fs");
+          const { chromium } = require("playwright");
 
-          import requests
+          const SITE_URL = "https://sto323742-hue.github.io/-2026/";
+          const STATE_FILE = "boatrace_line_state.json";
+          const LINE_TOKEN = (process.env.LINE_CHANNEL_ACCESS_TOKEN || "").trim();
+          const LINE_USER_ID = (process.env.LINE_USER_ID || "").trim();
 
-          JST = timezone(timedelta(hours=9))
-          API_BASE = "https://boatraceopenapi.github.io/api/v1"
-          ODDS_BASE = "https://lamrongol.github.io/BoatraceOdds/v3"
-          MODEL_NAME = "gold-v4-stable"
-          STATE_FILE = Path("boatrace_line_state.json")
-          LOCAL_ODDS_FILE = Path("odds_today.json")
+          const VENUE_NO = {
+            "桐生":1,"戸田":2,"江戸川":3,"平和島":4,"多摩川":5,"浜名湖":6,
+            "蒲郡":7,"常滑":8,"津":9,"三国":10,"びわこ":11,"住之江":12,
+            "尼崎":13,"鳴門":14,"丸亀":15,"児島":16,"宮島":17,"徳山":18,
+            "下関":19,"若松":20,"芦屋":21,"福岡":22,"唐津":23,"大村":24
+          };
 
-          LINE_TOKEN = os.getenv("LINE_CHANNEL_ACCESS_TOKEN", "").strip()
-          LINE_USER_ID = os.getenv("LINE_USER_ID", "").strip()
-
-          STADIUMS = {
-              1: "桐生", 2: "戸田", 3: "江戸川", 4: "平和島", 5: "多摩川", 6: "浜名湖",
-              7: "蒲郡", 8: "常滑", 9: "津", 10: "三国", 11: "びわこ", 12: "住之江",
-              13: "尼崎", 14: "鳴門", 15: "丸亀", 16: "児島", 17: "宮島", 18: "徳山",
-              19: "下関", 20: "若松", 21: "芦屋", 22: "福岡", 23: "唐津", 24: "大村",
+          function jstDate() {
+            return new Intl.DateTimeFormat("sv-SE", {
+              timeZone: "Asia/Tokyo",
+              year: "numeric",
+              month: "2-digit",
+              day: "2-digit"
+            }).format(new Date());
           }
 
-          def now_jst():
-              return datetime.now(JST)
+          function loadState() {
+            try {
+              const x = JSON.parse(fs.readFileSync(STATE_FILE, "utf8"));
+              if (x && typeof x === "object") return x;
+            } catch (_) {}
+            return { date: jstDate(), sent: {} };
+          }
 
-          def n(v, default=0.0):
-              try:
-                  return float(v)
-              except (TypeError, ValueError):
-                  return float(default)
+          function saveState(state) {
+            fs.writeFileSync(STATE_FILE, JSON.stringify(state, null, 2), "utf8");
+          }
 
-          def i(v, default=0):
-              try:
-                  return int(float(v))
-              except (TypeError, ValueError):
-                  return int(default)
+          function raceKey(name) {
+            const m = String(name).match(/^(.+?)\s*(\d+)R$/);
+            if (!m) return `${jstDate()}_${name.replace(/\s+/g, "_")}`;
+            const venue = m[1].trim();
+            const raceNo = Number(m[2]);
+            const venueNo = VENUE_NO[venue] || venue;
+            return `${jstDate()}_${venueNo}_${raceNo}`;
+          }
 
-          def get_json(url):
-              try:
-                  r = requests.get(
-                      f"{url}?t={int(time.time())}",
-                      timeout=25,
-                      headers={"User-Agent": "BOATRACE-AI-LINE/4.1", "Cache-Control": "no-cache"},
-                  )
-                  print("GET", url, r.status_code)
-                  if r.status_code == 200:
-                      return r.json()
-              except Exception as e:
-                  print("GET ERROR", url, repr(e))
-              return None
+          function comboTuple(c) {
+            return c.split("-").map(Number);
+          }
 
-          def fetch_races():
-              now = now_jst()
-              url = f"{API_BASE}/{now:%Y}/{now:%Y%m%d}.json"
-              data = get_json(url)
-              if not isinstance(data, dict):
-                  raise RuntimeError("BOATRACEデータを取得できませんでした")
-              return data
+          function sortCombos(combos) {
+            return [...combos].sort((a, b) => {
+              const A = comboTuple(a), B = comboTuple(b);
+              return (A[0]-B[0]) || (A[1]-B[1]) || (A[2]-B[2]);
+            });
+          }
 
-          def fetch_odds():
-              # サイト本体が利用しているリポジトリ内の odds_today.json を最優先で使う
-              if LOCAL_ODDS_FILE.exists():
-                  try:
-                      data = json.loads(LOCAL_ODDS_FILE.read_text(encoding="utf-8"))
-                      if isinstance(data, (dict, list)):
-                          print("ODDS SOURCE local odds_today.json")
-                          return data, "odds_today.json"
-                  except Exception as e:
-                      print("LOCAL ODDS ERROR", repr(e))
+          function parseMeta(meta) {
+            const close = (meta.match(/締切\s*([0-9]{1,2}:[0-9]{2})/) || [])[1] || "--:--";
+            const rating = Number((meta.match(/AI評価\s*(\d+)/) || [])[1] || 0);
+            return { close, rating };
+          }
 
-              # ローカルファイルが読めない場合だけ外部URLへフォールバック
-              now = now_jst()
-              urls = [
-                  ("日付JSON", f"{ODDS_BASE}/{now:%Y}/{now:%Y%m%d}.json"),
-                  ("today.json", f"{ODDS_BASE}/today.json"),
+          async function pushLine(message) {
+            if (!LINE_TOKEN || !LINE_USER_ID) {
+              throw new Error("GitHub Secrets BOATAI または LINE_USER_ID が未設定です");
+            }
+            const res = await fetch("https://api.line.me/v2/bot/message/push", {
+              method: "POST",
+              headers: {
+                "Authorization": `Bearer ${LINE_TOKEN}`,
+                "Content-Type": "application/json"
+              },
+              body: JSON.stringify({
+                to: LINE_USER_ID,
+                messages: [message]
+              })
+            });
+            const body = await res.text();
+            console.log("LINE", res.status, body.slice(0, 500));
+            if (!res.ok) throw new Error(`LINE送信失敗 HTTP ${res.status}`);
+          }
+
+          function makeColumn(title, combos, bg) {
+            return {
+              type: "box",
+              layout: "vertical",
+              flex: 1,
+              backgroundColor: bg,
+              paddingAll: "10px",
+              cornerRadius: "10px",
+              contents: [
+                { type: "text", text: title, weight: "bold", align: "center", size: "md" },
+                {
+                  type: "text",
+                  text: combos.join("\n"),
+                  weight: "bold",
+                  align: "center",
+                  size: "lg",
+                  wrap: true,
+                  margin: "md"
+                }
               ]
-              for name, url in urls:
-                  data = get_json(url)
-                  if isinstance(data, (dict, list)):
-                      print("ODDS SOURCE", name)
-                      return data, name
-              return None, "未取得"
+            };
+          }
 
-          def flatten_races(data):
-              out = []
-              programs = data.get("programs", {}) if isinstance(data, dict) else {}
-              stadiums = programs.get("stadiums", {}) if isinstance(programs, dict) else {}
-              if not isinstance(stadiums, dict):
-                  return out
-              for stadium_key, stadium_data in stadiums.items():
-                  if not isinstance(stadium_data, dict):
-                      continue
-                  races = stadium_data.get("races", {})
-                  if not isinstance(races, dict):
-                      continue
-                  for race_key, race in races.items():
-                      if not isinstance(race, dict):
-                          continue
-                      x = dict(race)
-                      x["stadium_number"] = i(race.get("stadium_number", stadium_key))
-                      x["race_number"] = i(race.get("race_number", race_key))
-                      out.append(x)
-              return out
+          function makeFlex(race) {
+            const { close, rating } = parseMeta(race.meta);
+            const all = sortCombos([...race.main, ...race.cover, ...race.hole]);
+            const left = all.slice(0, 5).map((x, i) => `${i+1}  ${x}`).join("\n");
+            const right = all.slice(5, 10).map((x, i) => `${i+6}  ${x}`).join("\n");
 
-          def close_dt(race):
-              raw = str(race.get("closed_at", "")).strip()
-              for fmt in ("%Y-%m-%d %H:%M:%S", "%Y-%m-%d %H:%M", "%Y/%m/%d %H:%M:%S", "%Y/%m/%d %H:%M"):
-                  try:
-                      return datetime.strptime(raw, fmt).replace(tzinfo=JST)
-                  except ValueError:
-                      pass
-              return None
+            const detail = (race.detail || "")
+              .replace(/\s+/g, " ")
+              .trim()
+              .slice(0, 550);
 
-          def future_race(race):
-              dt = close_dt(race)
-              return dt is None or dt > now_jst()
-
-          def preview_racers(race):
-              preview = race.get("preview", {})
-              if not isinstance(preview, dict):
-                  return {}
-              racers = preview.get("racers", {})
-              return racers if isinstance(racers, dict) else {}
-
-          def ready(race):
-              racers = preview_racers(race)
-              for boat in range(1, 7):
-                  p = racers.get(str(boat), {})
-                  if not isinstance(p, dict):
-                      return False
-                  if n(p.get("exhibition_time"), -1) <= 0:
-                      return False
-                  st = n(p.get("start_timing"), 999)
-                  if not math.isfinite(st) or st >= 999:
-                      return False
-              return True
-
-          def racer_stats(race, boat):
-              racers = race.get("racers", {})
-              if not isinstance(racers, dict):
-                  return {}
-              x = racers.get(str(boat), {})
-              return x if isinstance(x, dict) else {}
-
-          def analyze(race):
-              if not ready(race):
-                  return None
-              preview = race.get("preview", {})
-              pr = preview_racers(race)
-              rows = []
-              for boat in range(1, 7):
-                  p = pr.get(str(boat), {})
-                  s = racer_stats(race, boat)
-                  ex = n(p.get("exhibition_time"), 99)
-                  st = n(p.get("start_timing"), 1)
-                  course = i(p.get("course_number", boat), boat)
-                  score = 0.0
-                  score += (10.0 - ex) * 22.0
-                  score += (0.25 - st) * 42.0
-                  score += (7 - course) * 3.8
-                  score += n(s.get("win_rate")) * 2.6
-                  score += n(s.get("second_place_rate")) * 0.18
-                  score += n(s.get("motor_second_place_rate")) * 0.16
-                  score += n(s.get("boat_second_place_rate")) * 0.08
-                  rows.append({"boat": boat, "score": score, "ex": ex, "st": st, "course": course})
-
-              rows.sort(key=lambda x: x["score"], reverse=True)
-              ex_rank = sorted(rows, key=lambda x: x["ex"])
-              st_rank = sorted(rows, key=lambda x: x["st"])
-              top, second = rows[0], rows[1]
-
-              weather = preview if isinstance(preview, dict) else {}
-              wind = n(weather.get("wind_speed"))
-              wave = n(weather.get("wave_height"))
-              changes = sum(1 for x in rows if x["course"] != x["boat"])
-
-              rating = 70
-              rating += max(0, min(10, (top["score"] - second["score"]) * 0.7))
-              rating += 4 if ex_rank[0]["boat"] == top["boat"] else 0
-              rating += 4 if st_rank[0]["boat"] == top["boat"] else 0
-              rating += 3 if top["course"] == 1 else 0
-              rating += 2 if wind <= 4 else 0
-              rating += 2 if wave <= 4 else 0
-              rating -= 3 if changes >= 2 else 0
-              rating -= 4 if wind >= 7 else 0
-              rating -= 4 if wave >= 8 else 0
-              rating = int(round(max(0, min(100, rating))))
-
-              return {
-                  "race": race,
-                  "boats": rows,
-                  "rating": rating,
-                  "grade": "S" if rating >= 82 else ("A" if rating >= 74 else "B"),
-                  "wind": wind,
-                  "wave": wave,
-                  "ex1": ex_rank[0]["boat"],
-                  "st1": st_rank[0]["boat"],
-                  "top": top,
-              }
-
-          def find_odds_node(obj, stadium, race_no):
-              # odds_today.json の現在の構造を直接読む
-              if isinstance(obj, dict):
-                  stadiums = obj.get("stadiums")
-                  if isinstance(stadiums, dict):
-                      stadium_node = stadiums.get(str(stadium), stadiums.get(stadium))
-                      if isinstance(stadium_node, dict):
-                          races = stadium_node.get("races", {})
-                          if isinstance(races, dict):
-                              race_node = races.get(str(race_no), races.get(race_no))
-                              if isinstance(race_node, dict):
-                                  trifecta = race_node.get("trifecta")
-                                  if isinstance(trifecta, (dict, list)):
-                                      return trifecta
-
-              # 旧形式・外部データ形式にも対応
-              if isinstance(obj, list):
-                  for v in obj:
-                      found = find_odds_node(v, stadium, race_no)
-                      if found is not None:
-                          return found
-                  return None
-              if not isinstance(obj, dict):
-                  return None
-
-              s = i(obj.get("stadium_number", obj.get("stadium", obj.get("place_no", 0))))
-              r = i(obj.get("race_number", obj.get("race", obj.get("race_no", 0))))
-              if s == stadium and r == race_no:
-                  if isinstance(obj.get("trifecta"), (dict, list)):
-                      return obj.get("trifecta")
-                  odds = obj.get("odds")
-                  if isinstance(odds, dict) and isinstance(odds.get("trifecta"), (dict, list)):
-                      return odds.get("trifecta")
-
-              for v in obj.values():
-                  if isinstance(v, (dict, list)):
-                      found = find_odds_node(v, stadium, race_no)
-                      if found is not None:
-                          return found
-              return None
-
-          def flatten_odds(node):
-              out = {}
-              if isinstance(node, list):
-                  for x in node:
-                      if not isinstance(x, dict):
-                          continue
-                      combo = str(x.get("combination", x.get("combo", "")))
-                      odds = n(x.get("odds", x.get("rate", x.get("value", 0))))
-                      if re.fullmatch(r"[1-6]-[1-6]-[1-6]", combo) and odds > 0:
-                          out[combo] = odds
-                  return out
-              if not isinstance(node, dict):
-                  return out
-              for k, v in node.items():
-                  key = str(k)
-                  if re.fullmatch(r"[1-6]-[1-6]-[1-6]", key):
-                      odds = n(v.get("odds", v.get("rate", v.get("value", 0)))) if isinstance(v, dict) else n(v)
-                      if odds > 0:
-                          out[key] = odds
-                  elif key.isdigit() and isinstance(v, dict):
-                      a = int(key)
-                      for k2, v2 in v.items():
-                          if not str(k2).isdigit() or not isinstance(v2, dict):
-                              continue
-                          b = int(k2)
-                          for k3, v3 in v2.items():
-                              if not str(k3).isdigit():
-                                  continue
-                              c = int(k3)
-                              if len({a, b, c}) != 3 or not all(1 <= z <= 6 for z in (a, b, c)):
-                                  continue
-                              odds = n(v3.get("odds", v3.get("rate", v3.get("value", 0)))) if isinstance(v3, dict) else n(v3)
-                              if odds > 0:
-                                  out[f"{a}-{b}-{c}"] = odds
-              return out
-
-          def probabilities(analysis):
-              score = {x["boat"]: max(0.1, x["score"] + 50) for x in analysis["boats"]}
-              raw = {}
-              for a, b, c in itertools.permutations(range(1, 7), 3):
-                  key = f"{a}-{b}-{c}"
-                  raw[key] = score[a] * (score[b] ** 0.72) * (score[c] ** 0.48)
-              total = sum(raw.values()) or 1
-              return {k: v / total for k, v in raw.items()}
-
-          def tickets_for(analysis, odds_map):
-              if not odds_map:
-                  return []
-              probs = probabilities(analysis)
-              rows = []
-              for combo, odds in odds_map.items():
-                  p = probs.get(combo, 0.0)
-                  rows.append({"combo": combo, "odds": odds, "p": p, "ev": p * odds})
-
-              main = sorted((x for x in rows if x["odds"] <= 15), key=lambda x: (x["p"], x["ev"]), reverse=True)[:3]
-              cover = sorted((x for x in rows if 15 < x["odds"] < 80), key=lambda x: (x["p"], x["ev"]), reverse=True)[:4]
-              hole = sorted((x for x in rows if x["odds"] >= 80), key=lambda x: (x["p"], x["ev"]), reverse=True)[:3]
-              if not (len(main) == 3 and len(cover) == 4 and len(hole) == 3):
-                  return []
-              result = []
-              for group, arr in (("本命", main), ("狙い", cover), ("穴", hole)):
-                  for x in arr:
-                      y = dict(x)
-                      y["group"] = group
-                      y["money"] = 100
-                      result.append(y)
-              return result
-
-          def state_load():
-              if not STATE_FILE.exists():
-                  return {"date": now_jst().strftime("%Y-%m-%d"), "sent": {}}
-              try:
-                  x = json.loads(STATE_FILE.read_text(encoding="utf-8"))
-                  if not isinstance(x, dict):
-                      raise ValueError
-                  return x
-              except Exception:
-                  return {"date": now_jst().strftime("%Y-%m-%d"), "sent": {}}
-
-          def state_save(state):
-              STATE_FILE.write_text(json.dumps(state, ensure_ascii=False, indent=2), encoding="utf-8")
-
-          def race_key(race):
-              return f"{now_jst():%Y-%m-%d}_{i(race.get('stadium_number'))}_{i(race.get('race_number'))}"
-
-          def ticket_text(tickets, group):
-              return "\n".join(x["combo"] for x in tickets if x["group"] == group)
-
-          def sorted_ticket_combos(tickets):
-              # 投票しやすいように 1着 → 2着 → 3着 の数字順で並べる。
-              combos = [x["combo"] for x in tickets]
-              return sorted(
-                  combos,
-                  key=lambda c: tuple(int(v) for v in c.split("-"))
-              )
-
-          def betting_columns(tickets):
-              ordered = sorted_ticket_combos(tickets)
-              left = ordered[:5]
-              right = ordered[5:10]
-              left_text = "\n".join(f"{idx+1}　{combo}" for idx, combo in enumerate(left))
-              right_text = "\n".join(f"{idx+6}　{combo}" for idx, combo in enumerate(right))
-              return left_text, right_text
-
-          def flex_message_for(analysis, tickets, odds_source):
-              race = analysis["race"]
-              stadium = i(race.get("stadium_number"))
-              race_no = i(race.get("race_number"))
-              venue = STADIUMS.get(stadium, f"会場{stadium}")
-              close = close_dt(race)
-              close_text = close.strftime("%H:%M") if close else "--:--"
-              remain = max(0, int((close - now_jst()).total_seconds() // 60)) if close else 0
-              top = analysis["top"]
-
-              main_text = ticket_text(tickets, "本命")
-              cover_text = ticket_text(tickets, "狙い")
-              hole_text = ticket_text(tickets, "穴")
-              left_bets, right_bets = betting_columns(tickets)
-
-              alt = f"BOATRACE AI予想 {venue} {race_no}R 締切{close_text}"
-
-              bubble = {
-                  "type": "bubble",
-                  "size": "mega",
-                  "body": {
-                      "type": "box",
-                      "layout": "vertical",
-                      "paddingAll": "18px",
-                      "backgroundColor": "#FFFFFF",
-                      "contents": [
-                          {
-                              "type": "box",
-                              "layout": "horizontal",
-                              "contents": [
-                                  {
-                                      "type": "text",
-                                      "text": "🚤 BOATRACE AI 予想",
-                                      "weight": "bold",
-                                      "size": "xl",
-                                      "color": "#1F1F1F",
-                                      "flex": 4
-                                  },
-                                  {
-                                      "type": "text",
-                                      "text": "Ver.3 Learning",
-                                      "weight": "bold",
-                                      "size": "xs",
-                                      "color": "#1473B9",
-                                      "align": "end",
-                                      "gravity": "center",
-                                      "flex": 2
-                                  }
-                              ]
-                          },
-                          {"type": "separator", "margin": "md", "color": "#E5E7EB"},
-                          {
-                              "type": "text",
-                              "text": f"{venue} {race_no}R",
-                              "weight": "bold",
-                              "size": "xxl",
-                              "margin": "lg",
-                              "color": "#111111"
-                          },
-                          {
-                              "type": "box",
-                              "layout": "horizontal",
-                              "margin": "md",
-                              "contents": [
-                                  {
-                                      "type": "text",
-                                      "text": f"⏰ 締切予定 {close_text}",
-                                      "weight": "bold",
-                                      "size": "md",
-                                      "flex": 3,
-                                      "color": "#222222"
-                                  },
-                                  {
-                                      "type": "text",
-                                      "text": f"残り {remain}分",
-                                      "weight": "bold",
-                                      "size": "md",
-                                      "align": "end",
-                                      "flex": 2,
-                                      "color": "#222222"
-                                  }
-                              ]
-                          },
-                          {
-                              "type": "box",
-                              "layout": "horizontal",
-                              "margin": "xl",
-                              "spacing": "sm",
-                              "contents": [
-                                  {
-                                      "type": "box",
-                                      "layout": "vertical",
-                                      "flex": 1,
-                                      "backgroundColor": "#FFF0F2",
-                                      "paddingAll": "10px",
-                                      "cornerRadius": "10px",
-                                      "contents": [
-                                          {"type": "text", "text": "本命🚤", "weight": "bold", "align": "center", "size": "md"},
-                                          {"type": "text", "text": main_text, "weight": "bold", "align": "center", "size": "lg", "wrap": True, "margin": "md"}
-                                      ]
-                                  },
-                                  {
-                                      "type": "box",
-                                      "layout": "vertical",
-                                      "flex": 1,
-                                      "backgroundColor": "#EAF5FF",
-                                      "paddingAll": "10px",
-                                      "cornerRadius": "10px",
-                                      "contents": [
-                                          {"type": "text", "text": "狙い🚤", "weight": "bold", "align": "center", "size": "md"},
-                                          {"type": "text", "text": cover_text, "weight": "bold", "align": "center", "size": "lg", "wrap": True, "margin": "md"}
-                                      ]
-                                  },
-                                  {
-                                      "type": "box",
-                                      "layout": "vertical",
-                                      "flex": 1,
-                                      "backgroundColor": "#ECF9EE",
-                                      "paddingAll": "10px",
-                                      "cornerRadius": "10px",
-                                      "contents": [
-                                          {"type": "text", "text": "穴🚤", "weight": "bold", "align": "center", "size": "md"},
-                                          {"type": "text", "text": hole_text, "weight": "bold", "align": "center", "size": "lg", "wrap": True, "margin": "md"}
-                                      ]
-                                  }
-                              ]
-                          },
-                          {
-                              "type": "box",
-                              "layout": "horizontal",
-                              "margin": "xl",
-                              "contents": [
-                                  {
-                                      "type": "text",
-                                      "text": "🎫 投票",
-                                      "weight": "bold",
-                                      "size": "xl",
-                                      "color": "#222222",
-                                      "flex": 3
-                                  },
-                                  {
-                                      "type": "text",
-                                      "text": "合計10点",
-                                      "weight": "bold",
-                                      "size": "xl",
-                                      "color": "#1473B9",
-                                      "align": "end",
-                                      "flex": 2
-                                  }
-                              ]
-                          },
-                          {
-                              "type": "box",
-                              "layout": "horizontal",
-                              "margin": "md",
-                              "spacing": "md",
-                              "contents": [
-                                  {
-                                      "type": "box",
-                                      "layout": "vertical",
-                                      "flex": 1,
-                                      "backgroundColor": "#F4F8FD",
-                                      "paddingAll": "12px",
-                                      "cornerRadius": "10px",
-                                      "contents": [
-                                          {
-                                              "type": "text",
-                                              "text": left_bets,
-                                              "color": "#111827",
-                                              "weight": "bold",
-                                              "size": "md",
-                                              "wrap": True,
-                                              "lineSpacing": "6px"
-                                          }
-                                      ]
-                                  },
-                                  {
-                                      "type": "box",
-                                      "layout": "vertical",
-                                      "flex": 1,
-                                      "backgroundColor": "#F4F8FD",
-                                      "paddingAll": "12px",
-                                      "cornerRadius": "10px",
-                                      "contents": [
-                                          {
-                                              "type": "text",
-                                              "text": right_bets,
-                                              "color": "#111827",
-                                              "weight": "bold",
-                                              "size": "md",
-                                              "wrap": True,
-                                              "lineSpacing": "6px"
-                                          }
-                                      ]
-                                  }
-                              ]
-                          },
-                          {
-                              "type": "box",
-                              "layout": "vertical",
-                              "margin": "xl",
-                              "backgroundColor": "#F6F8FC",
-                              "paddingAll": "12px",
-                              "cornerRadius": "10px",
-                              "contents": [
-                                  {"type": "text", "text": "🧠 展開予測", "weight": "bold", "size": "lg", "color": "#1473B9"},
-                                  {"type": "text", "text": f"{top['boat']}号艇 中心　AI信頼 {analysis['rating']}%", "weight": "bold", "size": "md", "wrap": True, "margin": "sm"}
-                              ]
-                          },
-                          {
-                              "type": "box",
-                              "layout": "vertical",
-                              "margin": "md",
-                              "backgroundColor": "#F6F8FC",
-                              "paddingAll": "12px",
-                              "cornerRadius": "10px",
-                              "contents": [
-                                  {"type": "text", "text": "📊 判断基準", "weight": "bold", "size": "lg", "color": "#1473B9"},
-                                  {
-                                      "type": "text",
-                                      "text": (
-                                          f"AI上位：{top['boat']}号艇　展示1位：{analysis['ex1']}号艇　"
-                                          f"ST1位：{analysis['st1']}号艇\n"
-                                          f"風 {analysis['wind']:.1f}m / 波 {analysis['wave']:.1f}cm\n"
-                                          f"オッズ取得：{odds_source}\nModel：{MODEL_NAME}"
-                                      ),
-                                      "size": "sm",
-                                      "wrap": True,
-                                      "margin": "sm",
-                                      "color": "#333333"
-                                  }
-                              ]
-                          }
+            return {
+              type: "flex",
+              altText: `BOATRACE AI予想 ${race.name} 締切${close}`,
+              contents: {
+                type: "bubble",
+                size: "mega",
+                body: {
+                  type: "box",
+                  layout: "vertical",
+                  paddingAll: "18px",
+                  backgroundColor: "#FFFFFF",
+                  contents: [
+                    {
+                      type: "box",
+                      layout: "horizontal",
+                      contents: [
+                        {
+                          type: "text",
+                          text: "🚤 BOATRACE AI予想",
+                          weight: "bold",
+                          size: "xl",
+                          color: "#1F1F1F",
+                          flex: 4
+                        },
+                        {
+                          type: "text",
+                          text: "Ver.3 Learning",
+                          weight: "bold",
+                          size: "xs",
+                          color: "#1473B9",
+                          align: "end",
+                          gravity: "center",
+                          flex: 2
+                        }
                       ]
-                  }
+                    },
+                    { type: "separator", margin: "md", color: "#E5E7EB" },
+                    {
+                      type: "text",
+                      text: race.name,
+                      weight: "bold",
+                      size: "xxl",
+                      margin: "lg",
+                      color: "#111111"
+                    },
+                    {
+                      type: "box",
+                      layout: "horizontal",
+                      margin: "md",
+                      contents: [
+                        {
+                          type: "text",
+                          text: `⏰ 締切予定 ${close}`,
+                          weight: "bold",
+                          size: "md",
+                          flex: 3,
+                          color: "#222222"
+                        },
+                        {
+                          type: "text",
+                          text: `AI評価 ${rating}点`,
+                          weight: "bold",
+                          size: "md",
+                          align: "end",
+                          flex: 2,
+                          color: "#222222"
+                        }
+                      ]
+                    },
+                    {
+                      type: "box",
+                      layout: "horizontal",
+                      margin: "xl",
+                      spacing: "sm",
+                      contents: [
+                        makeColumn("本命🚤", race.main, "#FFF0F2"),
+                        makeColumn("狙い🚤", race.cover, "#EAF5FF"),
+                        makeColumn("穴🚤", race.hole, "#ECF9EE")
+                      ]
+                    },
+                    {
+                      type: "box",
+                      layout: "horizontal",
+                      margin: "xl",
+                      contents: [
+                        {
+                          type: "text",
+                          text: "🎫 投票",
+                          weight: "bold",
+                          size: "xl",
+                          color: "#222222",
+                          flex: 3
+                        },
+                        {
+                          type: "text",
+                          text: "合計10点",
+                          weight: "bold",
+                          size: "xl",
+                          color: "#1473B9",
+                          align: "end",
+                          flex: 2
+                        }
+                      ]
+                    },
+                    {
+                      type: "box",
+                      layout: "horizontal",
+                      margin: "md",
+                      spacing: "md",
+                      contents: [
+                        {
+                          type: "box",
+                          layout: "vertical",
+                          flex: 1,
+                          backgroundColor: "#F4F8FD",
+                          paddingAll: "12px",
+                          cornerRadius: "10px",
+                          contents: [
+                            { type: "text", text: left, color: "#111827", weight: "bold", size: "md", wrap: true }
+                          ]
+                        },
+                        {
+                          type: "box",
+                          layout: "vertical",
+                          flex: 1,
+                          backgroundColor: "#F4F8FD",
+                          paddingAll: "12px",
+                          cornerRadius: "10px",
+                          contents: [
+                            { type: "text", text: right, color: "#111827", weight: "bold", size: "md", wrap: true }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      type: "box",
+                      layout: "vertical",
+                      margin: "xl",
+                      backgroundColor: "#F6F8FC",
+                      paddingAll: "12px",
+                      cornerRadius: "10px",
+                      contents: [
+                        { type: "text", text: "🧠 WEBと同じAI分析", weight: "bold", size: "lg", color: "#1473B9" },
+                        {
+                          type: "text",
+                          text: detail || `AI評価 ${rating}点`,
+                          size: "sm",
+                          wrap: true,
+                          margin: "sm",
+                          color: "#333333"
+                        }
+                      ]
+                    }
+                  ]
+                }
               }
+            };
+          }
+
+          async function scrape(page) {
+            await page.goto(`${SITE_URL}?line=${Date.now()}`, {
+              waitUntil: "networkidle",
+              timeout: 90000
+            });
+
+            await page.waitForTimeout(2500);
+
+            return await page.locator(".race").evaluateAll(cards => cards.map(card => {
+              const txt = sel => card.querySelector(sel)?.textContent?.trim() || "";
+              const combos = col =>
+                [...(card.querySelector(col)?.querySelectorAll(".combo") || [])]
+                  .map(x => x.textContent.trim())
+                  .filter(Boolean);
 
               return {
-                  "type": "flex",
-                  "altText": alt,
-                  "contents": bubble
+                name: txt(".race-name"),
+                meta: txt(".race-meta"),
+                s: txt(".smark"),
+                main: combos(".main-col"),
+                cover: combos(".cover-col"),
+                hole: combos(".hole-col"),
+                detail: txt(".ai-detail")
+              };
+            }));
+          }
+
+          async function main() {
+            console.log("WEB-SYNC LINE START", new Date().toISOString());
+
+            let state = loadState();
+            const today = jstDate();
+            if (state.date !== today) state = { date: today, sent: {} };
+            if (!state.sent || typeof state.sent !== "object") state.sent = {};
+
+            const browser = await chromium.launch({ headless: true });
+            const page = await browser.newPage({
+              viewport: { width: 430, height: 1800 }
+            });
+
+            try {
+              const maxAttempts = 8;
+              const waitMs = 45000;
+
+              for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+                console.log(`WEB CHECK ${attempt}/${maxAttempts}`);
+                const races = await scrape(page);
+
+                const validS = races.filter(r =>
+                  r.s === "S" &&
+                  r.name &&
+                  r.main.length === 3 &&
+                  r.cover.length === 4 &&
+                  r.hole.length === 3
+                );
+
+                console.log("WEB S races:", validS.map(r => r.name).join(", ") || "none");
+
+                const unsent = validS.filter(r => !(raceKey(r.name) in state.sent));
+                console.log("WEB 未通知:", unsent.map(r => r.name).join(", ") || "0");
+
+                if (unsent.length) {
+                  for (const race of unsent) {
+                    const key = raceKey(race.name);
+                    console.log("SEND", key, race.name);
+                    await pushLine(makeFlex(race));
+                    state.sent[key] = {
+                      notified_at: new Date().toISOString(),
+                      once_only: true,
+                      source: "web-rendered"
+                    };
+                    saveState(state);
+                    await new Promise(r => setTimeout(r, 1000));
+                  }
+                  break;
+                }
+
+                if (attempt < maxAttempts) {
+                  await new Promise(r => setTimeout(r, waitMs));
+                }
               }
+            } finally {
+              await browser.close();
+            }
 
-          def line_push(message):
-              if not LINE_TOKEN or not LINE_USER_ID:
-                  raise RuntimeError("GitHub Secrets BOATAI または LINE_USER_ID が未設定です")
-              r = requests.post(
-                  "https://api.line.me/v2/bot/message/push",
-                  headers={"Authorization": f"Bearer {LINE_TOKEN}", "Content-Type": "application/json"},
-                  json={"to": LINE_USER_ID, "messages": [message]},
-                  timeout=25,
-              )
-              print("LINE", r.status_code, r.text[:500])
-              if r.status_code != 200:
-                  raise RuntimeError(f"LINE送信失敗: HTTP {r.status_code}")
+            saveState(state);
+            console.log("WEB-SYNC LINE END");
+          }
 
-          def collect_candidates(races, odds_data):
-              candidates = []
-              for race in races:
-                  if not future_race(race):
-                      continue
-                  analysis = analyze(race)
-                  if not analysis or analysis["grade"] != "S":
-                      continue
-                  stadium = i(race.get("stadium_number"))
-                  race_no = i(race.get("race_number"))
-                  odds_map = flatten_odds(find_odds_node(odds_data, stadium, race_no))
-                  tickets = tickets_for(analysis, odds_map)
-                  if len(tickets) == 10:
-                      candidates.append((analysis, tickets))
-              candidates.sort(key=lambda x: x[0]["rating"], reverse=True)
-              return candidates
+          main().catch(err => {
+            console.error(err);
+            process.exit(1);
+          });
+          JS
 
-          def main():
-              print("BOATRACE AI LINE START", now_jst().isoformat())
-
-              odds_data, odds_source = fetch_odds()
-              if odds_data is None:
-                  print("オッズ未取得。今回は通知しません。")
-                  return
-
-              state = state_load()
-              today = now_jst().strftime("%Y-%m-%d")
-              if state.get("date") != today:
-                  state = {"date": today, "sent": {}}
-              sent = state.setdefault("sent", {})
-
-              max_attempts = 8
-              wait_seconds = 60
-
-              for attempt in range(1, max_attempts + 1):
-                  print(f"CHECK attempt {attempt}/{max_attempts}", now_jst().isoformat())
-                  races = flatten_races(fetch_races())
-                  candidates = collect_candidates(races, odds_data)
-
-                  unsent = []
-                  for analysis, tickets in candidates:
-                      key = race_key(analysis["race"])
-                      if key in sent:
-                          print("SKIP already notified", key)
-                          continue
-                      unsent.append((analysis, tickets))
-
-                  print("S通知候補", len(candidates), "未通知", len(unsent))
-
-                  if unsent:
-                      for analysis, tickets in unsent:
-                          key = race_key(analysis["race"])
-                          line_push(flex_message_for(analysis, tickets, odds_source))
-                          sent[key] = {
-                              "notified_at": now_jst().isoformat(),
-                              "once_only": True
-                          }
-                          state_save(state)
-                          time.sleep(1)
-                      break
-
-                  if attempt < max_attempts:
-                      print(f"まだ新規S予想なし。{wait_seconds}秒後に再確認します。")
-                      time.sleep(wait_seconds)
-
-              state_save(state)
-              print("BOATRACE AI LINE END")
-
-          if __name__ == "__main__":
-              main()
-          PY
-
-      - name: Run BOATRACE AI LINE
+      - name: Run WEB-synced BOATRACE AI LINE
         env:
           LINE_CHANNEL_ACCESS_TOKEN: ${{ secrets.BOATAI }}
           LINE_USER_ID: ${{ secrets.LINE_USER_ID }}
-        run: python line_notify.py
+        run: node line_notify_web.js
 
       - name: Save notification state
         run: |
           if [ -f boatrace_line_state.json ]; then
             git config user.name "github-actions[bot]"
             git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+            git pull --rebase origin main || true
             git add boatrace_line_state.json
+
             if git diff --cached --quiet; then
               echo "通知状態に変更なし"
             else
