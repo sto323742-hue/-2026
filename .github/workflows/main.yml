@@ -374,12 +374,21 @@ jobs:
           def ticket_text(tickets, group):
               return "\n".join(x["combo"] for x in tickets if x["group"] == group)
 
-          def exact_ticket_text(tickets):
-              # 本命3 + 狙い4 + 穴3 = 合計10点を、そのまま投票用に表示する。
-              ordered = []
-              for group in ("本命", "狙い", "穴"):
-                  ordered.extend(x["combo"] for x in tickets if x["group"] == group)
-              return "\n".join(ordered)
+          def sorted_ticket_combos(tickets):
+              # 投票しやすいように 1着 → 2着 → 3着 の数字順で並べる。
+              combos = [x["combo"] for x in tickets]
+              return sorted(
+                  combos,
+                  key=lambda c: tuple(int(v) for v in c.split("-"))
+              )
+
+          def betting_columns(tickets):
+              ordered = sorted_ticket_combos(tickets)
+              left = ordered[:5]
+              right = ordered[5:10]
+              left_text = "\n".join(f"{idx+1}　{combo}" for idx, combo in enumerate(left))
+              right_text = "\n".join(f"{idx+6}　{combo}" for idx, combo in enumerate(right))
+              return left_text, right_text
 
           def flex_message_for(analysis, tickets, odds_source):
               race = analysis["race"]
@@ -394,7 +403,7 @@ jobs:
               main_text = ticket_text(tickets, "本命")
               cover_text = ticket_text(tickets, "狙い")
               hole_text = ticket_text(tickets, "穴")
-              exact_bets = exact_ticket_text(tickets)
+              left_bets, right_bets = betting_columns(tickets)
 
               alt = f"BOATRACE AI予想 {venue} {race_no}R 締切{close_text}"
 
@@ -408,11 +417,28 @@ jobs:
                       "backgroundColor": "#FFFFFF",
                       "contents": [
                           {
-                              "type": "text",
-                              "text": "🚤 BOATRACE AI 予想",
-                              "weight": "bold",
-                              "size": "xl",
-                              "color": "#1F1F1F"
+                              "type": "box",
+                              "layout": "horizontal",
+                              "contents": [
+                                  {
+                                      "type": "text",
+                                      "text": "🚤 BOATRACE AI 予想",
+                                      "weight": "bold",
+                                      "size": "xl",
+                                      "color": "#1F1F1F",
+                                      "flex": 4
+                                  },
+                                  {
+                                      "type": "text",
+                                      "text": "Ver.3 Learning",
+                                      "weight": "bold",
+                                      "size": "xs",
+                                      "color": "#1473B9",
+                                      "align": "end",
+                                      "gravity": "center",
+                                      "flex": 2
+                                  }
+                              ]
                           },
                           {"type": "separator", "margin": "md", "color": "#E5E7EB"},
                           {
@@ -492,47 +518,72 @@ jobs:
                               ]
                           },
                           {
-                              "type": "text",
-                              "text": "🎫 投票",
-                              "weight": "bold",
-                              "size": "xl",
-                              "margin": "xl",
-                              "color": "#222222"
-                          },
-                          {
                               "type": "box",
-                              "layout": "vertical",
-                              "margin": "md",
-                              "backgroundColor": "#2586D9",
-                              "paddingAll": "12px",
-                              "cornerRadius": "10px",
+                              "layout": "horizontal",
+                              "margin": "xl",
                               "contents": [
                                   {
                                       "type": "text",
-                                      "text": "10点 個別購入",
-                                      "color": "#FFFFFF",
+                                      "text": "🎫 投票",
                                       "weight": "bold",
-                                      "align": "center",
-                                      "size": "lg"
+                                      "size": "xl",
+                                      "color": "#222222",
+                                      "flex": 3
                                   },
                                   {
                                       "type": "text",
-                                      "text": exact_bets,
-                                      "color": "#FFFFFF",
+                                      "text": "合計10点",
                                       "weight": "bold",
-                                      "align": "center",
-                                      "wrap": True,
-                                      "margin": "md",
-                                      "size": "md"
+                                      "size": "xl",
+                                      "color": "#1473B9",
+                                      "align": "end",
+                                      "flex": 2
+                                  }
+                              ]
+                          },
+                          {
+                              "type": "box",
+                              "layout": "horizontal",
+                              "margin": "md",
+                              "spacing": "md",
+                              "contents": [
+                                  {
+                                      "type": "box",
+                                      "layout": "vertical",
+                                      "flex": 1,
+                                      "backgroundColor": "#F4F8FD",
+                                      "paddingAll": "12px",
+                                      "cornerRadius": "10px",
+                                      "contents": [
+                                          {
+                                              "type": "text",
+                                              "text": left_bets,
+                                              "color": "#111827",
+                                              "weight": "bold",
+                                              "size": "md",
+                                              "wrap": True,
+                                              "lineSpacing": "6px"
+                                          }
+                                      ]
                                   },
                                   {
-                                      "type": "text",
-                                      "text": "※フォーメーション・BOXは使用しません",
-                                      "color": "#EAF5FF",
-                                      "align": "center",
-                                      "wrap": True,
-                                      "margin": "md",
-                                      "size": "xs"
+                                      "type": "box",
+                                      "layout": "vertical",
+                                      "flex": 1,
+                                      "backgroundColor": "#F4F8FD",
+                                      "paddingAll": "12px",
+                                      "cornerRadius": "10px",
+                                      "contents": [
+                                          {
+                                              "type": "text",
+                                              "text": right_bets,
+                                              "color": "#111827",
+                                              "weight": "bold",
+                                              "size": "md",
+                                              "wrap": True,
+                                              "lineSpacing": "6px"
+                                          }
+                                      ]
                                   }
                               ]
                           },
