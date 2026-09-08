@@ -1,0 +1,31 @@
+name: BOATRACE Notify Immediately After Odds
+
+on:
+  workflow_dispatch:
+  workflow_run:
+    workflows:
+      - "BOATRACE Odds Collector"
+    types:
+      - completed
+
+permissions:
+  actions: write
+  contents: read
+
+concurrency:
+  group: boatrace-notify-after-odds
+  cancel-in-progress: false
+
+jobs:
+  trigger-line-notification:
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Trigger BOATRACE AI LINE Notification
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          echo "Odds Collector completed successfully."
+          echo "Starting BOATRACE AI LINE Notification immediately..."
+          gh workflow run main.yml --repo "$GITHUB_REPOSITORY" --ref main
