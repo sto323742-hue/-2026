@@ -1,4 +1,9 @@
 name: BOATRACE AI LINE Notification
+# Unified workflow:
+# - BOATRACE Odds Collector 完了後に即時実行
+# - 5分ごとのバックアップ実行
+# - 同じ日・同じ会場・同じRは1回だけ通知
+# IMPORTANT: .github/workflows/notify_after_odds.yml は削除してください。
 
 on:
   workflow_dispatch:
