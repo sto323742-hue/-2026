@@ -2,6 +2,11 @@ name: BOATRACE AI LINE Notification
 
 on:
   workflow_dispatch:
+  workflow_run:
+    workflows:
+      - "BOATRACE Odds Collector"
+    types:
+      - completed
   schedule:
     - cron: "*/5 * * * *"
 
@@ -14,6 +19,7 @@ concurrency:
 
 jobs:
   notify:
+    if: ${{ github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -368,15 +374,12 @@ jobs:
           def ticket_text(tickets, group):
               return "\n".join(x["combo"] for x in tickets if x["group"] == group)
 
-          def formation_text(tickets):
-              combos = [x["combo"].split("-") for x in tickets]
-              firsts = sorted({x[0] for x in combos})
-              seconds = sorted({x[1] for x in combos})
-              thirds = sorted({x[2] for x in combos})
-              f1 = ",".join(firsts)
-              f2 = ",".join(seconds)
-              f3 = ",".join(thirds)
-              return f"{f1} - {f2} - {f3}"
+          def exact_ticket_text(tickets):
+              # 本命3 + 狙い4 + 穴3 = 合計10点を、そのまま投票用に表示する。
+              ordered = []
+              for group in ("本命", "狙い", "穴"):
+                  ordered.extend(x["combo"] for x in tickets if x["group"] == group)
+              return "\n".join(ordered)
 
           def flex_message_for(analysis, tickets, odds_source):
               race = analysis["race"]
@@ -391,8 +394,7 @@ jobs:
               main_text = ticket_text(tickets, "本命")
               cover_text = ticket_text(tickets, "狙い")
               hole_text = ticket_text(tickets, "穴")
-              normal = next((x["combo"] for x in tickets if x["group"] == "本命"), "-")
-              form = formation_text(tickets)
+              exact_bets = exact_ticket_text(tickets)
 
               alt = f"BOATRACE AI予想 {venue} {race_no}R 締切{close_text}"
 
@@ -499,45 +501,38 @@ jobs:
                           },
                           {
                               "type": "box",
-                              "layout": "horizontal",
+                              "layout": "vertical",
                               "margin": "md",
-                              "spacing": "sm",
+                              "backgroundColor": "#2586D9",
+                              "paddingAll": "12px",
+                              "cornerRadius": "10px",
                               "contents": [
                                   {
-                                      "type": "box",
-                                      "layout": "vertical",
-                                      "flex": 1,
-                                      "backgroundColor": "#7D92AB",
-                                      "paddingAll": "8px",
-                                      "cornerRadius": "8px",
-                                      "contents": [
-                                          {"type": "text", "text": "通常", "color": "#FFFFFF", "weight": "bold", "align": "center"},
-                                          {"type": "text", "text": normal, "color": "#FFFFFF", "weight": "bold", "align": "center", "margin": "sm"}
-                                      ]
+                                      "type": "text",
+                                      "text": "10点 個別購入",
+                                      "color": "#FFFFFF",
+                                      "weight": "bold",
+                                      "align": "center",
+                                      "size": "lg"
                                   },
                                   {
-                                      "type": "box",
-                                      "layout": "vertical",
-                                      "flex": 2,
-                                      "backgroundColor": "#2586D9",
-                                      "paddingAll": "8px",
-                                      "cornerRadius": "8px",
-                                      "contents": [
-                                          {"type": "text", "text": "フォーメーション", "color": "#FFFFFF", "weight": "bold", "align": "center"},
-                                          {"type": "text", "text": form, "color": "#FFFFFF", "weight": "bold", "align": "center", "wrap": True, "margin": "sm", "size": "sm"}
-                                      ]
+                                      "type": "text",
+                                      "text": exact_bets,
+                                      "color": "#FFFFFF",
+                                      "weight": "bold",
+                                      "align": "center",
+                                      "wrap": True,
+                                      "margin": "md",
+                                      "size": "md"
                                   },
                                   {
-                                      "type": "box",
-                                      "layout": "vertical",
-                                      "flex": 1,
-                                      "backgroundColor": "#09A34A",
-                                      "paddingAll": "8px",
-                                      "cornerRadius": "8px",
-                                      "contents": [
-                                          {"type": "text", "text": "BOX", "color": "#FFFFFF", "weight": "bold", "align": "center"},
-                                          {"type": "text", "text": "—", "color": "#FFFFFF", "weight": "bold", "align": "center", "margin": "sm"}
-                                      ]
+                                      "type": "text",
+                                      "text": "※フォーメーション・BOXは使用しません",
+                                      "color": "#EAF5FF",
+                                      "align": "center",
+                                      "wrap": True,
+                                      "margin": "md",
+                                      "size": "xs"
                                   }
                               ]
                           },
