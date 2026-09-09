@@ -15,6 +15,12 @@
 .ai-toggle{margin-top:10px}
 .learning-progress-wrap{display:none;margin-top:8px}
 
+
+.final-badge{margin-top:7px;display:inline-flex;align-items:center;gap:5px;padding:6px 9px;border-radius:999px;font-size:10px;font-weight:950;border:1px solid #5f4d1b;background:#12100a;color:#d8c27c}
+.final-badge.checking{border-color:#6d5a20;color:#f0cf70;background:#171307}
+.final-badge.confirmed{border-color:#2f8f5a;color:#74e3a8;background:#07160f;box-shadow:0 0 0 1px rgba(116,227,168,.08) inset}
+.final-badge.waiting{border-color:#3b3b3b;color:#9b9b9b;background:#0d0d0d}
+
 </style>
 </head>
 <body>
@@ -112,6 +118,29 @@ function flatten(data){const out=[],ss=data?.programs?.stadiums||{};for(const [s
 function raceKey(r){return `${r.date||todayJST()}_${r.stadium_number}_${r.race_number}`}
 function closeTime(r){const m=String(r?.closed_at||'').match(/(\d{2}):(\d{2})/);return m?`${m[1]}:${m[2]}`:'--:--'}
 function upcoming(r){if(!r?.closed_at)return true;const t=new Date(String(r.closed_at).replace(' ','T')+'+09:00').getTime();return Number.isNaN(t)||t>Date.now()}
+function minutesToClose(r){
+  if(!r?.closed_at)return Infinity;
+  const t=new Date(String(r.closed_at).replace(' ','T')+'+09:00').getTime();
+  if(Number.isNaN(t))return Infinity;
+  return (t-Date.now())/60000;
+}
+function finalDecision(a){
+  const m=minutesToClose(a.race);
+  const oddsReady=num(a.oddsCoverage)>=80;
+  const topProb=num(a.scenario?.top?.probability);
+  const stableWater=num(a.weather?.windSpeed)<8&&num(a.weather?.wave)<7;
+  const entryStable=(a.courseChanges||[]).length<=1;
+  const exhibitionAligned=(a.exhibitionRank||[]).slice(0,3).includes(a.boats?.[0]?.boat);
+  const stAligned=(a.startRank||[]).slice(0,3).includes(a.boats?.[0]?.boat);
+  const strictPass=a.grade==='S'&&stableWater&&entryStable&&topProb>=.28&&exhibitionAligned&&stAligned&&oddsReady;
+  if(m<=5&&m>=0){
+    return {status:strictPass?'confirmed':'hold',label:strictPass?'✅ 最終確定':'⚠️ 最終見送り',minutes:m,strictPass};
+  }
+  if(m<=15&&m>5){
+    return {status:'checking',label:'🔥 最終判定中',minutes:m,strictPass};
+  }
+  return {status:'waiting',label:'⏳ 最終判定待ち',minutes:m,strictPass};
+}
 function previewReady(r){const p=r?.preview?.racers;if(!p)return false;for(let i=1;i<=6;i++){const x=p[String(i)];if(!x)return false;const e=Number(x.exhibition_time),s=Number(x.start_timing);if(!Number.isFinite(e)||e<=0||!Number.isFinite(s))return false}return true}
 function weatherInfo(r){const p=r?.preview||{};return{windSpeed:num(p.wind_speed),windDirection:num(p.wind_direction_number),wave:num(p.wave_height),weather:num(p.weather_number),air:num(p.air_temperature),water:num(p.water_temperature)}}
 function scoreBoat(r,p,entry){let s=0;const nw=num(r?.national_win_rate,5),n2=num(r?.national_top_2_percent,30),n3=num(r?.national_top_3_percent,45),lw=num(r?.local_win_rate,nw),l2=num(r?.local_top_2_percent,n2),m2=num(r?.motor_top_2_percent,30),m3=num(r?.motor_top_3_percent,45),b2=num(r?.boat_top_2_percent,30),ast=num(r?.average_start_timing,.18),ex=num(p?.exhibition_time,6.85),est=num(p?.start_timing,ast),rank=num(r?.rank_number,4),f=num(r?.flying_count,0),course=num(p?.course_number,entry);s+=nw*8+n2*.35+n3*.12+lw*4+l2*.18+m2*.4+m3*.1+b2*.15;s+=Math.max(0,(.22-ast)*100)+Math.max(-10,(6.9-ex)*75)+Math.max(-8,(.2-est)*60);s+=rank===1?9:rank===2?5:rank===3?1:-2;s-=f*4;s+=({1:16,2:7,3:5,4:2,5:-1,6:-4}[course]||0);return s}
@@ -273,7 +302,7 @@ function groupLabel(g){return g==='main'?'本線':g==='cover'?'押さえ':g==='h
 function learningSummary(rs){const done=rs.filter(x=>x.done),miss=done.filter(x=>!x.hit),known=miss.filter(x=>x.proximity&&x.proximity.type!=='unknown'),c={three:0,twoPos:0,twoBoats:0,one:0,none:0,thirdOnly:0,secondOnly:0,firstOnly:0};for(const x of known){const p=x.proximity;if(p.type==='three_wrong_order')c.three++;else if(p.type==='two_positions')c.twoPos++;else if(p.type==='two_boats')c.twoBoats++;else if(p.type==='one_boat')c.one++;else if(p.type==='none')c.none++;if(p.type==='two_positions'&&p.missPositions?.length===1){if(p.missPositions[0]===1)c.firstOnly++;if(p.missPositions[0]===2)c.secondOnly++;if(p.missPositions[0]===3)c.thirdOnly++}}const close=known.filter(x=>num(x.proximity?.score)>=65).length,closeRate=known.length?close/known.length*100:0;return{done,miss,known,c,close,closeRate}}
 function renderLearningStats(rs){const L=learningSummary(rs),root=$('learningStats');if(!root)return;if(!L.done.length){root.innerHTML='<div class="empty">結果が確定すると、予想10点と実際の結果の接近度を自動分析します。</div>';return}root.innerHTML=`<div class="learning-grid"><div class="learning-card"><small>分析済み不的中</small><b>${L.known.length}R</b></div><div class="learning-card"><small>惜しい予想率（65点以上）</small><b>${L.closeRate.toFixed(1)}%</b></div><div class="learning-card"><small>3艇一致・順番違い</small><b>${L.c.three}R</b></div><div class="learning-card"><small>着順1か所だけ外れ</small><b>${L.c.twoPos}R</b></div><div class="learning-card"><small>2艇一致</small><b>${L.c.twoBoats}R</b></div><div class="learning-card"><small>完全外れ</small><b>${L.c.none}R</b></div></div><div class="learning-summary"><b>外し方の内訳</b><br>1着だけ外れ：${L.c.firstOnly}R ／ 2着だけ外れ：${L.c.secondOnly}R ／ 3着だけ外れ：${L.c.thirdOnly}R<br>この偏りを会場別・条件別に蓄積し、100R到達後のロジック調整材料として使います。</div><div class="learning-note">※少数データだけで予想ロジックを自動変更しない設計です。</div>`}
 function renderLearningProgress(rs){const root=$('learningProgress');if(!root)return;const done=rs.filter(x=>x.done),rows=Object.values(STADIUMS).map(venue=>{const a=done.filter(x=>x.venue===venue),s=calc(a),count=a.length,pct=Math.min(100,count),status=count>=100?'100R到達':count>=50?'蓄積中':'収集中';return{venue,count,pct,status,hitRate:s.hitRate,roi:s.roi}}).sort((a,b)=>b.count-a.count||a.venue.localeCompare(b.venue,'ja'));root.innerHTML=`<div class="progress-list">${rows.map(x=>`<div class="progress-item"><div class="progress-top"><b>${x.venue}</b><span class="${x.count>=100?'learn-ready':x.count>=50?'learn-mid':'learn-low'}">${x.count}/100R ${x.status}</span></div><div class="progress-track"><div class="progress-fill" style="width:${x.pct}%"></div></div><div class="learning-note">的中率 ${x.hitRate.toFixed(1)}% ／ 回収率 ${x.roi.toFixed(1)}%</div></div>`).join('')}</div><div class="learning-note">100Rは会場別の初回分析ライン。100R到達後も200R・300Rと継続して累計データを残します。</div>`}
-function savePrediction(a){const r=a.race,key=raceKey(r),rs=records(),ticketSet=makeTickets(a),tickets=allocate(ticketSet,EVALUATION_STAKE,a),stake=tickets.reduce((s,x)=>s+x.money,0),w=a.weather,predictionMeta={windSpeed:w.windSpeed,windDirection:w.windDirection,wave:w.wave,weather:w.weather,airTemperature:w.air,waterTemperature:w.water,exhibitionRank:a.exhibitionRank,startRank:a.startRank,courseChanges:a.courseChanges.map(x=>({boat:x.boat,course:num(x.preview?.course_number,x.boat)})),scenario:a.scenario.candidates.slice(0,6).map(x=>({boat:x.boat,tactic:x.tactic,probability:x.probability})),attacker:a.scenario?.attacker?{boat:a.scenario.attacker.boat,tactic:a.scenario.attacker.tactic}:null,reasons:a.reasons,specialHole:ticketSet.special},old=rs.find(x=>x.key===key);if(old){if(!old.done){Object.assign(old,{tickets,stake,rating:a.rating,predictionMeta,savedAt:new Date().toISOString(),model:MODEL_NAME,learningSnapshot:{model:MODEL_NAME,savedAt:new Date().toISOString(),rating:a.rating,grade:'S',tickets:tickets.map(t=>({combo:t.combo,group:t.group||'',probability:num(t.probability),special:!!t.special,money:num(t.money)})),predictionMeta}});save(rs)}return}rs.push({key,date:r.date||todayJST(),stadium:r.stadium_number,venue:STADIUMS[r.stadium_number]||'会場',raceNumber:r.race_number,grade:'S',rating:a.rating,tickets,stake,done:false,hit:false,result:'',payout:0,resultOdds:0,returnAmount:0,savedAt:new Date().toISOString(),model:MODEL_NAME,predictionMeta,learningSnapshot:{model:MODEL_NAME,savedAt:new Date().toISOString(),rating:a.rating,grade:'S',tickets:tickets.map(t=>({combo:t.combo,group:t.group||'',probability:num(t.probability),special:!!t.special,money:num(t.money)})),predictionMeta}});save(rs)}
+function savePrediction(a){const r=a.race,key=raceKey(r),rs=records(),ticketSet=makeTickets(a),tickets=allocate(ticketSet,EVALUATION_STAKE,a),stake=tickets.reduce((s,x)=>s+x.money,0),w=a.weather,predictionMeta={finalDecision:a.finalDecision||finalDecision(a),windSpeed:w.windSpeed,windDirection:w.windDirection,wave:w.wave,weather:w.weather,airTemperature:w.air,waterTemperature:w.water,exhibitionRank:a.exhibitionRank,startRank:a.startRank,courseChanges:a.courseChanges.map(x=>({boat:x.boat,course:num(x.preview?.course_number,x.boat)})),scenario:a.scenario.candidates.slice(0,6).map(x=>({boat:x.boat,tactic:x.tactic,probability:x.probability})),attacker:a.scenario?.attacker?{boat:a.scenario.attacker.boat,tactic:a.scenario.attacker.tactic}:null,reasons:a.reasons,specialHole:ticketSet.special},old=rs.find(x=>x.key===key);if(old){if(!old.done){Object.assign(old,{tickets,stake,rating:a.rating,predictionMeta,savedAt:new Date().toISOString(),model:MODEL_NAME,learningSnapshot:{model:MODEL_NAME,savedAt:new Date().toISOString(),rating:a.rating,grade:'S',tickets:tickets.map(t=>({combo:t.combo,group:t.group||'',probability:num(t.probability),special:!!t.special,money:num(t.money)})),predictionMeta}});save(rs)}return}rs.push({key,date:r.date||todayJST(),stadium:r.stadium_number,venue:STADIUMS[r.stadium_number]||'会場',raceNumber:r.race_number,grade:'S',rating:a.rating,tickets,stake,done:false,hit:false,result:'',payout:0,resultOdds:0,returnAmount:0,savedAt:new Date().toISOString(),model:MODEL_NAME,predictionMeta,learningSnapshot:{model:MODEL_NAME,savedAt:new Date().toISOString(),rating:a.rating,grade:'S',tickets:tickets.map(t=>({combo:t.combo,group:t.group||'',probability:num(t.probability),special:!!t.special,money:num(t.money)})),predictionMeta}});save(rs)}
 function payouts(r){const t=r?.result?.payouts?.trifecta;return Array.isArray(t)?t:[]}
 function settle(races){const rs=records();let ch=false;for(const rec of rs){if(rec.done)continue;const r=races.find(x=>raceKey(x)===rec.key);if(!r)continue;const p=payouts(r);if(!p.length)continue;const w=p[0],combo=String(w.combination||''),pay=num(w.amount);if(!combo)continue;rec.done=true;rec.result=combo;rec.payout=pay;rec.resultOdds=pay>0?pay/100:0;const ht=rec.tickets?.find(t=>t.combo===combo);rec.hit=!!ht;rec.hitGroup=ht?.group||'';rec.returnAmount=ht?Math.round(pay/100*ht.money):0;rec.proximity=analyzePredictionCloseness(rec,combo);rec.settledAt=new Date().toISOString();ch=true}if(ch)save(rs)}
 function ticketRows(arr,g){
@@ -291,6 +320,12 @@ function raceHTML(a,i){
       <div>
         <div class="race-name">${STADIUMS[r.stadium_number]||'会場'} ${r.race_number}R</div>
         <div class="race-meta">締切 ${closeTime(r)} ／ 展開予測連動S評価</div>
+        ${(()=>{
+          const f=a.finalDecision||finalDecision(a);
+          const cls=f.status==='confirmed'?'confirmed':f.status==='checking'?'checking':f.status==='hold'?'waiting':'waiting';
+          const mins=Number.isFinite(f.minutes)?Math.max(0,Math.ceil(f.minutes)):null;
+          return `<div class="final-badge ${cls}">${f.label}${mins!==null?` ／ 締切まで約${mins}分`:''}</div>`;
+        })()}
       </div>
       <div class="smark">S</div>
     </div>
@@ -329,7 +364,7 @@ function dataSignature(races,oddsData){
     : [];
   return JSON.stringify([races.map(r=>[raceKey(r),r.closed_at,r.preview?.wind_speed,r.preview?.wind_direction_number,r.preview?.wave_height,r.preview?.weather_number,r.preview?.air_temperature,r.preview?.water_temperature,...Array.from({length:6},(_,i)=>{const p=r.preview?.racers?.[String(i+1)];return[p?.exhibition_time,p?.start_timing,p?.course_number]}),r.result?.payouts?.trifecta?.[0]?.combination,r.result?.payouts?.trifecta?.[0]?.amount]),oddsSig]);
 }
-function analyzeRaces(races,oddsData){settle(races);const arr=[];for(const r of races){if(!upcoming(r)||!previewReady(r))continue;const a=evaluate(r,oddsData);if(a?.grade==='S'){arr.push(a);savePrediction(a)}}arr.sort((a,b)=>b.rating-a.rating);analyses=arr;display();renderStats();return arr}
+function analyzeRaces(races,oddsData){settle(races);const arr=[];for(const r of races){if(!upcoming(r)||!previewReady(r))continue;const a=evaluate(r,oddsData);if(a?.grade==='S'){a.finalDecision=finalDecision(a);arr.push(a);savePrediction(a)}}arr.sort((a,b)=>b.rating-a.rating);analyses=arr;display();renderStats();return arr}
 async function autoRefresh(force=false){
   if(autoUpdateBusy)return;
   autoUpdateBusy=true;
@@ -345,10 +380,10 @@ async function autoRefresh(force=false){
     if(force||sig!==lastDataSignature){
       lastDataSignature=sig;
       const arr=analyzeRaces(races,oddsData);
-      st.innerHTML=`自動更新完了　🔥 S評価：${arr.length}レース<br>展示・水面・進入・展開・3連単人気を再評価しました。${oddsData?' オッズ連動ON':' オッズ取得待ち'}`;
+      const confirmed=arr.filter(x=>(x.finalDecision||finalDecision(x)).status==='confirmed').length;st.innerHTML=`自動更新完了　🔥 S評価：${arr.length}レース　✅ 最終確定：${confirmed}レース<br>展示・水面・進入・展開・3連単人気を再評価しました。${oddsData?' オッズ連動ON':' オッズ取得待ち'}`;
     }else{
       renderStats();
-      st.innerHTML=`自動確認済み　🔥 S評価：${analyses.length}レース<br>最新データに変化はありません。${oddsData?' オッズ連動ON':' オッズ取得待ち'}`;
+      analyses.forEach(x=>x.finalDecision=finalDecision(x));display();const confirmed=analyses.filter(x=>x.finalDecision.status==='confirmed').length;st.innerHTML=`自動確認済み　🔥 S評価：${analyses.length}レース　✅ 最終確定：${confirmed}レース<br>最新データに変化はありません。${oddsData?' オッズ連動ON':' オッズ取得待ち'}`;
     }
   }catch(e){
     console.error(e);
