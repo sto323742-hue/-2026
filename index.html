@@ -21,6 +21,19 @@
 .final-badge.confirmed{border-color:#2f8f5a;color:#74e3a8;background:#07160f;box-shadow:0 0 0 1px rgba(116,227,168,.08) inset}
 .final-badge.waiting{border-color:#3b3b3b;color:#9b9b9b;background:#0d0d0d}
 
+
+.trio-box{margin-top:12px;padding:11px;border:1px solid #693b70;border-radius:13px;background:linear-gradient(135deg,#170b19,#090909)}
+.trio-head{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:8px}
+.trio-head b{color:#f0a8ff;font-size:13px}
+.trio-head span{color:#a99aad;font-size:9px;font-weight:900}
+.trio-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+.trio-pick{min-width:0;padding:9px 4px;border-radius:10px;border:1px solid #4f2e55;background:#100912;text-align:center}
+.trio-pick strong{display:block;color:#ffd8ff;font-size:16px;letter-spacing:.5px;white-space:nowrap}
+.trio-pick small{display:block;margin-top:4px;color:#9f8ca3;font-size:8px;line-height:1.35}
+.trio-empty{padding:10px;border-radius:10px;background:#0d0d0d;color:#a69aa8;font-size:10px;text-align:center}
+.trio-note{margin-top:7px;color:#807083;font-size:8px;line-height:1.5}
+@media(max-width:480px){.trio-pick strong{font-size:15px}}
+
 </style>
 </head>
 <body>
@@ -176,12 +189,134 @@ const comboPool=allCombos().map(combo=>{
   return {combo,probability,odds,ev};
 });
 const oddsCoverage=comboPool.filter(x=>x.odds>0).length;
+if(oddsCoverage>=80){
+  const marketTop=[...comboPool].filter(x=>x.odds>0).sort((x,y)=>x.odds-y.odds)[0];
+  if(marketTop){
+    const set=[...marketTop.combo.split('-')].sort().join('・');
+    reasons.push(`人気3艇セット ${set}（人気1位 ${marketTop.combo} / ${marketTop.odds.toFixed(1)}倍）を並び替え再評価`);
+  }
+}
 return{race:r,boats,rating,grade:rating>=82&&stable&&scenarioStable&&!skip?'S':'B',gap1:g1,weather:w,exhibitionRank:exRanks,startRank:stRanks,courseChanges:changes,scenario,reasons,skip,oddsRace:or,comboPool,oddsCoverage}}
 function probabilityMap(boats){const raw={};let total=0;for(const x of boats){const v=Math.exp(x.score/45);raw[x.boat]=v;total+=v}for(const k of Object.keys(raw))raw[k]/=total;return raw}
 function allCombos(){const out=[];for(let a=1;a<=6;a++)for(let b=1;b<=6;b++)if(b!==a)for(let c=1;c<=6;c++)if(c!==a&&c!==b)out.push(`${a}-${b}-${c}`);return out}
 function baseComboProbability(combo,boats){const p=probabilityMap(boats),a=combo.split('-').map(Number);if(a.length!==3)return 0;const p1=p[a[0]]||0,rem1=1-p1,p2=rem1>0?(p[a[1]]||0)/rem1:0,rem2=1-p1-(p[a[1]]||0),p3=rem2>0?(p[a[2]]||0)/rem2:0;return Math.max(0,p1*p2*p3)}
 function comboRawWeight(combo,a){const head=Number(combo.split('-')[0]),base=baseComboProbability(combo,a.boats),scenarioHead=a.scenario?.firstMap?.[head]||1/6,factor=clamp(Math.pow(scenarioHead/(1/6),.45),.55,1.70);return base*factor}
 function comboProbability(combo,a){const combos=allCombos();let total=0,target=0;for(const c of combos){const w=comboRawWeight(c,a);total+=w;if(c===combo)target=w}return total?target/total:0}
+
+function popularThreeBoatSet(scored){
+  const market=scored.filter(x=>num(x.odds)>0).sort((x,y)=>x.odds-y.odds);
+  if(!market.length)return null;
+  const favorite=market[0];
+  const boats=favorite.combo.split('-').map(Number);
+  if(boats.length!==3)return null;
+  return {favorite:favorite.combo,boats:[...boats].sort((a,b)=>a-b),favoriteOdds:num(favorite.odds)};
+}
+function sameThreeBoatSet(combo,setInfo){
+  if(!setInfo)return false;
+  const boats=String(combo||'').split('-').map(Number).sort((a,b)=>a-b);
+  return boats.length===3&&boats.every((x,i)=>x===setInfo.boats[i]);
+}
+function linkedMarketScore(x,setInfo){
+  // 人気1位の3艇セットを使う並び替えを再評価。
+  // 低オッズをそのまま優遇せず、10倍以上の裏目＋AI確率＋期待値を重視する。
+  const linked=sameThreeBoatSet(x.combo,setInfo);
+  const odds=num(x.odds);
+  const probability=num(x.probability);
+  const ev=num(x.ev);
+  let bonus=0;
+  if(linked){
+    if(odds>=10)bonus+=0.55;
+    if(odds>=20)bonus+=0.20;
+    if(odds>=50)bonus+=0.10;
+    bonus+=Math.min(probability*8,0.30);
+    bonus+=Math.min(ev,2.5)*0.12;
+  }
+  return probability*(1+bonus);
+}
+
+
+function trioKeyFromCombo(combo){
+  return String(combo||'').split('-').map(Number).filter(x=>x>=1&&x<=6).sort((a,b)=>a-b).join('-');
+}
+function trioPermutations(key){
+  const a=String(key||'').split('-').map(Number);
+  if(a.length!==3)return[];
+  return [
+    `${a[0]}-${a[1]}-${a[2]}`,`${a[0]}-${a[2]}-${a[1]}`,
+    `${a[1]}-${a[0]}-${a[2]}`,`${a[1]}-${a[2]}-${a[0]}`,
+    `${a[2]}-${a[0]}-${a[1]}`,`${a[2]}-${a[1]}-${a[0]}`
+  ];
+}
+function makeTrioLongshots(a){
+  const pool=Array.isArray(a?.comboPool)?a.comboPool:[];
+  const withOdds=pool.filter(x=>num(x.odds)>0).length>=80;
+
+  // 「大穴」判定には市場情報が必要なので、オッズ未取得時は無理に出さない。
+  if(!withOdds)return[];
+
+  const aiOrder=(a.boats||[]).map(x=>x.boat);
+  const favoriteSet=popularThreeBoatSet(addPopularityRank(pool.map(x=>({...x}))));
+  const rows=[];
+
+  for(let x=1;x<=4;x++){
+    for(let y=x+1;y<=5;y++){
+      for(let z=y+1;z<=6;z++){
+        const key=`${x}-${y}-${z}`;
+        const perms=trioPermutations(key);
+        const items=perms.map(c=>pool.find(p=>p.combo===c)).filter(Boolean);
+        const odds=items.map(p=>num(p.odds)).filter(v=>v>0).sort((a,b)=>a-b);
+        if(odds.length<5)continue;
+
+        const trioProb=items.reduce((s,p)=>s+num(p.probability),0);
+        const minOdds=odds[0];
+        const medianOdds=odds[Math.floor(odds.length/2)];
+        const maxOdds=odds[odds.length-1];
+        const boats=[x,y,z];
+        const outsiderCount=boats.filter(b=>aiOrder.indexOf(b)>=3).length;
+        const containsTop=boats.includes(aiOrder[0]);
+        const favorite=sameThreeBoatSet(key,favoriteSet);
+
+        rows.push({
+          key,boats,trioProb,minOdds,medianOdds,maxOdds,outsiderCount,containsTop,favorite,
+          marketRank:0,score:0
+        });
+      }
+    }
+  }
+
+  // 3艇セット単位での市場人気を近似。
+  // 実際の3連複オッズではなく、6通りの3連単オッズから「人気度」を推定する。
+  [...rows].sort((a,b)=>a.minOdds-b.minOdds||a.medianOdds-b.medianOdds)
+    .forEach((r,i)=>r.marketRank=i+1);
+
+  for(const r of rows){
+    const marketValue=Math.log10(Math.max(r.medianOdds,10));
+    const outsiderBoost=1+(r.outsiderCount*.22);
+    const topAnchor=r.containsTop?1.08:1;
+    r.score=r.trioProb*marketValue*outsiderBoost*topAnchor;
+  }
+
+  // 人気ど真ん中は避け、AI確率が残っている中穴〜大穴だけを最大3本。
+  const candidates=rows
+    .filter(r=>
+      !r.favorite &&
+      r.marketRank>=5 &&
+      r.medianOdds>=35 &&
+      r.maxOdds>=60 &&
+      r.trioProb>=0.025 &&
+      r.outsiderCount>=1
+    )
+    .sort((a,b)=>b.score-a.score||b.trioProb-a.trioProb);
+
+  return candidates.slice(0,3).map(r=>({
+    combo:r.key,
+    probability:r.trioProb,
+    marketRank:r.marketRank,
+    marketMedian:r.medianOdds,
+    outsiderCount:r.outsiderCount
+  }));
+}
+
 function makeTickets(a){
   const source=Array.isArray(a.comboPool)&&a.comboPool.length
     ? a.comboPool.map(x=>({...x}))
@@ -189,71 +324,125 @@ function makeTickets(a){
 
   const scored=addPopularityRank(source);
   const withOdds=scored.filter(x=>x.odds>0).length>=80;
+  const setInfo=withOdds?popularThreeBoatSet(scored):null;
 
-  // 本線3点：AI上位＋人気上位。極端な高配当は本線から除外。
-  const mainPool=scored
-    .filter(x=>!withOdds||(x.popRank<=15&&x.odds>0&&x.odds<=40))
-    .sort((x,y)=>y.probability-x.probability);
+  // 人気1位3艇セットの「並び替え」を独立再評価。
+  // 例: 1-4-5が人気1位なら、4-1-5 / 4-5-1 / 5-1-4 / 5-4-1 等も
+  // 展示・ST・展開確率・期待値・オッズで再採点する。
+  for(const x of scored){
+    x.linkedSet=!!setInfo&&sameThreeBoatSet(x.combo,setInfo);
+    x.linkedScore=linkedMarketScore(x,setInfo);
+  }
+
+  const used=new Set();
+
+  // 本線3点：10倍未満は原則除外。
+  // 人気上位＋AI確率を中心に、人気3艇セットの有力な裏目を昇格。
+  let mainPool=scored
+    .filter(x=>!withOdds||(x.odds>=10&&x.popRank<=22&&x.odds<=80))
+    .sort((x,y)=>
+      (Number(y.linkedSet)-Number(x.linkedSet))*0.15 ||
+      (y.linkedScore-x.linkedScore) ||
+      (y.probability-x.probability)
+    );
 
   const main=[];
-  const used=new Set();
   for(const x of mainPool){
     if(main.length>=3)break;
-    main.push(x.combo); used.add(x.combo);
+    main.push(x.combo);used.add(x.combo);
   }
-  // オッズ条件で3点に届かない場合だけAI確率順で補完
-  for(const x of [...scored].sort((x,y)=>y.probability-x.probability)){
+
+  // 10倍以上だけで不足するケース用。まず10倍以上のAI確率順で補完。
+  for(const x of [...scored].filter(x=>!withOdds||x.odds>=10).sort((x,y)=>y.linkedScore-x.linkedScore)){
     if(main.length>=3)break;
     if(!used.has(x.combo)){main.push(x.combo);used.add(x.combo);}
   }
 
-  // 狙い4点：中位人気＋AI期待値を重視
+  // 狙い4点：10〜120倍を中心に期待値重視。
   let coverPool=scored
-    .filter(x=>!used.has(x.combo)&&(!withOdds||(x.popRank>=5&&x.popRank<=40&&x.odds>=10&&x.odds<=100)))
-    .sort((x,y)=>(y.ev-x.ev)||(y.probability-x.probability));
+    .filter(x=>!used.has(x.combo)&&(!withOdds||(x.odds>=10&&x.odds<=120&&x.popRank<=55)))
+    .sort((x,y)=>{
+      const yScore=(y.ev*0.65)+(y.linkedScore*4)+(y.linkedSet?0.20:0);
+      const xScore=(x.ev*0.65)+(x.linkedScore*4)+(x.linkedSet?0.20:0);
+      return yScore-xScore;
+    });
 
   const cover=[];
   for(const x of coverPool){
     if(cover.length>=4)break;
-    cover.push(x.combo); used.add(x.combo);
+    cover.push(x.combo);used.add(x.combo);
   }
-  for(const x of [...scored].sort((x,y)=>y.probability-x.probability)){
+  for(const x of [...scored].filter(x=>!used.has(x.combo)&&(!withOdds||x.odds>=10))
+      .sort((x,y)=>(y.ev-x.ev)||(y.linkedScore-x.linkedScore))){
     if(cover.length>=4)break;
-    if(!used.has(x.combo)){cover.push(x.combo);used.add(x.combo);}
+    cover.push(x.combo);used.add(x.combo);
   }
 
-  // 穴3点：人気上位は穴にしない。原則25位以下かつ30倍以上。
+  // 穴3点：30倍以上を基本にする。
+  // 人気3艇セットの裏目でも、配当妙味がある場合は穴候補に残す。
   let holePool=scored
-    .filter(x=>!used.has(x.combo)&&(!withOdds||(x.popRank>=25&&x.odds>=30&&x.probability>=0.002)))
-    .map(x=>({...x,holeScore:x.probability*Math.log10(Math.max(x.odds,10))*(1+Math.min(x.ev,3))}))
+    .filter(x=>!used.has(x.combo)&&(!withOdds||(x.odds>=30&&x.popRank>=18&&x.probability>=0.0015)))
+    .map(x=>({
+      ...x,
+      holeScore:
+        x.probability*Math.log10(Math.max(x.odds,10))*(1+Math.min(x.ev,3))
+        *(x.linkedSet?1.35:1)
+    }))
     .sort((x,y)=>y.holeScore-x.holeScore);
 
   const hole=[];
   for(const x of holePool){
     if(hole.length>=3)break;
-    hole.push(x.combo); used.add(x.combo);
+    hole.push(x.combo);used.add(x.combo);
   }
 
-  // オッズ取得済み時は人気上位を穴の補完に使わない
   if(withOdds&&hole.length<3){
     const fallback=scored
-      .filter(x=>!used.has(x.combo)&&x.popRank>=20&&x.odds>=25)
-      .sort((x,y)=>(y.ev-x.ev)||(y.probability-x.probability));
+      .filter(x=>!used.has(x.combo)&&x.odds>=20&&x.popRank>=15)
+      .sort((x,y)=>{
+        const yScore=y.ev+(y.linkedSet?0.35:0)+y.linkedScore*2;
+        const xScore=x.ev+(x.linkedSet?0.35:0)+x.linkedScore*2;
+        return yScore-xScore;
+      });
     for(const x of fallback){
       if(hole.length>=3)break;
-      hole.push(x.combo); used.add(x.combo);
+      hole.push(x.combo);used.add(x.combo);
     }
   }
 
-  // オッズ未取得時だけ、従来通り確率評価で3点まで補完
+  // オッズ未取得時だけ従来方式で補完。
   if(!withOdds){
-    for(const x of [...scored].sort((x,y)=>y.probability-x.probability)){
-      if(hole.length>=3)break;
-      if(!used.has(x.combo)){hole.push(x.combo);used.add(x.combo);}
+    const fallback=[...scored].sort((x,y)=>y.probability-x.probability);
+    for(const x of fallback){
+      if(main.length<3&&!used.has(x.combo)){main.push(x.combo);used.add(x.combo);continue;}
+      if(cover.length<4&&!used.has(x.combo)){cover.push(x.combo);used.add(x.combo);continue;}
+      if(hole.length<3&&!used.has(x.combo)){hole.push(x.combo);used.add(x.combo);}
+      if(main.length>=3&&cover.length>=4&&hole.length>=3)break;
     }
   }
 
-  return{main:main.slice(0,3),cover:cover.slice(0,4),hole:hole.slice(0,3),special:null};
+  // LINE通知や画面表示を壊さないため、オッズ取得済みでも最後は10点を保証。
+  // ただし10倍未満は最後の最後の補欠扱い。
+  if(withOdds){
+    const fill=[...scored].filter(x=>!used.has(x.combo)).sort((x,y)=>{
+      const yo=y.odds>=10?1:0, xo=x.odds>=10?1:0;
+      return (yo-xo)||(y.linkedScore-x.linkedScore)||(y.probability-x.probability);
+    });
+    for(const x of fill){
+      if(main.length<3){main.push(x.combo);used.add(x.combo);continue;}
+      if(cover.length<4){cover.push(x.combo);used.add(x.combo);continue;}
+      if(hole.length<3){hole.push(x.combo);used.add(x.combo);}
+      if(main.length>=3&&cover.length>=4&&hole.length>=3)break;
+    }
+  }
+
+  return{
+    main:main.slice(0,3),
+    cover:cover.slice(0,4),
+    hole:hole.slice(0,3),
+    special:null,
+    marketSet:setInfo?{favorite:setInfo.favorite,boats:setInfo.boats,favoriteOdds:setInfo.favoriteOdds}:null
+  };
 }
 function allocate(t,budget,a){
   const all=[
@@ -302,9 +491,15 @@ function groupLabel(g){return g==='main'?'本線':g==='cover'?'押さえ':g==='h
 function learningSummary(rs){const done=rs.filter(x=>x.done),miss=done.filter(x=>!x.hit),known=miss.filter(x=>x.proximity&&x.proximity.type!=='unknown'),c={three:0,twoPos:0,twoBoats:0,one:0,none:0,thirdOnly:0,secondOnly:0,firstOnly:0};for(const x of known){const p=x.proximity;if(p.type==='three_wrong_order')c.three++;else if(p.type==='two_positions')c.twoPos++;else if(p.type==='two_boats')c.twoBoats++;else if(p.type==='one_boat')c.one++;else if(p.type==='none')c.none++;if(p.type==='two_positions'&&p.missPositions?.length===1){if(p.missPositions[0]===1)c.firstOnly++;if(p.missPositions[0]===2)c.secondOnly++;if(p.missPositions[0]===3)c.thirdOnly++}}const close=known.filter(x=>num(x.proximity?.score)>=65).length,closeRate=known.length?close/known.length*100:0;return{done,miss,known,c,close,closeRate}}
 function renderLearningStats(rs){const L=learningSummary(rs),root=$('learningStats');if(!root)return;if(!L.done.length){root.innerHTML='<div class="empty">結果が確定すると、予想10点と実際の結果の接近度を自動分析します。</div>';return}root.innerHTML=`<div class="learning-grid"><div class="learning-card"><small>分析済み不的中</small><b>${L.known.length}R</b></div><div class="learning-card"><small>惜しい予想率（65点以上）</small><b>${L.closeRate.toFixed(1)}%</b></div><div class="learning-card"><small>3艇一致・順番違い</small><b>${L.c.three}R</b></div><div class="learning-card"><small>着順1か所だけ外れ</small><b>${L.c.twoPos}R</b></div><div class="learning-card"><small>2艇一致</small><b>${L.c.twoBoats}R</b></div><div class="learning-card"><small>完全外れ</small><b>${L.c.none}R</b></div></div><div class="learning-summary"><b>外し方の内訳</b><br>1着だけ外れ：${L.c.firstOnly}R ／ 2着だけ外れ：${L.c.secondOnly}R ／ 3着だけ外れ：${L.c.thirdOnly}R<br>この偏りを会場別・条件別に蓄積し、100R到達後のロジック調整材料として使います。</div><div class="learning-note">※少数データだけで予想ロジックを自動変更しない設計です。</div>`}
 function renderLearningProgress(rs){const root=$('learningProgress');if(!root)return;const done=rs.filter(x=>x.done),rows=Object.values(STADIUMS).map(venue=>{const a=done.filter(x=>x.venue===venue),s=calc(a),count=a.length,pct=Math.min(100,count),status=count>=100?'100R到達':count>=50?'蓄積中':'収集中';return{venue,count,pct,status,hitRate:s.hitRate,roi:s.roi}}).sort((a,b)=>b.count-a.count||a.venue.localeCompare(b.venue,'ja'));root.innerHTML=`<div class="progress-list">${rows.map(x=>`<div class="progress-item"><div class="progress-top"><b>${x.venue}</b><span class="${x.count>=100?'learn-ready':x.count>=50?'learn-mid':'learn-low'}">${x.count}/100R ${x.status}</span></div><div class="progress-track"><div class="progress-fill" style="width:${x.pct}%"></div></div><div class="learning-note">的中率 ${x.hitRate.toFixed(1)}% ／ 回収率 ${x.roi.toFixed(1)}%</div></div>`).join('')}</div><div class="learning-note">100Rは会場別の初回分析ライン。100R到達後も200R・300Rと継続して累計データを残します。</div>`}
-function savePrediction(a){const r=a.race,key=raceKey(r),rs=records(),ticketSet=makeTickets(a),tickets=allocate(ticketSet,EVALUATION_STAKE,a),stake=tickets.reduce((s,x)=>s+x.money,0),w=a.weather,predictionMeta={finalDecision:a.finalDecision||finalDecision(a),windSpeed:w.windSpeed,windDirection:w.windDirection,wave:w.wave,weather:w.weather,airTemperature:w.air,waterTemperature:w.water,exhibitionRank:a.exhibitionRank,startRank:a.startRank,courseChanges:a.courseChanges.map(x=>({boat:x.boat,course:num(x.preview?.course_number,x.boat)})),scenario:a.scenario.candidates.slice(0,6).map(x=>({boat:x.boat,tactic:x.tactic,probability:x.probability})),attacker:a.scenario?.attacker?{boat:a.scenario.attacker.boat,tactic:a.scenario.attacker.tactic}:null,reasons:a.reasons,specialHole:ticketSet.special},old=rs.find(x=>x.key===key);if(old){if(!old.done){Object.assign(old,{tickets,stake,rating:a.rating,predictionMeta,savedAt:new Date().toISOString(),model:MODEL_NAME,learningSnapshot:{model:MODEL_NAME,savedAt:new Date().toISOString(),rating:a.rating,grade:'S',tickets:tickets.map(t=>({combo:t.combo,group:t.group||'',probability:num(t.probability),special:!!t.special,money:num(t.money)})),predictionMeta}});save(rs)}return}rs.push({key,date:r.date||todayJST(),stadium:r.stadium_number,venue:STADIUMS[r.stadium_number]||'会場',raceNumber:r.race_number,grade:'S',rating:a.rating,tickets,stake,done:false,hit:false,result:'',payout:0,resultOdds:0,returnAmount:0,savedAt:new Date().toISOString(),model:MODEL_NAME,predictionMeta,learningSnapshot:{model:MODEL_NAME,savedAt:new Date().toISOString(),rating:a.rating,grade:'S',tickets:tickets.map(t=>({combo:t.combo,group:t.group||'',probability:num(t.probability),special:!!t.special,money:num(t.money)})),predictionMeta}});save(rs)}
+function savePrediction(a){const r=a.race,key=raceKey(r),rs=records(),ticketSet=makeTickets(a),tickets=allocate(ticketSet,EVALUATION_STAKE,a),stake=tickets.reduce((s,x)=>s+x.money,0),w=a.weather,trioLongshots=makeTrioLongshots(a),predictionMeta={trioLongshots,finalDecision:a.finalDecision||finalDecision(a),windSpeed:w.windSpeed,windDirection:w.windDirection,wave:w.wave,weather:w.weather,airTemperature:w.air,waterTemperature:w.water,exhibitionRank:a.exhibitionRank,startRank:a.startRank,courseChanges:a.courseChanges.map(x=>({boat:x.boat,course:num(x.preview?.course_number,x.boat)})),scenario:a.scenario.candidates.slice(0,6).map(x=>({boat:x.boat,tactic:x.tactic,probability:x.probability})),attacker:a.scenario?.attacker?{boat:a.scenario.attacker.boat,tactic:a.scenario.attacker.tactic}:null,reasons:a.reasons,specialHole:ticketSet.special},old=rs.find(x=>x.key===key);if(old){if(!old.done){Object.assign(old,{tickets,stake,rating:a.rating,predictionMeta,savedAt:new Date().toISOString(),model:MODEL_NAME,learningSnapshot:{model:MODEL_NAME,savedAt:new Date().toISOString(),rating:a.rating,grade:'S',tickets:tickets.map(t=>({combo:t.combo,group:t.group||'',probability:num(t.probability),special:!!t.special,money:num(t.money)})),predictionMeta}});save(rs)}return}rs.push({key,date:r.date||todayJST(),stadium:r.stadium_number,venue:STADIUMS[r.stadium_number]||'会場',raceNumber:r.race_number,grade:'S',rating:a.rating,tickets,stake,done:false,hit:false,result:'',payout:0,resultOdds:0,returnAmount:0,savedAt:new Date().toISOString(),model:MODEL_NAME,predictionMeta,learningSnapshot:{model:MODEL_NAME,savedAt:new Date().toISOString(),rating:a.rating,grade:'S',tickets:tickets.map(t=>({combo:t.combo,group:t.group||'',probability:num(t.probability),special:!!t.special,money:num(t.money)})),predictionMeta}});save(rs)}
 function payouts(r){const t=r?.result?.payouts?.trifecta;return Array.isArray(t)?t:[]}
-function settle(races){const rs=records();let ch=false;for(const rec of rs){if(rec.done)continue;const r=races.find(x=>raceKey(x)===rec.key);if(!r)continue;const p=payouts(r);if(!p.length)continue;const w=p[0],combo=String(w.combination||''),pay=num(w.amount);if(!combo)continue;rec.done=true;rec.result=combo;rec.payout=pay;rec.resultOdds=pay>0?pay/100:0;const ht=rec.tickets?.find(t=>t.combo===combo);rec.hit=!!ht;rec.hitGroup=ht?.group||'';rec.returnAmount=ht?Math.round(pay/100*ht.money):0;rec.proximity=analyzePredictionCloseness(rec,combo);rec.settledAt=new Date().toISOString();ch=true}if(ch)save(rs)}
+function settle(races){const rs=records();let ch=false;for(const rec of rs){if(rec.done)continue;const r=races.find(x=>raceKey(x)===rec.key);if(!r)continue;const p=payouts(r);if(!p.length)continue;const w=p[0],combo=String(w.combination||''),pay=num(w.amount);if(!combo)continue;rec.done=true;rec.result=combo;rec.payout=pay;rec.resultOdds=pay>0?pay/100:0;const ht=rec.tickets?.find(t=>t.combo===combo);rec.hit=!!ht;rec.hitGroup=ht?.group||'';rec.returnAmount=ht?Math.round(pay/100*ht.money):0;rec.proximity=analyzePredictionCloseness(rec,combo);
+const resultTrio=trioKeyFromCombo(combo);
+const trioPicks=Array.isArray(rec?.predictionMeta?.trioLongshots)?rec.predictionMeta.trioLongshots:[];
+const trioHit=trioPicks.find(x=>trioKeyFromCombo(x?.combo)===resultTrio);
+rec.trioHit=!!trioHit;
+rec.trioHitCombo=trioHit?.combo||'';
+rec.settledAt=new Date().toISOString();ch=true}if(ch)save(rs)}
 function ticketRows(arr,g){
   return arr.filter(x=>x.group===g).map(x=>{
     const odds=num(x.odds);
@@ -312,6 +507,29 @@ function ticketRows(arr,g){
     return `<div class="ticket"><span class="combo">${x.combo}${x.special?' ★':''}</span><div class="ticket-sub">展開補正AI推定 ${(x.probability*100).toFixed(1)}%${odds?` ／ ${odds.toFixed(1)}倍${rank?` ／ 人気${rank}位`:''}`:''}</div></div>`;
   }).join('');
 }
+
+function trioLongshotHTML(a){
+  const picks=makeTrioLongshots(a);
+  const f=a.finalDecision||finalDecision(a);
+  const phase=f.status==='confirmed'?'最終確定連動':f.status==='checking'?'最終判定中':'自動再評価';
+  if(!picks.length){
+    return `<div class="trio-box">
+      <div class="trio-head"><b>🎯 3連複 大穴狙い</b><span>最大3本・${phase}</span></div>
+      <div class="trio-empty">現在は大穴条件を満たす3連複がありません。無理に3本出さず見送ります。</div>
+      <div class="trio-note">※実際の3連複オッズではなく、3連単6通りの市場オッズ＋AI展開確率から妙味を推定しています。3連単10点とは別枠です。</div>
+    </div>`;
+  }
+  return `<div class="trio-box">
+    <div class="trio-head"><b>🎯 3連複 大穴狙い</b><span>${picks.length}/3本・${phase}</span></div>
+    <div class="trio-grid">${picks.map((p,i)=>`
+      <div class="trio-pick">
+        <strong>${p.combo}</strong>
+        <small>AI3艇到達 ${(p.probability*100).toFixed(1)}%<br>市場セット人気 推定${p.marketRank}位</small>
+      </div>`).join('')}</div>
+    <div class="trio-note">人気ど真ん中を避け、AI上位艇＋展開穴を優先。条件不足なら1〜2本、または見送りになります。※3連単10点とは別枠です。</div>
+  </div>`;
+}
+
 function scenarioHTML(a){const s=a.scenario;if(!s?.top)return'';return`<div class="scenario-box"><div class="scenario-title">🧠 AI展開予測</div><div class="scenario-main"><strong>${s.top.boat}号艇 ${s.top.tactic}</strong><span>${(s.top.probability*100).toFixed(1)}%</span></div><div class="scenario-list">${s.candidates.slice(1,5).map(x=>`<div class="scenario-row"><span>${x.boat}号艇 ${x.tactic}</span><b>${(x.probability*100).toFixed(1)}%</b></div>`).join('')}</div><div class="scenario-note">展示ST・展示タイム・選手能力・モーター・進入コース・風速・波高から1マークの展開を推定しています。</div></div>`}
 function raceHTML(a,i){
   const r=a.race,t=allocate(makeTickets(a),EVALUATION_STAKE,a),id='ai'+i,w=a.weather;
@@ -336,6 +554,7 @@ function raceHTML(a,i){
       <div class="bet-col hole-col"><div class="bet-head hole">穴 3点</div>${ticketRows(t,'hole')}</div>
     </div>
     <div class="total total-right"><span></span><span>合計10点</span></div>
+    ${trioLongshotHTML(a)}
 
     <button class="gold-btn ai-toggle" data-ai-detail="${id}">🧠 AI信頼スコアを表示する ▼</button>
     <div class="detail ai-detail" id="${id}">
@@ -353,7 +572,7 @@ function raceHTML(a,i){
         ${scenarioHTML(a)}
       </div>
       <div class="reason"><b>今回のAI判断根拠</b><br>${a.reasons.map(x=>'・'+x).join('<br>')}</div>
-      <div class="logic"><b>Ver.3 展開予測ロジック</b><br><br>艇の単純な能力順位だけではなく、1マークの「逃げ・差し・まくり・まくり差し・展開突き」を推定し、3連単120通りへ反映します。★は攻め役連動の特殊穴です。水面が荒れている・進入変化が大きい・展開予測が分散している場合はS評価から外して見送ります。</div>
+      <div class="logic"><b>Ver.3 展開予測ロジック</b><br><br>艇の単純な能力順位だけではなく、1マークの「逃げ・差し・まくり・まくり差し・展開突き」を推定し、3連単120通りへ反映します。さらに人気1位の3艇セットを抽出し、その6通りを展示・ST・展開確率・期待値・オッズで再評価します。10倍未満は原則として買い目候補から外します。さらに3連複は、人気ど真ん中の3艇セットを避け、AI上位艇＋展開穴を含む組み合わせを最大3本だけ別枠で抽出します。条件不足時は無理に3本出さず見送ります。★は攻め役連動の特殊穴です。水面が荒れている・進入変化が大きい・展開予測が分散している場合はS評価から外して見送ります。</div>
     </div>
   </article>`;
 }
