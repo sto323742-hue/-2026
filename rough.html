@@ -18,7 +18,7 @@
 <body>
 <div class="topbar">
   <div class="title">🔥 荒れるレース厳選版</div>
-  <div class="sub">S判定 → 期待値 → 波乱度75以上だけ表示</div>
+  <div class="sub">S判定 → 期待値 → 11項目の波乱度75以上だけ表示</div>
   <div class="meter"><span class="pill">基準 75/100</span><span class="pill hot" id="roughCount">判定中…</span><span class="pill pass" id="passCount">通過 0R</span></div>
 </div>
 <div class="loading" id="loading">通常版AIを読み込み、波乱度を追加判定しています…</div>
@@ -35,6 +35,79 @@ const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 function getLex(win,name){
   try{return win.eval(name)}catch(e){return null}
 }
+
+function readRoughOddsHistory(){
+  try{return JSON.parse(localStorage.getItem('boat_ai_rough_odds_history')||'{}')}catch(e){return{}}
+}
+function writeRoughOddsHistory(x){
+  try{localStorage.setItem('boat_ai_rough_odds_history',JSON.stringify(x))}catch(e){}
+}
+function raceRoughKey(a){
+  const r=a?.race||{};
+  return `${r.date||''}_${r.stadium_number||''}_${r.race_number||''}`;
+}
+function getField(obj,names,def=null){
+  for(const k of names){
+    const v=obj?.[k];
+    if(v!==undefined&&v!==null&&v!=='')return v;
+  }
+  return def;
+}
+function average(arr){
+  const a=arr.map(Number).filter(Number.isFinite);
+  return a.length?a.reduce((s,x)=>s+x,0)/a.length:0;
+}
+function oddsMoveSignal(a){
+  const key=raceRoughKey(a),hist=readRoughOddsHistory();
+  const pool=Array.isArray(a?.comboPool)?a.comboPool:[];
+  const now=pool.filter(x=>n(x.odds)>0).sort((x,y)=>n(x.odds)-n(y.odds)).slice(0,30)
+    .reduce((o,x)=>(o[x.combo]=n(x.odds),o),{});
+  const prev=hist[key]?.odds||{};
+  let sharp=0,drift=0,checked=0;
+  for(const [combo,odd] of Object.entries(now)){
+    const po=n(prev[combo]);
+    if(po<=0||odd<=0)continue;
+    checked++;
+    const ratio=odd/po;
+    if(ratio<=.78)sharp++;
+    if(ratio>=1.30)drift++;
+  }
+  hist[key]={ts:Date.now(),odds:now};
+  const cutoff=Date.now()-6*60*60*1000;
+  for(const k of Object.keys(hist))if(n(hist[k]?.ts)<cutoff)delete hist[k];
+  writeRoughOddsHistory(hist);
+  return {checked,sharp,drift};
+}
+function venueCourseSignal(a){
+  const r=a?.race||{}, stadium=n(r.stadium_number);
+  const s=a?.scenario||{}, top=s?.top, attacker=s?.attacker;
+  // 実データが無い場合は会場名だけで決め打ちせず、当該レースの展開モデルを使う。
+  let score=0, label='';
+  if(top&&n(top.boat)!==1&&n(top.probability)>=.28){
+    score+=4; label=`${top.boat}号艇 ${top.tactic}優勢`;
+  }
+  if(attacker&&n(attacker.boat)>=3&&n(attacker.boat)<=5&&n(attacker.probability)>=.12){
+    score+=3;
+  }
+  // 江戸川・鳴門は水面変化データが取れた場合だけ追加評価し、会場名だけでは加点しない。
+  return {score:Math.min(7,score),label,stadium};
+}
+function tideCurrentSignal(a){
+  const p=a?.race?.preview||{};
+  const tide=n(getField(p,['tide_level','tide_height','water_level','tide'],0));
+  const current=n(getField(p,['current_speed','flow_speed','tide_speed'],0));
+  let score=0; const reasons=[];
+  if(tide>0){
+    if(tide>=150){score+=3;reasons.push(`潮位 ${tide}`)}
+    else if(tide>=100){score+=2;reasons.push(`潮位 ${tide}`)}
+  }
+  if(current>0){
+    if(current>=1.0){score+=4;reasons.push(`潮流 ${current}`)}
+    else if(current>=0.5){score+=2;reasons.push(`潮流 ${current}`)}
+  }
+  return {score:Math.min(7,score),reasons,available:tide>0||current>0};
+}
+
 function roughDecision(a){
   const boats=Array.isArray(a?.boats)?a.boats:[];
   const w=a?.weather||{};
@@ -42,6 +115,7 @@ function roughDecision(a){
   const st=Array.isArray(a?.startRank)?a.startRank:[];
   const sc=a?.scenario||{};
   const pool=Array.isArray(a?.comboPool)?a.comboPool:[];
+  const b1=boats.find(x=>x.boat===1);
   const b1Rank=Math.max(0,boats.findIndex(x=>x.boat===1));
   const ex1=ex.indexOf(1),st1=st.indexOf(1);
   const first1=n(sc?.firstMap?.[1],1/6);
@@ -53,60 +127,138 @@ function roughDecision(a){
   const high100=pool.filter(x=>n(x.odds)>=100&&n(x.probability)>=.0012).length;
   const high200=pool.filter(x=>n(x.odds)>=200&&n(x.probability)>=.0009).length;
   const valueLong=pool.filter(x=>n(x.odds)>=80&&n(x.ev)>=.8).length;
-  let score=10;
+  let score=4;
   const reasons=[];
 
+  // 1) 1号艇危険度
   let inner=0;
-  if(b1Rank>=1){inner+=10;reasons.push(`1号艇 AI能力${b1Rank+1}位`)}
-  if(b1Rank>=2)inner+=5;
-  if(ex1>=2){inner+=6;reasons.push(`1号艇 展示${ex1+1}位`)}
-  if(st1>=2){inner+=5;reasons.push(`1号艇 ST${st1+1}位`)}
-  if(first1<.18){inner+=6;reasons.push(`1号艇 1着展開確率 ${(first1*100).toFixed(1)}%`)}
-  if(sc?.top&&n(sc.top.boat)!==1){inner+=5;reasons.push(`最有力展開は${sc.top.boat}号艇 ${sc.top.tactic}`)}
-  inner=Math.min(30,inner);score+=inner;
+  if(b1Rank>=1){inner+=8;reasons.push(`1号艇 AI能力${b1Rank+1}位`)}
+  if(b1Rank>=2)inner+=4;
+  if(ex1>=2){inner+=5;reasons.push(`1号艇 展示${ex1+1}位`)}
+  if(st1>=2){inner+=4;reasons.push(`1号艇 ST${st1+1}位`)}
+  if(first1<.18){inner+=5;reasons.push(`1号艇 1着展開確率 ${(first1*100).toFixed(1)}%`)}
+  if(sc?.top&&n(sc.top.boat)!==1){inner+=4;reasons.push(`最有力展開は${sc.top.boat}号艇 ${sc.top.tactic}`)}
 
+  // 2) F持ち・事故リスク（既存 racer.flying_count 等を使用）
+  const fCount=n(b1?.racer?.flying_count);
+  const lateCount=n(getField(b1?.racer,['late_count','lateness_count'],0));
+  if(fCount>=1){inner+=5;reasons.push(`1号艇 F${fCount}持ち`)}
+  if(lateCount>=1){inner+=2;reasons.push(`1号艇 L${lateCount}`)}
+  inner=Math.min(28,inner); score+=inner;
+
+  // 3) 攻め艇の強さ
   let attack=0;
-  if(attacker&&attackerBoat>=3&&attackerBoat<=5){attack+=9;reasons.push(`攻め役 ${attackerBoat}号艇 ${attacker.tactic}`)}
-  if(attackerRank<=2&&attackerBoat!==1)attack+=5;
+  if(attacker&&attackerBoat>=3&&attackerBoat<=5){attack+=7;reasons.push(`攻め役 ${attackerBoat}号艇 ${attacker.tactic}`)}
+  if(attackerRank<=2&&attackerBoat!==1)attack+=4;
   if(sc?.top&&n(sc.top.boat)>=3&&n(sc.top.boat)<=5)attack+=4;
   const attackST=attackerBoat?st.indexOf(attackerBoat):-1;
   if(attackST>=0&&attackST<=1)attack+=4;
-  attack=Math.min(20,attack);score+=attack;
+  attack=Math.min(18,attack); score+=attack;
 
+  // 4) 今節好調度：今節専用値があれば使用。無い場合は普段STと展示STの改善を代理指標にする。
+  let form=0;
+  for(const x of boats){
+    const rr=x?.racer||{}, pv=x?.preview||{};
+    const avgST=n(rr.average_start_timing,.18), exST=n(pv.start_timing,avgST);
+    const seriesST=n(getField(rr,['series_average_start_timing','current_series_average_start_timing','meet_average_start_timing'],0));
+    const seriesRank=n(getField(rr,['series_average_rank','current_series_average_rank','meet_average_rank'],0));
+    const improvement=(avgST-exST);
+    let one=0;
+    if(seriesST>0&&seriesST<=avgST-.015)one+=2;
+    if(seriesRank>0&&seriesRank<=3)one+=2;
+    if(improvement>=.025)one+=2;
+    if(ex.indexOf(x.boat)<=1&&boats.indexOf(x)>=2)one+=2; // 人気薄/AI下位の展示上昇
+    if(one>=4&&x.boat!==1)reasons.push(`${x.boat}号艇 今節/直前気配上昇`);
+    form=Math.max(form,one);
+  }
+  form=Math.min(8,form); score+=form;
+
+  // 5) 展示逆転・進入変化
   let upset=0;
   const topAbility=boats[0]?.boat;
-  if(ex[0]&&ex[0]!==topAbility){upset+=6;reasons.push(`展示1位 ${ex[0]}号艇がAI能力1位と不一致`)}
+  if(ex[0]&&ex[0]!==topAbility){upset+=5;reasons.push(`展示1位 ${ex[0]}号艇がAI能力1位と不一致`)}
   const exTopAbilityRank=Math.max(0,boats.findIndex(x=>x.boat===ex[0]));
-  if(exTopAbilityRank>=2)upset+=4;
+  if(exTopAbilityRank>=2)upset+=3;
   const changes=Array.isArray(a?.courseChanges)?a.courseChanges:[];
-  if(changes.length===1){upset+=3;reasons.push('進入変化あり')}
-  if(changes.length>=2){upset+=5;reasons.push(`進入変化 ${changes.length}艇`)}
-  score+=Math.min(15,upset);
+  if(changes.length===1){upset+=2;reasons.push('進入変化あり')}
+  if(changes.length>=2){upset+=4;reasons.push(`進入変化 ${changes.length}艇`)}
+  upset=Math.min(12,upset); score+=upset;
 
+  // 6) 実力拮抗度
+  let parity=0;
+  const scores=boats.slice(0,4).map(x=>n(x.score));
+  if(scores.length>=4){
+    const gap14=Math.max(...scores)-Math.min(...scores);
+    const gap12=Math.abs(scores[0]-scores[1]);
+    if(gap14<=18){parity+=5;reasons.push(`上位4艇が拮抗 差${gap14.toFixed(1)}`)}
+    else if(gap14<=26)parity+=3;
+    if(gap12<=5){parity+=3;reasons.push(`1・2番手差 ${gap12.toFixed(1)}`)}
+  }
+  parity=Math.min(8,parity); score+=parity;
+
+  // 7) 展開分散
   let spread=0;
-  if(scenarioTop>=.24&&scenarioTop<.34){spread+=7;reasons.push(`展開が割れる ${Math.round(scenarioTop*100)}%`)}
-  else if(scenarioTop>=.34&&scenarioTop<.40)spread+=4;
-  if(sc?.candidates?.[1]&&n(sc.candidates[1].probability)>=.16)spread+=3;
-  score+=Math.min(10,spread);
+  if(scenarioTop>=.24&&scenarioTop<.34){spread+=5;reasons.push(`展開が割れる ${Math.round(scenarioTop*100)}%`)}
+  else if(scenarioTop>=.34&&scenarioTop<.40)spread+=3;
+  if(sc?.candidates?.[1]&&n(sc.candidates[1].probability)>=.16)spread+=2;
+  spread=Math.min(7,spread); score+=spread;
 
-  let market=0;
-  if(favorite&&n(favorite.odds)<12){market+=3;reasons.push(`人気集中 ${n(favorite.odds).toFixed(1)}倍`)}
-  if(high100>=12){market+=4;reasons.push(`100倍以上の有力候補 ${high100}通り`)}
-  if(high200>=6)market+=4;
-  if(valueLong>=5){market+=4;reasons.push(`80倍以上EV候補 ${valueLong}通り`)}
-  score+=Math.min(15,market);
+  // 8) コース別決まり手相性（会場名だけでは決め打ちしない）
+  const venueSig=venueCourseSignal(a);
+  const courseFit=venueSig.score;
+  if(courseFit>=4&&venueSig.label)reasons.push(`コース展開相性 ${venueSig.label}`);
+  score+=courseFit;
 
+  // 9) 風向×風速×会場条件
   let water=0;
-  if(n(w.windSpeed)>=4){water+=4;reasons.push(`風 ${n(w.windSpeed)}m`)}
+  if(n(w.windSpeed)>=4){water+=2;reasons.push(`風 ${n(w.windSpeed)}m`)}
   if(n(w.windSpeed)>=6)water+=2;
-  if(n(w.wave)>=3){water+=2;reasons.push(`波 ${n(w.wave)}cm`)}
-  if(n(w.wave)>=5)water+=2;
-  score+=Math.min(10,water);
+  if(n(w.wave)>=3){water+=1;reasons.push(`波 ${n(w.wave)}cm`)}
+  if(n(w.wave)>=5)water+=1;
+  // 風向番号が取れている場合、強風＋明確な風向がある時のみ追加
+  if(n(w.windSpeed)>=5&&n(w.windDirection)>0)water+=1;
+  water=Math.min(7,water); score+=water;
+
+  // 10) 潮位・潮流（APIに値がある場合だけ）
+  const tide=tideCurrentSignal(a);
+  if(tide.available&&tide.score>0){
+    score+=tide.score;
+    reasons.push(...tide.reasons);
+  }
+
+  // 11) 高配当余地
+  let market=0;
+  if(favorite&&n(favorite.odds)<12){market+=2;reasons.push(`人気集中 ${n(favorite.odds).toFixed(1)}倍`)}
+  if(high100>=12){market+=3;reasons.push(`100倍以上の有力候補 ${high100}通り`)}
+  if(high200>=6)market+=2;
+  if(valueLong>=5){market+=3;reasons.push(`80倍以上EV候補 ${valueLong}通り`)}
+  market=Math.min(8,market); score+=market;
+
+  // 12) 直前オッズ変動（同じ端末で前回取得値との比較）
+  const move=oddsMoveSignal(a);
+  let oddsMove=0;
+  if(move.checked>=5){
+    if(move.sharp>=2){oddsMove+=4;reasons.push(`直前オッズ急低下 ${move.sharp}点`)}
+    else if(move.sharp===1)oddsMove+=2;
+    if(move.drift>=3){oddsMove+=2;reasons.push(`人気側オッズ変動 ${move.drift}点`)}
+  }
+  oddsMove=Math.min(6,oddsMove); score+=oddsMove;
 
   score=Math.round(clamp(score,0,100));
-  const mustHave=(inner>=10)&&(attack>=8||upset>=6||market>=7);
+
+  // 「荒れ要因1つだけ」で通さない。
+  const independentSignals=[
+    inner>=9, attack>=7, form>=4, upset>=5, parity>=5,
+    spread>=4, courseFit>=4, water>=4, tide.score>=3, market>=5, oddsMove>=3
+  ].filter(Boolean).length;
+  const mustHave=inner>=9 && independentSignals>=3;
   const pass=score>=75&&mustHave;
-  return{score,pass,reasons,parts:{inner,attack,upset,spread,market,water}};
+
+  return{
+    score,pass,reasons,
+    signals:independentSignals,
+    parts:{inner,attack,form,upset,parity,spread,courseFit,water,tide:tide.score,market,oddsMove}
+  };
 }
 
 function injectStyle(doc){
@@ -153,15 +305,15 @@ function apply(){
       const meta=card.querySelector('.race-meta');
       if(meta)meta.insertAdjacentHTML('afterend',`<div class="rough-badge">🔥 波乱度 <span class="rough-score">${rd.score}</span>/100　厳選通過</div>`);
       const detail=card.querySelector('.ai-detail');
-      if(detail)detail.insertAdjacentHTML('beforeend',`<div class="rough-box"><b>🔥 波乱度判定 ${rd.score}/100</b><br>内訳：1号艇危険 ${rd.parts.inner}/30 ／ 攻め艇 ${rd.parts.attack}/20 ／ 展示・進入逆転 ${rd.parts.upset}/15 ／ 展開分散 ${rd.parts.spread}/10 ／ 高配当余地 ${rd.parts.market}/15 ／ 水面変化 ${rd.parts.water}/10<br><br>${rd.reasons.slice(0,7).map(x=>'・'+x).join('<br>')}</div>`);
+      if(detail)detail.insertAdjacentHTML('beforeend',`<div class="rough-box"><b>🔥 波乱度判定 ${rd.score}/100</b><br>内訳：1号艇危険 ${rd.parts.inner}/28 ／ 攻め艇 ${rd.parts.attack}/18 ／ 今節気配 ${rd.parts.form}/8 ／ 展示・進入 ${rd.parts.upset}/12 ／ 実力拮抗 ${rd.parts.parity}/8 ／ 展開分散 ${rd.parts.spread}/7 ／ コース相性 ${rd.parts.courseFit}/7 ／ 風・水面 ${rd.parts.water}/7 ／ 潮位潮流 ${rd.parts.tide}/7 ／ 高配当余地 ${rd.parts.market}/8 ／ オッズ変動 ${rd.parts.oddsMove}/6<br>独立した荒れ要因：${rd.signals}項目<br><br>${rd.reasons.slice(0,7).map(x=>'・'+x).join('<br>')}</div>`);
     }
   });
   const root=doc.getElementById('results');
   if(root&&passed.length===0)root.innerHTML='<div class="empty">現在、S＋期待値＋波乱度75をすべて通過したレースはありません。<br><small>荒れる条件が十分に重なるまで見送ります。</small></div>';
   const status=doc.getElementById('status');
-  if(status)status.innerHTML=`🔥 荒れるレース厳選モード<br>S＋期待値候補 ${candidates.length}R → 波乱度75以上 ${passed.length}R<br>1号艇危険度・攻め艇・展示逆転・進入変化・展開分散・高配当余地・水面変化を再評価しています。`;
+  if(status)status.innerHTML=`🔥 荒れるレース厳選モード<br>S＋期待値候補 ${candidates.length}R → 波乱度75以上 ${passed.length}R<br>1号艇危険・F持ち・今節気配・攻め艇・展示/進入・実力拮抗・コース展開・風向/風速・潮位/潮流・高配当余地・直前オッズ変動を再評価しています。`;
   const notice=doc.querySelector('.notice');
-  if(notice)notice.textContent='荒れるレース厳選版：通常のS＋期待値判定を通過した後、波乱度75/100以上かつ「1号艇危険＋攻め/展示逆転/高配当余地」の複合条件を満たしたレースだけ表示・成績保存します。';
+  if(notice)notice.textContent='荒れるレース厳選版：S＋期待値通過後、波乱度75/100以上・1号艇危険度・独立した荒れ要因3項目以上を満たすレースだけ表示・成績保存します。今節気配、F/L、実力拮抗、コース展開、風向×風速、潮位/潮流、直前オッズ変動も追加評価します。取得できないデータは加点しません。';
   loading.style.display='none';
 }
 
