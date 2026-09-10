@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#050505">
+<title>BOAT RACE AI 荒れるレース厳選版</title>
+<style>
+*{box-sizing:border-box}html,body{margin:0;height:100%;background:#050505;color:#fff;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Hiragino Kaku Gothic ProN","Yu Gothic",sans-serif}
+.topbar{position:fixed;left:0;right:0;top:0;z-index:1000;background:linear-gradient(180deg,#171005,#080808);border-bottom:1px solid #765b19;padding:10px 12px 9px;box-shadow:0 6px 24px rgba(0,0,0,.45)}
+.title{font-weight:950;font-size:17px;color:#f4cf67;text-align:center}.sub{font-size:10px;color:#aaa;text-align:center;margin-top:3px}
+.meter{display:flex;gap:6px;justify-content:center;align-items:center;margin-top:7px;font-size:10px}.pill{padding:5px 8px;border-radius:999px;border:1px solid #5a4818;background:#100e08;color:#d9c37c;font-weight:900}
+.pill.hot{border-color:#9d3f1d;background:#231006;color:#ffad70}.pill.pass{border-color:#2f8f5a;background:#07160f;color:#74e3a8}
+.frame{position:fixed;left:0;right:0;bottom:0;top:88px;width:100%;height:calc(100% - 88px);border:0;background:#050505}
+.loading{position:fixed;inset:88px 0 0;display:flex;align-items:center;justify-content:center;color:#d8c27c;background:#050505;z-index:500;font-size:13px}.err{color:#ff8a8a;text-align:center;padding:20px;line-height:1.7}
+</style>
+</head>
+<body>
+<div class="topbar">
+  <div class="title">🔥 荒れるレース厳選版</div>
+  <div class="sub">S判定 → 期待値 → 波乱度75以上だけ表示</div>
+  <div class="meter"><span class="pill">基準 75/100</span><span class="pill hot" id="roughCount">判定中…</span><span class="pill pass" id="passCount">通過 0R</span></div>
+</div>
+<div class="loading" id="loading">通常版AIを読み込み、波乱度を追加判定しています…</div>
+<iframe class="frame" id="app" src="./index.html?mode=rough-v1"></iframe>
+<script>
+const frame=document.getElementById('app');
+const loading=document.getElementById('loading');
+const roughCount=document.getElementById('roughCount');
+const passCount=document.getElementById('passCount');
+let injected=false,lastKey='';
+const n=(v,d=0)=>Number.isFinite(Number(v))?Number(v):d;
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+
+function getLex(win,name){
+  try{return win.eval(name)}catch(e){return null}
+}
+function roughDecision(a){
+  const boats=Array.isArray(a?.boats)?a.boats:[];
+  const w=a?.weather||{};
+  const ex=Array.isArray(a?.exhibitionRank)?a.exhibitionRank:[];
+  const st=Array.isArray(a?.startRank)?a.startRank:[];
+  const sc=a?.scenario||{};
+  const pool=Array.isArray(a?.comboPool)?a.comboPool:[];
+  const b1Rank=Math.max(0,boats.findIndex(x=>x.boat===1));
+  const ex1=ex.indexOf(1),st1=st.indexOf(1);
+  const first1=n(sc?.firstMap?.[1],1/6);
+  const attacker=sc?.attacker||null;
+  const attackerBoat=n(attacker?.boat);
+  const attackerRank=Math.max(0,boats.findIndex(x=>x.boat===attackerBoat));
+  const scenarioTop=n(sc?.top?.probability);
+  const favorite=[...pool].filter(x=>n(x.odds)>0).sort((x,y)=>n(x.odds)-n(y.odds))[0];
+  const high100=pool.filter(x=>n(x.odds)>=100&&n(x.probability)>=.0012).length;
+  const high200=pool.filter(x=>n(x.odds)>=200&&n(x.probability)>=.0009).length;
+  const valueLong=pool.filter(x=>n(x.odds)>=80&&n(x.ev)>=.8).length;
+  let score=10;
+  const reasons=[];
+
+  let inner=0;
+  if(b1Rank>=1){inner+=10;reasons.push(`1号艇 AI能力${b1Rank+1}位`)}
+  if(b1Rank>=2)inner+=5;
+  if(ex1>=2){inner+=6;reasons.push(`1号艇 展示${ex1+1}位`)}
+  if(st1>=2){inner+=5;reasons.push(`1号艇 ST${st1+1}位`)}
+  if(first1<.18){inner+=6;reasons.push(`1号艇 1着展開確率 ${(first1*100).toFixed(1)}%`)}
+  if(sc?.top&&n(sc.top.boat)!==1){inner+=5;reasons.push(`最有力展開は${sc.top.boat}号艇 ${sc.top.tactic}`)}
+  inner=Math.min(30,inner);score+=inner;
+
+  let attack=0;
+  if(attacker&&attackerBoat>=3&&attackerBoat<=5){attack+=9;reasons.push(`攻め役 ${attackerBoat}号艇 ${attacker.tactic}`)}
+  if(attackerRank<=2&&attackerBoat!==1)attack+=5;
+  if(sc?.top&&n(sc.top.boat)>=3&&n(sc.top.boat)<=5)attack+=4;
+  const attackST=attackerBoat?st.indexOf(attackerBoat):-1;
+  if(attackST>=0&&attackST<=1)attack+=4;
+  attack=Math.min(20,attack);score+=attack;
+
+  let upset=0;
+  const topAbility=boats[0]?.boat;
+  if(ex[0]&&ex[0]!==topAbility){upset+=6;reasons.push(`展示1位 ${ex[0]}号艇がAI能力1位と不一致`)}
+  const exTopAbilityRank=Math.max(0,boats.findIndex(x=>x.boat===ex[0]));
+  if(exTopAbilityRank>=2)upset+=4;
+  const changes=Array.isArray(a?.courseChanges)?a.courseChanges:[];
+  if(changes.length===1){upset+=3;reasons.push('進入変化あり')}
+  if(changes.length>=2){upset+=5;reasons.push(`進入変化 ${changes.length}艇`)}
+  score+=Math.min(15,upset);
+
+  let spread=0;
+  if(scenarioTop>=.24&&scenarioTop<.34){spread+=7;reasons.push(`展開が割れる ${Math.round(scenarioTop*100)}%`)}
+  else if(scenarioTop>=.34&&scenarioTop<.40)spread+=4;
+  if(sc?.candidates?.[1]&&n(sc.candidates[1].probability)>=.16)spread+=3;
+  score+=Math.min(10,spread);
+
+  let market=0;
+  if(favorite&&n(favorite.odds)<12){market+=3;reasons.push(`人気集中 ${n(favorite.odds).toFixed(1)}倍`)}
+  if(high100>=12){market+=4;reasons.push(`100倍以上の有力候補 ${high100}通り`)}
+  if(high200>=6)market+=4;
+  if(valueLong>=5){market+=4;reasons.push(`80倍以上EV候補 ${valueLong}通り`)}
+  score+=Math.min(15,market);
+
+  let water=0;
+  if(n(w.windSpeed)>=4){water+=4;reasons.push(`風 ${n(w.windSpeed)}m`)}
+  if(n(w.windSpeed)>=6)water+=2;
+  if(n(w.wave)>=3){water+=2;reasons.push(`波 ${n(w.wave)}cm`)}
+  if(n(w.wave)>=5)water+=2;
+  score+=Math.min(10,water);
+
+  score=Math.round(clamp(score,0,100));
+  const mustHave=(inner>=10)&&(attack>=8||upset>=6||market>=7);
+  const pass=score>=75&&mustHave;
+  return{score,pass,reasons,parts:{inner,attack,upset,spread,market,water}};
+}
+
+function injectStyle(doc){
+  if(doc.getElementById('rough-style'))return;
+  const s=doc.createElement('style');s.id='rough-style';s.textContent=`
+    .rough-badge{margin-top:6px;display:inline-flex;align-items:center;gap:5px;padding:6px 9px;border-radius:999px;font-size:10px;font-weight:950;border:1px solid #a43f1d;background:#251006;color:#ffb277;box-shadow:0 0 18px rgba(255,112,42,.08)}
+    .rough-box{margin-top:9px;padding:10px;border:1px solid #7c3219;border-radius:11px;background:linear-gradient(135deg,#1e0d06,#090909);font-size:10px;line-height:1.65;color:#d9b497}
+    .rough-box b{color:#ffb277}.rough-score{font-size:18px;color:#ff9e62;font-weight:950}.rough-hidden{display:none!important}
+  `;doc.head.appendChild(s);
+}
+
+function apply(){
+  const win=frame.contentWindow,doc=frame.contentDocument;
+  if(!win||!doc)return;
+  injectStyle(doc);
+  const analyses=getLex(win,'analyses');
+  const evFn=getLex(win,'expectedValueDecision');
+  const removeFn=getLex(win,'removePendingPrediction');
+  const saveFn=getLex(win,'savePrediction');
+  const displayFn=getLex(win,'display');
+  if(!Array.isArray(analyses)||typeof evFn!=='function')return;
+  const candidates=analyses.filter(a=>{try{return evFn(a).pass}catch{return false}});
+  const passed=[];
+  for(const a of candidates){
+    a.roughDecision=roughDecision(a);
+    if(a.roughDecision.pass){passed.push(a);try{if(typeof saveFn==='function')saveFn(a)}catch(e){}}
+    else{try{if(typeof removeFn==='function')removeFn(a)}catch(e){}}
+  }
+  roughCount.textContent=`候補 ${candidates.length}R`;
+  passCount.textContent=`波乱度通過 ${passed.length}R`;
+
+  const key=JSON.stringify(passed.map(a=>[a.race?.stadium_number,a.race?.race_number,a.roughDecision.score]));
+  if(key===lastKey&&injected)return;lastKey=key;injected=true;
+
+  try{if(typeof displayFn==='function')displayFn()}catch(e){}
+  const cards=[...doc.querySelectorAll('#results .race')];
+  cards.forEach((card,i)=>{
+    const a=candidates[i];
+    if(!a)return;
+    const rd=a.roughDecision||roughDecision(a);
+    if(!rd.pass){card.classList.add('rough-hidden');return}
+    card.classList.remove('rough-hidden');
+    if(!card.querySelector('.rough-badge')){
+      const meta=card.querySelector('.race-meta');
+      if(meta)meta.insertAdjacentHTML('afterend',`<div class="rough-badge">🔥 波乱度 <span class="rough-score">${rd.score}</span>/100　厳選通過</div>`);
+      const detail=card.querySelector('.ai-detail');
+      if(detail)detail.insertAdjacentHTML('beforeend',`<div class="rough-box"><b>🔥 波乱度判定 ${rd.score}/100</b><br>内訳：1号艇危険 ${rd.parts.inner}/30 ／ 攻め艇 ${rd.parts.attack}/20 ／ 展示・進入逆転 ${rd.parts.upset}/15 ／ 展開分散 ${rd.parts.spread}/10 ／ 高配当余地 ${rd.parts.market}/15 ／ 水面変化 ${rd.parts.water}/10<br><br>${rd.reasons.slice(0,7).map(x=>'・'+x).join('<br>')}</div>`);
+    }
+  });
+  const root=doc.getElementById('results');
+  if(root&&passed.length===0)root.innerHTML='<div class="empty">現在、S＋期待値＋波乱度75をすべて通過したレースはありません。<br><small>荒れる条件が十分に重なるまで見送ります。</small></div>';
+  const status=doc.getElementById('status');
+  if(status)status.innerHTML=`🔥 荒れるレース厳選モード<br>S＋期待値候補 ${candidates.length}R → 波乱度75以上 ${passed.length}R<br>1号艇危険度・攻め艇・展示逆転・進入変化・展開分散・高配当余地・水面変化を再評価しています。`;
+  const notice=doc.querySelector('.notice');
+  if(notice)notice.textContent='荒れるレース厳選版：通常のS＋期待値判定を通過した後、波乱度75/100以上かつ「1号艇危険＋攻め/展示逆転/高配当余地」の複合条件を満たしたレースだけ表示・成績保存します。';
+  loading.style.display='none';
+}
+
+frame.addEventListener('load',()=>{setTimeout(apply,1200);setInterval(apply,2500)});
+setTimeout(()=>{if(loading.style.display!=='none')loading.innerHTML='<div class="err">AIデータの準備を待っています。<br>数秒後に自動判定します。</div>'},10000);
+</script>
+</body>
+</html>
