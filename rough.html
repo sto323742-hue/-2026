@@ -18,7 +18,7 @@
 <body>
 <div class="topbar">
   <div class="title">🔥 荒れるレース厳選版</div>
-  <div class="sub">S判定 → 期待値 → 11項目の波乱度75以上だけ表示</div>
+  <div class="sub">S判定 → 期待値 → 波乱シナリオ強化版（75以上）</div>
   <div class="meter"><span class="pill">基準 75/100</span><span class="pill hot" id="roughCount">判定中…</span><span class="pill pass" id="passCount">通過 0R</span></div>
 </div>
 <div class="loading" id="loading">通常版AIを読み込み、波乱度を追加判定しています…</div>
@@ -60,24 +60,40 @@ function average(arr){
 function oddsMoveSignal(a){
   const key=raceRoughKey(a),hist=readRoughOddsHistory();
   const pool=Array.isArray(a?.comboPool)?a.comboPool:[];
-  const now=pool.filter(x=>n(x.odds)>0).sort((x,y)=>n(x.odds)-n(y.odds)).slice(0,30)
+  const now=pool.filter(x=>n(x.odds)>0).sort((x,y)=>n(x.odds)-n(y.odds)).slice(0,45)
     .reduce((o,x)=>(o[x.combo]=n(x.odds),o),{});
   const prev=hist[key]?.odds||{};
   let sharp=0,drift=0,checked=0;
+  const sharpCombos=[],driftCombos=[];
   for(const [combo,odd] of Object.entries(now)){
     const po=n(prev[combo]);
     if(po<=0||odd<=0)continue;
     checked++;
     const ratio=odd/po;
-    if(ratio<=.78)sharp++;
-    if(ratio>=1.30)drift++;
+    if(ratio<=.78){sharp++;sharpCombos.push({combo,ratio,odd,prev:po})}
+    if(ratio>=1.30){drift++;driftCombos.push({combo,ratio,odd,prev:po})}
   }
   hist[key]={ts:Date.now(),odds:now};
   const cutoff=Date.now()-6*60*60*1000;
   for(const k of Object.keys(hist))if(n(hist[k]?.ts)<cutoff)delete hist[k];
   writeRoughOddsHistory(hist);
-  return {checked,sharp,drift};
+  return {checked,sharp,drift,sharpCombos,driftCombos};
 }
+function comboBoats(combo){
+  return String(combo||'').split(/[^1-6]+/).filter(Boolean).map(Number);
+}
+function marketBoatRanks(a){
+  const pool=Array.isArray(a?.comboPool)?a.comboPool:[];
+  const score={1:0,2:0,3:0,4:0,5:0,6:0};
+  for(const x of pool){
+    const odd=n(x.odds); if(odd<=0)continue;
+    const bs=comboBoats(x.combo); if(bs.length<3)continue;
+    const w=1/Math.max(1,odd);
+    score[bs[0]]+=w*1.00; score[bs[1]]+=w*.42; score[bs[2]]+=w*.22;
+  }
+  return Object.keys(score).map(Number).sort((a,b)=>score[b]-score[a]);
+}
+
 function venueCourseSignal(a){
   const r=a?.race||{}, stadium=n(r.stadium_number);
   const s=a?.scenario||{}, top=s?.top, attacker=s?.attacker;
@@ -155,6 +171,25 @@ function roughDecision(a){
   if(attackST>=0&&attackST<=1)attack+=4;
   attack=Math.min(18,attack); score+=attack;
 
+  // 3.5) 展開をもらう艇：攻め艇の外隣・展開候補上位を評価
+  let beneficiary=0, beneficiaryBoat=0;
+  if(attackerBoat>=2&&attackerBoat<=5){
+    const outer=attackerBoat+1;
+    const ob=boats.find(x=>x.boat===outer);
+    const oRank=boats.findIndex(x=>x.boat===outer);
+    const oEx=ex.indexOf(outer),oSt=st.indexOf(outer);
+    if(ob){
+      beneficiaryBoat=outer;
+      if(oRank>=0&&oRank<=3)beneficiary+=3;
+      if(oEx>=0&&oEx<=2)beneficiary+=3;
+      if(oSt>=0&&oSt<=2)beneficiary+=2;
+      const cand=(sc?.candidates||[]).find(x=>n(x.boat)===outer);
+      if(cand&&n(cand.probability)>=.12)beneficiary+=3;
+      if(beneficiary>=6)reasons.push(`展開利 ${outer}号艇 ← ${attackerBoat}号艇の攻め`);
+    }
+  }
+  beneficiary=Math.min(10,beneficiary); score+=beneficiary;
+
   // 4) 今節好調度：今節専用値があれば使用。無い場合は普段STと展示STの改善を代理指標にする。
   let form=0;
   for(const x of boats){
@@ -226,6 +261,23 @@ function roughDecision(a){
     reasons.push(...tide.reasons);
   }
 
+  // 10.5) 人気順位とAI順位のズレ
+  let rankGap=0;
+  const marketRanks=marketBoatRanks(a);
+  const aiRanks=boats.map(x=>x.boat);
+  const gapDetails=[];
+  for(let boat=1;boat<=6;boat++){
+    const mr=marketRanks.indexOf(boat)+1, ar=aiRanks.indexOf(boat)+1;
+    if(!mr||!ar)continue;
+    const gap=mr-ar; // +: 市場人気よりAI評価が高い
+    if(gap>=3){rankGap+=4;gapDetails.push(`${boat}号艇 人気${mr}位→AI${ar}位`) }
+    else if(gap===2){rankGap+=2;gapDetails.push(`${boat}号艇 人気${mr}位→AI${ar}位`) }
+    if(ar>=4&&mr<=2){rankGap+=2;gapDetails.push(`${boat}号艇 過剰人気疑い`) }
+  }
+  rankGap=Math.min(10,rankGap);
+  if(rankGap>=4&&gapDetails.length)reasons.push(`人気×AI乖離：${gapDetails.slice(0,2).join(' / ')}`);
+  score+=rankGap;
+
   // 11) 高配当余地
   let market=0;
   if(favorite&&n(favorite.odds)<12){market+=2;reasons.push(`人気集中 ${n(favorite.odds).toFixed(1)}倍`)}
@@ -244,12 +296,28 @@ function roughDecision(a){
   }
   oddsMove=Math.min(6,oddsMove); score+=oddsMove;
 
+  // 13) 直前オッズ×展示の連動：展示上位艇を含む組み合わせに資金流入
+  let oddsExLink=0;
+  if(move.checked>=5&&move.sharpCombos?.length){
+    const exTop=new Set(ex.slice(0,2));
+    const linked=move.sharpCombos.filter(x=>comboBoats(x.combo).some(b=>exTop.has(b)));
+    if(linked.length>=3){oddsExLink+=6;reasons.push(`展示上位×オッズ急低下 ${linked.length}点連動`)}
+    else if(linked.length===2){oddsExLink+=4;reasons.push('展示上位×オッズ急低下 2点連動')}
+    else if(linked.length===1){oddsExLink+=2}
+    // AI下位の展示上位艇への資金流入は波乱シグナルを強化
+    const sleeper=ex.slice(0,2).find(b=>aiRanks.indexOf(b)>=2);
+    if(sleeper&&linked.some(x=>comboBoats(x.combo).includes(sleeper))){
+      oddsExLink+=2;reasons.push(`${sleeper}号艇 人気薄気配＋資金流入`);
+    }
+  }
+  oddsExLink=Math.min(8,oddsExLink); score+=oddsExLink;
+
   score=Math.round(clamp(score,0,100));
 
   // 「荒れ要因1つだけ」で通さない。
   const independentSignals=[
-    inner>=9, attack>=7, form>=4, upset>=5, parity>=5,
-    spread>=4, courseFit>=4, water>=4, tide.score>=3, market>=5, oddsMove>=3
+    inner>=9, attack>=7, beneficiary>=6, form>=4, upset>=5, parity>=5,
+    spread>=4, courseFit>=4, water>=4, tide.score>=3, rankGap>=4, market>=5, oddsMove>=3, oddsExLink>=4
   ].filter(Boolean).length;
   const mustHave=inner>=9 && independentSignals>=3;
   const pass=score>=75&&mustHave;
@@ -257,7 +325,8 @@ function roughDecision(a){
   return{
     score,pass,reasons,
     signals:independentSignals,
-    parts:{inner,attack,form,upset,parity,spread,courseFit,water,tide:tide.score,market,oddsMove}
+    beneficiaryBoat,
+    parts:{inner,attack,beneficiary,form,upset,parity,spread,courseFit,water,tide:tide.score,rankGap,market,oddsMove,oddsExLink}
   };
 }
 
@@ -305,15 +374,15 @@ function apply(){
       const meta=card.querySelector('.race-meta');
       if(meta)meta.insertAdjacentHTML('afterend',`<div class="rough-badge">🔥 波乱度 <span class="rough-score">${rd.score}</span>/100　厳選通過</div>`);
       const detail=card.querySelector('.ai-detail');
-      if(detail)detail.insertAdjacentHTML('beforeend',`<div class="rough-box"><b>🔥 波乱度判定 ${rd.score}/100</b><br>内訳：1号艇危険 ${rd.parts.inner}/28 ／ 攻め艇 ${rd.parts.attack}/18 ／ 今節気配 ${rd.parts.form}/8 ／ 展示・進入 ${rd.parts.upset}/12 ／ 実力拮抗 ${rd.parts.parity}/8 ／ 展開分散 ${rd.parts.spread}/7 ／ コース相性 ${rd.parts.courseFit}/7 ／ 風・水面 ${rd.parts.water}/7 ／ 潮位潮流 ${rd.parts.tide}/7 ／ 高配当余地 ${rd.parts.market}/8 ／ オッズ変動 ${rd.parts.oddsMove}/6<br>独立した荒れ要因：${rd.signals}項目<br><br>${rd.reasons.slice(0,7).map(x=>'・'+x).join('<br>')}</div>`);
+      if(detail)detail.insertAdjacentHTML('beforeend',`<div class="rough-box"><b>🔥 波乱度判定 ${rd.score}/100</b><br>内訳：1号艇危険 ${rd.parts.inner}/28 ／ 攻め艇 ${rd.parts.attack}/18 ／ 展開利艇 ${rd.parts.beneficiary}/10 ／ 今節気配 ${rd.parts.form}/8 ／ 展示・進入 ${rd.parts.upset}/12 ／ 実力拮抗 ${rd.parts.parity}/8 ／ 人気×AI乖離 ${rd.parts.rankGap}/10 ／ 展開分散 ${rd.parts.spread}/7 ／ コース相性 ${rd.parts.courseFit}/7 ／ 風・水面 ${rd.parts.water}/7 ／ 潮位潮流 ${rd.parts.tide}/7 ／ 高配当余地 ${rd.parts.market}/8 ／ オッズ変動 ${rd.parts.oddsMove}/6 ／ オッズ×展示連動 ${rd.parts.oddsExLink}/8<br>独立した荒れ要因：${rd.signals}項目<br><br>${rd.reasons.slice(0,7).map(x=>'・'+x).join('<br>')}</div>`);
     }
   });
   const root=doc.getElementById('results');
   if(root&&passed.length===0)root.innerHTML='<div class="empty">現在、S＋期待値＋波乱度75をすべて通過したレースはありません。<br><small>荒れる条件が十分に重なるまで見送ります。</small></div>';
   const status=doc.getElementById('status');
-  if(status)status.innerHTML=`🔥 荒れるレース厳選モード<br>S＋期待値候補 ${candidates.length}R → 波乱度75以上 ${passed.length}R<br>1号艇危険・F持ち・今節気配・攻め艇・展示/進入・実力拮抗・コース展開・風向/風速・潮位/潮流・高配当余地・直前オッズ変動を再評価しています。`;
+  if(status)status.innerHTML=`🔥 荒れるレース厳選モード<br>S＋期待値候補 ${candidates.length}R → 波乱度75以上 ${passed.length}R<br>1号艇危険・F持ち・今節気配・攻め艇・展開利艇・人気×AI順位のズレ・展示/進入・実力拮抗・コース展開・風向/風速・潮位/潮流・高配当余地・直前オッズ×展示連動を再評価しています。`;
   const notice=doc.querySelector('.notice');
-  if(notice)notice.textContent='荒れるレース厳選版：S＋期待値通過後、波乱度75/100以上・1号艇危険度・独立した荒れ要因3項目以上を満たすレースだけ表示・成績保存します。今節気配、F/L、実力拮抗、コース展開、風向×風速、潮位/潮流、直前オッズ変動も追加評価します。取得できないデータは加点しません。';
+  if(notice)notice.textContent='荒れるレース厳選版：S＋期待値通過後、波乱度75/100以上・1号艇危険度・独立した荒れ要因3項目以上を満たすレースだけ表示・成績保存します。今節気配、F/L、実力拮抗、コース展開、風向×風速、潮位/潮流、人気×AI順位のズレ、展開をもらう艇、直前オッズ×展示の連動も追加評価します。取得できないデータは加点しません。';
   loading.style.display='none';
 }
 
