@@ -82,6 +82,20 @@ async function refreshResults(){
       if(typeof renderStats==='function')renderStats();
     }catch(e){}
 
+    // 通常版の再描画後、荒れるレース版の表示を必ず再適用する。
+    // これにより「🔥 波乱度 xx/100 厳選通過」が更新後に消えない。
+    try{
+      const roughWin=outer.contentWindow;
+      const roughApply=roughWin.eval('apply');
+      if(typeof roughApply==='function'){
+        roughApply();
+        setTimeout(()=>{ try{ roughWin.eval('apply')(); }catch(e){} },300);
+        setTimeout(()=>{ try{ roughWin.eval('apply')(); }catch(e){} },1200);
+      }
+    }catch(e){
+      console.warn('rough badge re-apply failed',e);
+    }
+
     bar.innerHTML='<span class="dot"></span>結果自動反映 強化ON・最新確認済み';
   }catch(e){
     console.warn('rough-fixed result refresh failed',e);
@@ -104,6 +118,15 @@ document.addEventListener('visibilitychange',()=>{
 });
 
 window.addEventListener('focus',refreshResults);
+
+// Safariで再描画が発生した場合も波乱度表示を復元
+setInterval(()=>{
+  try{
+    const rw=outer.contentWindow;
+    const fn=rw.eval('apply');
+    if(typeof fn==='function')fn();
+  }catch(e){}
+},2500);
 </script>
 </body>
 </html>
