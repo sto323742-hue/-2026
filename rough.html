@@ -18,8 +18,8 @@
 <body>
 <div class="topbar">
   <div class="title">🔥 荒れるレース厳選版</div>
-  <div class="sub">S判定 → 期待値 → 波乱シナリオ強化版（75以上）</div>
-  <div class="meter"><span class="pill">基準 75/100</span><span class="pill hot" id="roughCount">判定中…</span><span class="pill pass" id="passCount">通過 0R</span></div>
+  <div class="sub">S判定 → 期待値 → 波乱シナリオ強化版（50以上）</div>
+  <div class="meter"><span class="pill">基準 50/100</span><span class="pill hot" id="roughCount">判定中…</span><span class="pill pass" id="passCount">通過 0R</span></div>
 </div>
 <div class="loading" id="loading">通常版AIを読み込み、波乱度を追加判定しています…</div>
 <iframe class="frame" id="app" src="./index.html?mode=rough-v1"></iframe>
@@ -320,7 +320,7 @@ function roughDecision(a){
     spread>=4, courseFit>=4, water>=4, tide.score>=3, rankGap>=4, market>=5, oddsMove>=3, oddsExLink>=4
   ].filter(Boolean).length;
   const mustHave=inner>=9 && independentSignals>=3;
-  const pass=score>=75&&mustHave;
+  const pass=score>=50&&mustHave;
 
   return{
     score,pass,reasons,
@@ -378,11 +378,11 @@ function apply(){
     }
   });
   const root=doc.getElementById('results');
-  if(root&&passed.length===0)root.innerHTML='<div class="empty">現在、S＋期待値＋波乱度75をすべて通過したレースはありません。<br><small>荒れる条件が十分に重なるまで見送ります。</small></div>';
+  if(root&&passed.length===0)root.innerHTML='<div class="empty">現在、S＋期待値＋波乱度50をすべて通過したレースはありません。<br><small>荒れる条件が十分に重なるまで見送ります。</small></div>';
   const status=doc.getElementById('status');
-  if(status)status.innerHTML=`🔥 荒れるレース厳選モード<br>S＋期待値候補 ${candidates.length}R → 波乱度75以上 ${passed.length}R<br>1号艇危険・F持ち・今節気配・攻め艇・展開利艇・人気×AI順位のズレ・展示/進入・実力拮抗・コース展開・風向/風速・潮位/潮流・高配当余地・直前オッズ×展示連動を再評価しています。`;
+  if(status)status.innerHTML=`🔥 荒れるレース厳選モード<br>S＋期待値候補 ${candidates.length}R → 波乱度50以上 ${passed.length}R<br>1号艇危険・F持ち・今節気配・攻め艇・展開利艇・人気×AI順位のズレ・展示/進入・実力拮抗・コース展開・風向/風速・潮位/潮流・高配当余地・直前オッズ×展示連動を再評価しています。`;
   const notice=doc.querySelector('.notice');
-  if(notice)notice.textContent='荒れるレース厳選版：S＋期待値通過後、波乱度75/100以上・1号艇危険度・独立した荒れ要因3項目以上を満たすレースだけ表示・成績保存します。今節気配、F/L、実力拮抗、コース展開、風向×風速、潮位/潮流、人気×AI順位のズレ、展開をもらう艇、直前オッズ×展示の連動も追加評価します。取得できないデータは加点しません。';
+  if(notice)notice.textContent='荒れるレース厳選版：S＋期待値通過後、波乱度50/100以上・1号艇危険度・独立した荒れ要因3項目以上を満たすレースだけ表示・成績保存します。今節気配、F/L、実力拮抗、コース展開、風向×風速、潮位/潮流、人気×AI順位のズレ、展開をもらう艇、直前オッズ×展示の連動も追加評価します。取得できないデータは加点しません。';
   loading.style.display='none';
 }
 
