@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#050505">
+<title>BOAT RACE AI 荒れるレース厳選版</title>
+<style>
+*{box-sizing:border-box}html,body{margin:0;height:100%;background:#050505;color:#fff;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Hiragino Kaku Gothic ProN","Yu Gothic",sans-serif}
+.topbar{position:fixed;left:0;right:0;top:0;z-index:1000;background:linear-gradient(180deg,#171005,#080808);border-bottom:1px solid #765b19;padding:10px 12px 9px;box-shadow:0 6px 24px rgba(0,0,0,.45)}
+.title{font-weight:950;font-size:17px;color:#f4cf67;text-align:center}.sub{font-size:10px;color:#aaa;text-align:center;margin-top:3px}
+.meter{display:flex;gap:6px;justify-content:center;align-items:center;margin-top:7px;font-size:10px}.pill{padding:5px 8px;border-radius:999px;border:1px solid #5a4818;background:#100e08;color:#d9c37c;font-weight:900}
+.pill.hot{border-color:#9d3f1d;background:#231006;color:#ffad70}.pill.pass{border-color:#2f8f5a;background:#07160f;color:#74e3a8}
+.frame{position:fixed;left:0;right:0;bottom:0;top:88px;width:100%;height:calc(100% - 88px);border:0;background:#050505}
+.loading{position:fixed;inset:88px 0 0;display:flex;align-items:center;justify-content:center;color:#d8c27c;background:#050505;z-index:500;font-size:13px}.err{color:#ff8a8a;text-align:center;padding:20px;line-height:1.7}
+</style>
+</head>
+<body>
+<div class="topbar">
+  <div class="title">🔥 荒れるレース厳選版</div>
+  <div class="sub">S判定 → 期待値 → 波乱シナリオ強化版（50以上）</div>
+  <div class="meter"><span class="pill">基準 50/100</span><span class="pill hot" id="roughCount">判定中…</span><span class="pill pass" id="passCount">通過 0R</span></div>
+</div>
+<div class="loading" id="loading">通常版AIを読み込み、波乱度を追加判定しています…</div>
+<iframe class="frame" id="app" src="./index.html?mode=rough-v1"></iframe>
+<script>
+const frame=document.getElementById('app');
+const loading=document.getElementById('loading');
+const roughCount=document.getElementById('roughCount');
+const passCount=document.getElementById('passCount');
+let injected=false,lastKey='';
+const n=(v,d=0)=>Number.isFinite(Number(v))?Number(v):d;
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+
+function getLex(win,name){
+  try{return win.eval(name)}catch(e){return null}
+}
+
+function readRoughOddsHistory(){
+  try{return JSON.parse(localStorage.getItem('boat_ai_rough_odds_history')||'{}')}catch(e){return{}}
+}
+function writeRoughOddsHistory(x){
+  try{localStorage.setItem('boat_ai_rough_odds_history',JSON.stringify(x))}catch(e){}
+}
+function raceRoughKey(a){
+  const r=a?.race||{};
+  return `${r.date||''}_${r.stadium_number||''}_${r.race_number||''}`;
+}
+function getField(obj,names,def=null){
+  for(const k of names){
+    const v=obj?.[k];
+    if(v!==undefined&&v!==null&&v!=='')return v;
+  }
+  return def;
+}
+function average(arr){
+  const a=arr.map(Number).filter(Number.isFinite);
+  return a.length?a.reduce((s,x)=>s+x,0)/a.length:0;
+}
+function oddsMoveSignal(a){
+  const key=raceRoughKey(a),hist=readRoughOddsHistory();
+  const pool=Array.isArray(a?.comboPool)?a.comboPool:[];
+  const now=pool.filter(x=>n(x.odds)>0).sort((x,y)=>n(x.odds)-n(y.odds)).slice(0,45)
+    .reduce((o,x)=>(o[x.combo]=n(x.odds),o),{});
+  const prev=hist[key]?.odds||{};
+  let sharp=0,drift=0,checked=0;
+  const sharpCombos=[],driftCombos=[];
+  for(const [combo,odd] of Object.entries(now)){
+    const po=n(prev[combo]);
+    if(po<=0||odd<=0)continue;
+    checked++;
+    const ratio=odd/po;
+    if(ratio<=.78){sharp++;sharpCombos.push({combo,ratio,odd,prev:po})}
+    if(ratio>=1.30){drift++;driftCombos.push({combo,ratio,odd,prev:po})}
+  }
+  hist[key]={ts:Date.now(),odds:now};
+  const cutoff=Date.now()-6*60*60*1000;
+  for(const k of Object.keys(hist))if(n(hist[k]?.ts)<cutoff)delete hist[k];
+  writeRoughOddsHistory(hist);
+  return {checked,sharp,drift,sharpCombos,driftCombos};
+}
+function comboBoats(combo){
+  return String(combo||'').split(/[^1-6]+/).filter(Boolean).map(Number);
+}
+function marketBoatRanks(a){
+  const pool=Array.isArray(a?.comboPool)?a.comboPool:[];
+  const score={1:0,2:0,3:0,4:0,5:0,6:0};
+  for(const x of pool){
+    const odd=n(x.odds); if(odd<=0)continue;
+    const bs=comboBoats(x.combo); if(bs.length<3)continue;
+    const w=1/Math.max(1,odd);
+    score[bs[0]]+=w*1.00; score[bs[1]]+=w*.42; score[bs[2]]+=w*.22;
+  }
+  return Object.keys(score).map(Number).sort((a,b)=>score[b]-score[a]);
+}
+
+function venueCourseSignal(a){
+  const r=a?.race||{}, stadium=n(r.stadium_number);
+  const s=a?.scenario||{}, top=s?.top, attacker=s?.attacker;
+  // 実データが無い場合は会場名だけで決め打ちせず、当該レースの展開モデルを使う。
+  let score=0, label='';
+  if(top&&n(top.boat)!==1&&n(top.probability)>=.28){
+    score+=4; label=`${top.boat}号艇 ${top.tactic}優勢`;
+  }
+  if(attacker&&n(attacker.boat)>=3&&n(attacker.boat)<=5&&n(attacker.probability)>=.12){
+    score+=3;
+  }
+  // 江戸川・鳴門は水面変化データが取れた場合だけ追加評価し、会場名だけでは加点しない。
+  return {score:Math.min(7,score),label,stadium};
+}
+function tideCurrentSignal(a){
+  const p=a?.race?.preview||{};
+  const tide=n(getField(p,['tide_level','tide_height','water_level','tide'],0));
+  const current=n(getField(p,['current_speed','flow_speed','tide_speed'],0));
+  let score=0; const reasons=[];
+  if(tide>0){
+    if(tide>=150){score+=3;reasons.push(`潮位 ${tide}`)}
+    else if(tide>=100){score+=2;reasons.push(`潮位 ${tide}`)}
+  }
+  if(current>0){
+    if(current>=1.0){score+=4;reasons.push(`潮流 ${current}`)}
+    else if(current>=0.5){score+=2;reasons.push(`潮流 ${current}`)}
+  }
+  return {score:Math.min(7,score),reasons,available:tide>0||current>0};
+}
+
+function roughDecision(a){
+  const boats=Array.isArray(a?.boats)?a.boats:[];
+  const w=a?.weather||{};
+  const ex=Array.isArray(a?.exhibitionRank)?a.exhibitionRank:[];
+  const st=Array.isArray(a?.startRank)?a.startRank:[];
+  const sc=a?.scenario||{};
+  const pool=Array.isArray(a?.comboPool)?a.comboPool:[];
+  const b1=boats.find(x=>x.boat===1);
+  const b1Rank=Math.max(0,boats.findIndex(x=>x.boat===1));
+  const ex1=ex.indexOf(1),st1=st.indexOf(1);
+  const first1=n(sc?.firstMap?.[1],1/6);
+  const attacker=sc?.attacker||null;
+  const attackerBoat=n(attacker?.boat);
+  const attackerRank=Math.max(0,boats.findIndex(x=>x.boat===attackerBoat));
+  const scenarioTop=n(sc?.top?.probability);
+  const favorite=[...pool].filter(x=>n(x.odds)>0).sort((x,y)=>n(x.odds)-n(y.odds))[0];
+  const high100=pool.filter(x=>n(x.odds)>=100&&n(x.probability)>=.0012).length;
+  const high200=pool.filter(x=>n(x.odds)>=200&&n(x.probability)>=.0009).length;
+  const valueLong=pool.filter(x=>n(x.odds)>=80&&n(x.ev)>=.8).length;
+  let score=4;
+  const reasons=[];
+
+  // 1) 1号艇危険度
+  let inner=0;
+  if(b1Rank>=1){inner+=8;reasons.push(`1号艇 AI能力${b1Rank+1}位`)}
+  if(b1Rank>=2)inner+=4;
+  if(ex1>=2){inner+=5;reasons.push(`1号艇 展示${ex1+1}位`)}
+  if(st1>=2){inner+=4;reasons.push(`1号艇 ST${st1+1}位`)}
+  if(first1<.18){inner+=5;reasons.push(`1号艇 1着展開確率 ${(first1*100).toFixed(1)}%`)}
+  if(sc?.top&&n(sc.top.boat)!==1){inner+=4;reasons.push(`最有力展開は${sc.top.boat}号艇 ${sc.top.tactic}`)}
+
+  // 2) F持ち・事故リスク（既存 racer.flying_count 等を使用）
+  const fCount=n(b1?.racer?.flying_count);
+  const lateCount=n(getField(b1?.racer,['late_count','lateness_count'],0));
+  if(fCount>=1){inner+=5;reasons.push(`1号艇 F${fCount}持ち`)}
+  if(lateCount>=1){inner+=2;reasons.push(`1号艇 L${lateCount}`)}
+  inner=Math.min(28,inner); score+=inner;
+
+  // 3) 攻め艇の強さ
+  let attack=0;
+  if(attacker&&attackerBoat>=3&&attackerBoat<=5){attack+=7;reasons.push(`攻め役 ${attackerBoat}号艇 ${attacker.tactic}`)}
+  if(attackerRank<=2&&attackerBoat!==1)attack+=4;
+  if(sc?.top&&n(sc.top.boat)>=3&&n(sc.top.boat)<=5)attack+=4;
+  const attackST=attackerBoat?st.indexOf(attackerBoat):-1;
+  if(attackST>=0&&attackST<=1)attack+=4;
+  attack=Math.min(18,attack); score+=attack;
+
+  // 3.5) 展開をもらう艇：攻め艇の外隣・展開候補上位を評価
+  let beneficiary=0, beneficiaryBoat=0;
+  if(attackerBoat>=2&&attackerBoat<=5){
+    const outer=attackerBoat+1;
+    const ob=boats.find(x=>x.boat===outer);
+    const oRank=boats.findIndex(x=>x.boat===outer);
+    const oEx=ex.indexOf(outer),oSt=st.indexOf(outer);
+    if(ob){
+      beneficiaryBoat=outer;
+      if(oRank>=0&&oRank<=3)beneficiary+=3;
+      if(oEx>=0&&oEx<=2)beneficiary+=3;
+      if(oSt>=0&&oSt<=2)beneficiary+=2;
+      const cand=(sc?.candidates||[]).find(x=>n(x.boat)===outer);
+      if(cand&&n(cand.probability)>=.12)beneficiary+=3;
+      if(beneficiary>=6)reasons.push(`展開利 ${outer}号艇 ← ${attackerBoat}号艇の攻め`);
+    }
+  }
+  beneficiary=Math.min(10,beneficiary); score+=beneficiary;
+
+  // 4) 今節好調度：今節専用値があれば使用。無い場合は普段STと展示STの改善を代理指標にする。
+  let form=0;
+  for(const x of boats){
+    const rr=x?.racer||{}, pv=x?.preview||{};
+    const avgST=n(rr.average_start_timing,.18), exST=n(pv.start_timing,avgST);
+    const seriesST=n(getField(rr,['series_average_start_timing','current_series_average_start_timing','meet_average_start_timing'],0));
+    const seriesRank=n(getField(rr,['series_average_rank','current_series_average_rank','meet_average_rank'],0));
+    const improvement=(avgST-exST);
+    let one=0;
+    if(seriesST>0&&seriesST<=avgST-.015)one+=2;
+    if(seriesRank>0&&seriesRank<=3)one+=2;
+    if(improvement>=.025)one+=2;
+    if(ex.indexOf(x.boat)<=1&&boats.indexOf(x)>=2)one+=2; // 人気薄/AI下位の展示上昇
+    if(one>=4&&x.boat!==1)reasons.push(`${x.boat}号艇 今節/直前気配上昇`);
+    form=Math.max(form,one);
+  }
+  form=Math.min(8,form); score+=form;
+
+  // 5) 展示逆転・進入変化
+  let upset=0;
+  const topAbility=boats[0]?.boat;
+  if(ex[0]&&ex[0]!==topAbility){upset+=5;reasons.push(`展示1位 ${ex[0]}号艇がAI能力1位と不一致`)}
+  const exTopAbilityRank=Math.max(0,boats.findIndex(x=>x.boat===ex[0]));
+  if(exTopAbilityRank>=2)upset+=3;
+  const changes=Array.isArray(a?.courseChanges)?a.courseChanges:[];
+  if(changes.length===1){upset+=2;reasons.push('進入変化あり')}
+  if(changes.length>=2){upset+=4;reasons.push(`進入変化 ${changes.length}艇`)}
+  upset=Math.min(12,upset); score+=upset;
+
+  // 6) 実力拮抗度
+  let parity=0;
+  const scores=boats.slice(0,4).map(x=>n(x.score));
+  if(scores.length>=4){
+    const gap14=Math.max(...scores)-Math.min(...scores);
+    const gap12=Math.abs(scores[0]-scores[1]);
+    if(gap14<=18){parity+=5;reasons.push(`上位4艇が拮抗 差${gap14.toFixed(1)}`)}
+    else if(gap14<=26)parity+=3;
+    if(gap12<=5){parity+=3;reasons.push(`1・2番手差 ${gap12.toFixed(1)}`)}
+  }
+  parity=Math.min(8,parity); score+=parity;
+
+  // 7) 展開分散
+  let spread=0;
+  if(scenarioTop>=.24&&scenarioTop<.34){spread+=5;reasons.push(`展開が割れる ${Math.round(scenarioTop*100)}%`)}
+  else if(scenarioTop>=.34&&scenarioTop<.40)spread+=3;
+  if(sc?.candidates?.[1]&&n(sc.candidates[1].probability)>=.16)spread+=2;
+  spread=Math.min(7,spread); score+=spread;
+
+  // 8) コース別決まり手相性（会場名だけでは決め打ちしない）
+  const venueSig=venueCourseSignal(a);
+  const courseFit=venueSig.score;
+  if(courseFit>=4&&venueSig.label)reasons.push(`コース展開相性 ${venueSig.label}`);
+  score+=courseFit;
+
+  // 9) 風向×風速×会場条件
+  let water=0;
+  if(n(w.windSpeed)>=4){water+=2;reasons.push(`風 ${n(w.windSpeed)}m`)}
+  if(n(w.windSpeed)>=6)water+=2;
+  if(n(w.wave)>=3){water+=1;reasons.push(`波 ${n(w.wave)}cm`)}
+  if(n(w.wave)>=5)water+=1;
+  // 風向番号が取れている場合、強風＋明確な風向がある時のみ追加
+  if(n(w.windSpeed)>=5&&n(w.windDirection)>0)water+=1;
+  water=Math.min(7,water); score+=water;
+
+  // 10) 潮位・潮流（APIに値がある場合だけ）
+  const tide=tideCurrentSignal(a);
+  if(tide.available&&tide.score>0){
+    score+=tide.score;
+    reasons.push(...tide.reasons);
+  }
+
+  // 10.5) 人気順位とAI順位のズレ
+  let rankGap=0;
+  const marketRanks=marketBoatRanks(a);
+  const aiRanks=boats.map(x=>x.boat);
+  const gapDetails=[];
+  for(let boat=1;boat<=6;boat++){
+    const mr=marketRanks.indexOf(boat)+1, ar=aiRanks.indexOf(boat)+1;
+    if(!mr||!ar)continue;
+    const gap=mr-ar; // +: 市場人気よりAI評価が高い
+    if(gap>=3){rankGap+=4;gapDetails.push(`${boat}号艇 人気${mr}位→AI${ar}位`) }
+    else if(gap===2){rankGap+=2;gapDetails.push(`${boat}号艇 人気${mr}位→AI${ar}位`) }
+    if(ar>=4&&mr<=2){rankGap+=2;gapDetails.push(`${boat}号艇 過剰人気疑い`) }
+  }
+  rankGap=Math.min(10,rankGap);
+  if(rankGap>=4&&gapDetails.length)reasons.push(`人気×AI乖離：${gapDetails.slice(0,2).join(' / ')}`);
+  score+=rankGap;
+
+  // 11) 高配当余地
+  let market=0;
+  if(favorite&&n(favorite.odds)<12){market+=2;reasons.push(`人気集中 ${n(favorite.odds).toFixed(1)}倍`)}
+  if(high100>=12){market+=3;reasons.push(`100倍以上の有力候補 ${high100}通り`)}
+  if(high200>=6)market+=2;
+  if(valueLong>=5){market+=3;reasons.push(`80倍以上EV候補 ${valueLong}通り`)}
+  market=Math.min(8,market); score+=market;
+
+  // 12) 直前オッズ変動（同じ端末で前回取得値との比較）
+  const move=oddsMoveSignal(a);
+  let oddsMove=0;
+  if(move.checked>=5){
+    if(move.sharp>=2){oddsMove+=4;reasons.push(`直前オッズ急低下 ${move.sharp}点`)}
+    else if(move.sharp===1)oddsMove+=2;
+    if(move.drift>=3){oddsMove+=2;reasons.push(`人気側オッズ変動 ${move.drift}点`)}
+  }
+  oddsMove=Math.min(6,oddsMove); score+=oddsMove;
+
+  // 13) 直前オッズ×展示の連動：展示上位艇を含む組み合わせに資金流入
+  let oddsExLink=0;
+  if(move.checked>=5&&move.sharpCombos?.length){
+    const exTop=new Set(ex.slice(0,2));
+    const linked=move.sharpCombos.filter(x=>comboBoats(x.combo).some(b=>exTop.has(b)));
+    if(linked.length>=3){oddsExLink+=6;reasons.push(`展示上位×オッズ急低下 ${linked.length}点連動`)}
+    else if(linked.length===2){oddsExLink+=4;reasons.push('展示上位×オッズ急低下 2点連動')}
+    else if(linked.length===1){oddsExLink+=2}
+    // AI下位の展示上位艇への資金流入は波乱シグナルを強化
+    const sleeper=ex.slice(0,2).find(b=>aiRanks.indexOf(b)>=2);
+    if(sleeper&&linked.some(x=>comboBoats(x.combo).includes(sleeper))){
+      oddsExLink+=2;reasons.push(`${sleeper}号艇 人気薄気配＋資金流入`);
+    }
+  }
+  oddsExLink=Math.min(8,oddsExLink); score+=oddsExLink;
+
+  score=Math.round(clamp(score,0,100));
+
+  // 「荒れ要因1つだけ」で通さない。
+  const independentSignals=[
+    inner>=9, attack>=7, beneficiary>=6, form>=4, upset>=5, parity>=5,
+    spread>=4, courseFit>=4, water>=4, tide.score>=3, rankGap>=4, market>=5, oddsMove>=3, oddsExLink>=4
+  ].filter(Boolean).length;
+  const mustHave=inner>=9 && independentSignals>=3;
+  const pass=score>=50&&mustHave;
+
+  return{
+    score,pass,reasons,
+    signals:independentSignals,
+    beneficiaryBoat,
+    parts:{inner,attack,beneficiary,form,upset,parity,spread,courseFit,water,tide:tide.score,rankGap,market,oddsMove,oddsExLink}
+  };
+}
+
+function injectStyle(doc){
+  if(doc.getElementById('rough-style'))return;
+  const s=doc.createElement('style');s.id='rough-style';s.textContent=`
+    .rough-badge{margin-top:6px;display:inline-flex;align-items:center;gap:5px;padding:6px 9px;border-radius:999px;font-size:10px;font-weight:950;border:1px solid #a43f1d;background:#251006;color:#ffb277;box-shadow:0 0 18px rgba(255,112,42,.08)}
+    .rough-box{margin-top:9px;padding:10px;border:1px solid #7c3219;border-radius:11px;background:linear-gradient(135deg,#1e0d06,#090909);font-size:10px;line-height:1.65;color:#d9b497}
+    .rough-box b{color:#ffb277}.rough-score{font-size:18px;color:#ff9e62;font-weight:950}.rough-hidden{display:none!important}
+  `;doc.head.appendChild(s);
+}
+
+function apply(){
+  const win=frame.contentWindow,doc=frame.contentDocument;
+  if(!win||!doc)return;
+  injectStyle(doc);
+  const analyses=getLex(win,'analyses');
+  const evFn=getLex(win,'expectedValueDecision');
+  const removeFn=getLex(win,'removePendingPrediction');
+  const saveFn=getLex(win,'savePrediction');
+  const displayFn=getLex(win,'display');
+  if(!Array.isArray(analyses)||typeof evFn!=='function')return;
+  const candidates=analyses.filter(a=>{try{return evFn(a).pass}catch{return false}});
+  const passed=[];
+  for(const a of candidates){
+    a.roughDecision=roughDecision(a);
+    if(a.roughDecision.pass){passed.push(a);try{if(typeof saveFn==='function')saveFn(a)}catch(e){}}
+    else{try{if(typeof removeFn==='function')removeFn(a)}catch(e){}}
+  }
+  roughCount.textContent=`候補 ${candidates.length}R`;
+  passCount.textContent=`波乱度通過 ${passed.length}R`;
+
+  const key=JSON.stringify(passed.map(a=>[a.race?.stadium_number,a.race?.race_number,a.roughDecision.score]));
+  if(key===lastKey&&injected)return;lastKey=key;injected=true;
+
+  try{if(typeof displayFn==='function')displayFn()}catch(e){}
+  const cards=[...doc.querySelectorAll('#results .race')];
+  cards.forEach((card,i)=>{
+    const a=candidates[i];
+    if(!a)return;
+    const rd=a.roughDecision||roughDecision(a);
+    if(!rd.pass){card.classList.add('rough-hidden');return}
+    card.classList.remove('rough-hidden');
+    if(!card.querySelector('.rough-badge')){
+      const meta=card.querySelector('.race-meta');
+      if(meta)meta.insertAdjacentHTML('afterend',`<div class="rough-badge">🔥 波乱度 <span class="rough-score">${rd.score}</span>/100　厳選通過</div>`);
+      const detail=card.querySelector('.ai-detail');
+      if(detail)detail.insertAdjacentHTML('beforeend',`<div class="rough-box"><b>🔥 波乱度判定 ${rd.score}/100</b><br>内訳：1号艇危険 ${rd.parts.inner}/28 ／ 攻め艇 ${rd.parts.attack}/18 ／ 展開利艇 ${rd.parts.beneficiary}/10 ／ 今節気配 ${rd.parts.form}/8 ／ 展示・進入 ${rd.parts.upset}/12 ／ 実力拮抗 ${rd.parts.parity}/8 ／ 人気×AI乖離 ${rd.parts.rankGap}/10 ／ 展開分散 ${rd.parts.spread}/7 ／ コース相性 ${rd.parts.courseFit}/7 ／ 風・水面 ${rd.parts.water}/7 ／ 潮位潮流 ${rd.parts.tide}/7 ／ 高配当余地 ${rd.parts.market}/8 ／ オッズ変動 ${rd.parts.oddsMove}/6 ／ オッズ×展示連動 ${rd.parts.oddsExLink}/8<br>独立した荒れ要因：${rd.signals}項目<br><br>${rd.reasons.slice(0,7).map(x=>'・'+x).join('<br>')}</div>`);
+    }
+  });
+  const root=doc.getElementById('results');
+  if(root&&passed.length===0)root.innerHTML='<div class="empty">現在、S＋期待値＋波乱度50をすべて通過したレースはありません。<br><small>荒れる条件が十分に重なるまで見送ります。</small></div>';
+  const status=doc.getElementById('status');
+  if(status)status.innerHTML=`🔥 荒れるレース厳選モード<br>S＋期待値候補 ${candidates.length}R → 波乱度50以上 ${passed.length}R<br>1号艇危険・F持ち・今節気配・攻め艇・展開利艇・人気×AI順位のズレ・展示/進入・実力拮抗・コース展開・風向/風速・潮位/潮流・高配当余地・直前オッズ×展示連動を再評価しています。`;
+  const notice=doc.querySelector('.notice');
+  if(notice)notice.textContent='荒れるレース厳選版：S＋期待値通過後、波乱度50/100以上・1号艇危険度・独立した荒れ要因3項目以上を満たすレースだけ表示・成績保存します。今節気配、F/L、実力拮抗、コース展開、風向×風速、潮位/潮流、人気×AI順位のズレ、展開をもらう艇、直前オッズ×展示の連動も追加評価します。取得できないデータは加点しません。';
+  loading.style.display='none';
+}
+
+frame.addEventListener('load',()=>{setTimeout(apply,1200);setInterval(apply,2500)});
+setTimeout(()=>{if(loading.style.display!=='none')loading.innerHTML='<div class="err">AIデータの準備を待っています。<br>数秒後に自動判定します。</div>'},10000);
+</script>
+</body>
+</html>
