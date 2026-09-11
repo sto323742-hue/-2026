@@ -86,12 +86,11 @@ async function refreshResults(){
     // これにより「🔥 波乱度 xx/100 厳選通過」が更新後に消えない。
     try{
       const roughWin=outer.contentWindow;
-      const roughApply=roughWin.eval('apply');
-      if(typeof roughApply==='function'){
-        roughApply();
-        setTimeout(()=>{ try{ roughWin.eval('apply')(); }catch(e){} },300);
-        setTimeout(()=>{ try{ roughWin.eval('apply')(); }catch(e){} },1200);
-      }
+      // rough.html は「判定内容が同じなら再描画しない」最適化を持っているため、
+      // 通常版の再描画後はフラグをリセットして波乱度表示を強制再適用する。
+      roughWin.eval('injected=false; lastKey=""; apply()');
+      setTimeout(()=>{ try{ roughWin.eval('injected=false; lastKey=""; apply()'); }catch(e){} },300);
+      setTimeout(()=>{ try{ roughWin.eval('injected=false; lastKey=""; apply()'); }catch(e){} },1200);
     }catch(e){
       console.warn('rough badge re-apply failed',e);
     }
@@ -123,8 +122,7 @@ window.addEventListener('focus',refreshResults);
 setInterval(()=>{
   try{
     const rw=outer.contentWindow;
-    const fn=rw.eval('apply');
-    if(typeof fn==='function')fn();
+    rw.eval('injected=false; lastKey=""; apply()');
   }catch(e){}
 },2500);
 </script>
