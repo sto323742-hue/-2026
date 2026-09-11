@@ -25,20 +25,31 @@ let passLockInstalled=false;
 function installPassLock(){
   try{
     const rw=outer.contentWindow;
-    if(!rw || passLockInstalled)return false;
+    if(!rw)return false;
 
     rw.eval(`
+      window.__roughPassLocks=window.__roughPassLocks||{};
+
+      // すでに一度通過済みの分析結果がある場合も先に固定
+      try{
+        const arr=frame?.contentWindow?.eval('analyses');
+        if(Array.isArray(arr)){
+          for(const a of arr){
+            if(a?.roughDecision?.pass){
+              window.__roughPassLocks[raceRoughKey(a)]=a.roughDecision;
+            }
+          }
+        }
+      }catch(e){}
+
       if(!window.__roughPassLockInstalled){
         window.__roughPassLockInstalled=true;
-        window.__roughPassLocks=window.__roughPassLocks||{};
         window.__roughDecisionOriginal=roughDecision;
 
         roughDecision=function(a){
           const key=raceRoughKey(a);
           const locked=window.__roughPassLocks[key];
 
-          // 一度「波乱度50以上＋条件通過」したレースは、
-          // 同じページ内では締切まで通過状態を固定する。
           if(locked && locked.pass){
             return locked;
           }
@@ -51,6 +62,36 @@ function installPassLock(){
 
           return fresh;
         };
+
+        // 実際に「波乱度通過」がDOMへ表示された瞬間も固定する。
+        const watchPassed=()=>{
+          try{
+            const doc=frame?.contentDocument;
+            const arr=frame?.contentWindow?.eval('analyses');
+            if(!doc||!Array.isArray(arr))return;
+
+            const cards=[...doc.querySelectorAll('#results .race')];
+            for(let i=0;i<cards.length;i++){
+              const badge=cards[i].querySelector('.rough-badge');
+              const a=arr[i];
+              if(!badge||!a)continue;
+
+              const score=Number(badge.querySelector('.rough-score')?.textContent||0);
+              const rd=a.roughDecision;
+              if(rd?.pass){
+                window.__roughPassLocks[raceRoughKey(a)]=rd;
+              }else if(score>=50){
+                const fresh=window.__roughDecisionOriginal(a);
+                fresh.score=Math.max(score,Number(fresh.score)||0);
+                fresh.pass=true;
+                window.__roughPassLocks[raceRoughKey(a)]=fresh;
+                a.roughDecision=fresh;
+              }
+            }
+          }catch(e){}
+        };
+
+        setInterval(watchPassed,500);
       }
     `);
 
@@ -62,14 +103,6 @@ function installPassLock(){
   }
 }
 
-function getInner(){
-  try{return outer.contentWindow.document.getElementById('app')?.contentWindow||null}catch(e){return null}
-}
-function jstDate(){
-  return new Intl.DateTimeFormat('en-CA',{
-    timeZone:'Asia/Tokyo',year:'numeric',month:'2-digit',day:'2-digit'
-  }).format(new Date());
-}
 async function fallbackSettle(w){
   const d=jstDate();
   const y=d.slice(0,4),ymd=d.replaceAll('-','');
