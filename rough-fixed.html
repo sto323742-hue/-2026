@@ -20,6 +20,48 @@ const outer=document.getElementById('rough');
 const bar=document.getElementById('bar');
 let busy=false;
 
+let passLockInstalled=false;
+
+function installPassLock(){
+  try{
+    const rw=outer.contentWindow;
+    if(!rw || passLockInstalled)return false;
+
+    rw.eval(`
+      if(!window.__roughPassLockInstalled){
+        window.__roughPassLockInstalled=true;
+        window.__roughPassLocks=window.__roughPassLocks||{};
+        window.__roughDecisionOriginal=roughDecision;
+
+        roughDecision=function(a){
+          const key=raceRoughKey(a);
+          const locked=window.__roughPassLocks[key];
+
+          // 一度「波乱度50以上＋条件通過」したレースは、
+          // 同じページ内では締切まで通過状態を固定する。
+          if(locked && locked.pass){
+            return locked;
+          }
+
+          const fresh=window.__roughDecisionOriginal(a);
+
+          if(fresh && fresh.pass){
+            window.__roughPassLocks[key]=fresh;
+          }
+
+          return fresh;
+        };
+      }
+    `);
+
+    passLockInstalled=true;
+    return true;
+  }catch(e){
+    console.warn('rough pass lock install failed',e);
+    return false;
+  }
+}
+
 function getInner(){
   try{return outer.contentWindow.document.getElementById('app')?.contentWindow||null}catch(e){return null}
 }
@@ -82,15 +124,12 @@ async function refreshResults(){
       if(typeof renderStats==='function')renderStats();
     }catch(e){}
 
-    // 通常版の再描画後、荒れるレース版の表示を必ず再適用する。
-    // これにより「🔥 波乱度 xx/100 厳選通過」が更新後に消えない。
+    // 波乱度通過レースを固定したうえで、通常版の再描画後に表示を復元する。
     try{
+      installPassLock();
       const roughWin=outer.contentWindow;
-      // rough.html は「判定内容が同じなら再描画しない」最適化を持っているため、
-      // 通常版の再描画後はフラグをリセットして波乱度表示を強制再適用する。
       roughWin.eval('injected=false; lastKey=""; apply()');
-      setTimeout(()=>{ try{ roughWin.eval('injected=false; lastKey=""; apply()'); }catch(e){} },300);
-      setTimeout(()=>{ try{ roughWin.eval('injected=false; lastKey=""; apply()'); }catch(e){} },1200);
+      setTimeout(()=>{ try{ roughWin.eval('injected=false; lastKey=""; apply()'); }catch(e){} },500);
     }catch(e){
       console.warn('rough badge re-apply failed',e);
     }
@@ -105,6 +144,9 @@ async function refreshResults(){
 }
 
 outer.addEventListener('load',()=>{
+  // rough.html 自身の初回判定より先に通過固定ロジックを入れる
+  setTimeout(installPassLock,100);
+  setTimeout(installPassLock,500);
   setTimeout(refreshResults,2500);
   setTimeout(refreshResults,7000);
   setTimeout(refreshResults,15000);
@@ -118,13 +160,6 @@ document.addEventListener('visibilitychange',()=>{
 
 window.addEventListener('focus',refreshResults);
 
-// Safariで再描画が発生した場合も波乱度表示を復元
-setInterval(()=>{
-  try{
-    const rw=outer.contentWindow;
-    rw.eval('injected=false; lastKey=""; apply()');
-  }catch(e){}
-},2500);
 </script>
 </body>
 </html>
