@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#050505">
-<title>BOAT RACE AI予想 Ver.3・5分前最終確定＋3連複分散版</title>
+<title>BOAT RACE AI予想 Ver.3・締切順＋5分前最終確定＋3連複分散版</title>
 <style>
 html,body{margin:0;height:100%;background:#050505;overflow:hidden}
 #app{position:fixed;inset:0;width:100%;height:100%;border:0;background:#050505}
@@ -316,10 +316,62 @@ function installFinal5Decision(){
   }
 }
 
+
+function installCloseTimeSort(){
+  const w=frame.contentWindow;
+  if(!w)return false;
+
+  try{
+    w.eval(`
+      (function(){
+        if(window.__CLOSE_TIME_SORT_V1__)return;
+        if(typeof display!=='function' || typeof minutesToClose!=='function')return;
+
+        window.__CLOSE_TIME_SORT_V1__=true;
+        const originalDisplay=display;
+
+        function sortByCloseTime(){
+          try{
+            if(!Array.isArray(analyses))return;
+            analyses.sort((a,b)=>{
+              const am=minutesToClose(a?.race);
+              const bm=minutesToClose(b?.race);
+
+              const av=Number.isFinite(am)?am:999999;
+              const bv=Number.isFinite(bm)?bm:999999;
+
+              if(av!==bv)return av-bv;
+
+              const at=new Date(String(a?.race?.closed_at||'').replace(' ','T')+'+09:00').getTime();
+              const bt=new Date(String(b?.race?.closed_at||'').replace(' ','T')+'+09:00').getTime();
+              if(Number.isFinite(at)&&Number.isFinite(bt)&&at!==bt)return at-bt;
+
+              return Number(b?.rating||0)-Number(a?.rating||0);
+            });
+          }catch(e){}
+        }
+
+        display=function(){
+          sortByCloseTime();
+          return originalDisplay.apply(this,arguments);
+        };
+
+        sortByCloseTime();
+        originalDisplay();
+      })();
+    `);
+    return true;
+  }catch(e){
+    console.warn('close time sort install failed',e);
+    return false;
+  }
+}
+
 function installLoop(){
   const a=installTrioDiversify();
   const b=installFinal5Decision();
-  if(a&&b)return;
+  const c=installCloseTimeSort();
+  if(a&&b&&c)return;
   setTimeout(installLoop,200);
 }
 frame.addEventListener('load',()=>setTimeout(installLoop,100));
@@ -327,6 +379,7 @@ setTimeout(installLoop,300);
 setInterval(()=>{
   installTrioDiversify();
   installFinal5Decision();
+  installCloseTimeSort();
 },5000);
 </script>
 </body>
