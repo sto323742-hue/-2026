@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#050505">
+<title>BOAT RACE AI予想 Ver.3・3連複分散版</title>
+<style>
+html,body{margin:0;height:100%;background:#050505;overflow:hidden}
+#app{position:fixed;inset:0;width:100%;height:100%;border:0;background:#050505}
+</style>
+</head>
+<body>
+<iframe id="app" src="./index.html?v=trio-diversified-20260912"></iframe>
+<script>
+const frame=document.getElementById('app');
+
+function installTrioDiversify(){
+  const w=frame.contentWindow;
+  if(!w)return false;
+
+  try{
+    w.eval(`
+      (function(){
+        if(window.__TRIO_DIVERSIFY_MAX2_V1__)return;
+        if(typeof makeTrioLongshots!=='function' || typeof trioKeyFromCombo!=='function')return;
+
+        window.__TRIO_DIVERSIFY_MAX2_V1__=true;
+        const original=makeTrioLongshots;
+
+        function boatsOf(combo){
+          return String(combo||'').split('-').map(Number).filter(n=>n>=1&&n<=6);
+        }
+        function normalized(combo){
+          const b=[...new Set(boatsOf(combo))].sort((a,b)=>a-b);
+          return b.length===3?b.join('-'):'';
+        }
+        function boatCounts(rows){
+          const c={1:0,2:0,3:0,4:0,5:0,6:0};
+          for(const r of rows){
+            for(const b of boatsOf(r?.combo)){
+              if(c[b]!==undefined)c[b]++;
+            }
+          }
+          return c;
+        }
+        function maxTwo(rows){
+          const c=boatCounts(rows);
+          return Object.values(c).every(v=>v<=2);
+        }
+
+        function buildAllCandidates(a){
+          const pool=Array.isArray(a?.comboPool)?a.comboPool:[];
+          const aiOrder=(a?.boats||[]).map(x=>Number(x.boat));
+          const ticketSet=(typeof makeTickets==='function')?makeTickets(a):{main:[],cover:[],hole:[]};
+          const trifecta10=[
+            ...(ticketSet?.main||[]),
+            ...(ticketSet?.cover||[]),
+            ...(ticketSet?.hole||[])
+          ];
+          const overlapCount={};
+          for(const combo of trifecta10){
+            const k=normalized(combo);
+            if(k)overlapCount[k]=(overlapCount[k]||0)+1;
+          }
+
+          const groups={};
+          for(const p of pool){
+            const k=normalized(p?.combo);
+            if(!k)continue;
+            if(!groups[k]){
+              groups[k]={
+                combo:k,
+                probability:0,
+                odds:[],
+                outsiderCount:k.split('-').map(Number).filter(b=>aiOrder.indexOf(b)>=3).length,
+                trifectaOverlap:overlapCount[k]||0
+              };
+            }
+            groups[k].probability+=Number(p?.probability||0);
+            const o=Number(p?.odds||0);
+            if(o>0)groups[k].odds.push(o);
+          }
+
+          return Object.values(groups).map(g=>{
+            g.odds.sort((a,b)=>a-b);
+            g.marketMedian=g.odds.length?g.odds[Math.floor(g.odds.length/2)]:0;
+            g.marketMax=g.odds.length?g.odds[g.odds.length-1]:0;
+            g.score=
+              g.probability *
+              Math.log10(Math.max(g.marketMedian,10)) *
+              (1+g.outsiderCount*.20) *
+              (g.trifectaOverlap>=2?.50:1);
+            return g;
+          }).filter(g=>g.odds.length>=3);
+        }
+
+        makeTrioLongshots=function(a){
+          const raw=original(a);
+          const all=buildAllCandidates(a);
+          const seen=new Set();
+          const candidates=[];
+
+          function add(x,priority=0){
+            const k=normalized(x?.combo);
+            if(!k||seen.has(k))return;
+            seen.add(k);
+            candidates.push({...x,combo:k,_priority:priority});
+          }
+
+          if(Array.isArray(raw))raw.forEach(x=>add(x,100));
+
+          all
+            .sort((x,y)=>
+              (x.trifectaOverlap>=2)-(y.trifectaOverlap>=2) ||
+              y.score-x.score ||
+              y.probability-x.probability
+            )
+            .forEach(x=>add(x,0));
+
+          let best=null;
+
+          for(let i=0;i<candidates.length;i++){
+            for(let j=i+1;j<candidates.length;j++){
+              for(let k=j+1;k<candidates.length;k++){
+                const rows=[candidates[i],candidates[j],candidates[k]];
+
+                // 同じ3艇セットは当然不可
+                const keys=rows.map(r=>normalized(r.combo));
+                if(new Set(keys).size!==3)continue;
+
+                // 今回の本命ルール:
+                // 同じ艇番を3本すべてに入れない（各艇番 最大2本まで）
+                if(!maxTwo(rows))continue;
+
+                // 3連単10点と同じ3艇セットが2通り以上ある3連複はできるだけ避ける
+                const hardOverlap=rows.reduce((s,r)=>s+(Number(r.trifectaOverlap||0)>=2?1:0),0);
+
+                const value=rows.reduce((s,r)=>
+                  s +
+                  Number(r._priority||0) +
+                  Number(r.probability||0)*120 +
+                  Math.log10(Math.max(Number(r.marketMedian||35),10))*2 -
+                  Number(r.trifectaOverlap||0)*2
+                ,0) - hardOverlap*15;
+
+                if(!best || value>best.value)best={rows,value};
+              }
+            }
+          }
+
+          if(best){
+            return best.rows.map(r=>({
+              combo:normalized(r.combo),
+              probability:Number(r.probability||0),
+              marketRank:r.marketRank,
+              marketMedian:Number(r.marketMedian||0),
+              outsiderCount:Number(r.outsiderCount||0),
+              trifectaOverlap:Number(r.trifectaOverlap||0)
+            }));
+          }
+
+          // 条件を満たす3本がどうしても作れない場合は無理に重複3本を表示しない
+          // 最大2本までにして安全側へ。
+          const safe=[];
+          for(const c of candidates){
+            const test=[...safe,c];
+            if(test.length<=2 || maxTwo(test)){
+              safe.push(c);
+              if(safe.length>=3)break;
+            }
+          }
+          return safe.slice(0,3).map(r=>({
+            combo:normalized(r.combo),
+            probability:Number(r.probability||0),
+            marketRank:r.marketRank,
+            marketMedian:Number(r.marketMedian||0),
+            outsiderCount:Number(r.outsiderCount||0),
+            trifectaOverlap:Number(r.trifectaOverlap||0)
+          }));
+        };
+
+        // すでに画面が描画済みなら再計算して表示
+        try{
+          if(Array.isArray(analyses)){
+            if(typeof display==='function')display();
+          }
+        }catch(e){}
+      })();
+    `);
+    return true;
+  }catch(e){
+    console.warn('trio diversify install failed',e);
+    return false;
+  }
+}
+
+function installLoop(){
+  if(installTrioDiversify())return;
+  setTimeout(installLoop,200);
+}
+frame.addEventListener('load',()=>setTimeout(installLoop,100));
+setTimeout(installLoop,300);
+setInterval(installTrioDiversify,5000);
+</script>
+</body>
+</html>
