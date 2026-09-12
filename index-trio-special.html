@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#05070a">
+<title>BOAT RACE AI予想・3連複専用版</title>
+<style>
+html,body{margin:0;height:100%;background:#05070a;overflow:hidden}
+#app{position:fixed;inset:0;width:100%;height:100%;border:0;background:#05070a}
+</style>
+</head>
+<body>
+<iframe id="app" src="./index-final5-trio5-with-results.html?v=trio-special-20260912"></iframe>
+<script>
+const outer = document.getElementById('app');
+
+function installIntoInnermost(){
+  try{
+    const wrapperDoc = outer.contentDocument;
+    if(!wrapperDoc) return false;
+    const inner = wrapperDoc.getElementById('app');
+    if(!inner || !inner.contentDocument) return false;
+    const d = inner.contentDocument;
+    const w = inner.contentWindow;
+    if(!d || !w) return false;
+
+    // 強制CSS: 3連単の買い目・合計は絶対に表示しない
+    if(!d.getElementById('trio-only-hard-css')){
+      const st = d.createElement('style');
+      st.id='trio-only-hard-css';
+      st.textContent=`
+        .bet-grid,
+        .bet-col,
+        .total,
+        .logic {display:none !important;}
+        .trio-box{
+          display:block !important;
+          margin-top:10px !important;
+          border-color:#7d3c88 !important;
+          background:linear-gradient(135deg,#170b19,#090909) !important;
+        }
+        .trio-head b{font-size:17px !important;color:#f1a8ff !important}
+        .trio-grid{grid-template-columns:repeat(2,minmax(0,1fr)) !important}
+        .trio-pick{padding:12px 5px !important}
+        .trio-pick strong{font-size:19px !important}
+        .menu{grid-template-columns:1fr !important}
+        #historyOpen,#venueOpen{display:none !important}
+        #stats{display:none !important}
+        #learningStats,#learningToggle,#learningProgressWrap,
+        #historyToggle,#historyWrap,#venueToggle,#venueWrap{display:none !important}
+        #statsSection .section-title{display:none !important}
+        @media(min-width:650px){.trio-grid{grid-template-columns:repeat(5,minmax(0,1fr)) !important}}
+      `;
+      d.head.appendChild(st);
+    }
+
+    // 見出し・説明を3連複専用化
+    const brand=d.querySelector('.brand');
+    if(brand) brand.innerHTML='<span class="gold">🚤 BOAT RACE</span> AI予想 <span class="ver">3連複専用版</span>';
+
+    const sub=d.querySelector('.sub');
+    if(sub) sub.textContent='高配当を狙う、3連複専用AI予想';
+
+    d.querySelectorAll('.notice').forEach(el=>{
+      el.textContent='3連複5点のみ表示。3連単と同じ3艇セットを避け、別シナリオの高配当候補を優先します。';
+    });
+
+    const statsOpen=d.getElementById('statsOpen');
+    if(statsOpen) statsOpen.textContent='📊 3連複成績を見る';
+
+    const statsSection=d.getElementById('statsSection');
+    if(statsSection){
+      const t=statsSection.querySelector('.panel-title');
+      if(t) t.textContent='📊 3連複 成績';
+    }
+
+    const qStats=d.getElementById('qStats');
+    if(qStats) qStats.textContent='📊 3連複';
+
+    // 3連複ボックス文言
+    d.querySelectorAll('.trio-head b').forEach(el=>{
+      if(!el.textContent.includes('3連複')) el.textContent='🎯 3連複 大穴狙い';
+    });
+
+    // 3連複成績ボックスの注記
+    const trioStats=d.getElementById('trioStatsBox');
+    if(trioStats){
+      const ttl=trioStats.querySelector('.section-title');
+      if(ttl) ttl.textContent='📊 3連複5点 成績';
+      const note=trioStats.querySelector('.learning-note');
+      if(note) note.textContent='3連複5点×100円＝1レース500円として集計します。';
+    }
+
+    // 3連単の文字が残る補助ラベルを除去。ただし3連複ロジック用の内部データは触らない
+    d.querySelectorAll('div,span,small,b,strong').forEach(el=>{
+      if(el.children.length===0){
+        const tx=(el.textContent||'').trim();
+        if(tx==='合計10点' || tx.includes('本線2点') || tx.includes('狙い4点') || tx.includes('穴4点')){
+          el.style.setProperty('display','none','important');
+        }
+      }
+    });
+
+    // 画面更新で再生成されても即座に3連単を隠す
+    if(!w.__TRIO_ONLY_OBSERVER__){
+      w.__TRIO_ONLY_OBSERVER__=new w.MutationObserver(()=>{
+        d.querySelectorAll('.bet-grid,.bet-col,.total,.logic').forEach(el=>{
+          el.style.setProperty('display','none','important');
+        });
+      });
+      w.__TRIO_ONLY_OBSERVER__.observe(d.body,{childList:true,subtree:true});
+    }
+    return true;
+  }catch(e){
+    console.warn('trio-only install failed',e);
+    return false;
+  }
+}
+
+function installLoop(){
+  let tries=0;
+  const timer=setInterval(()=>{
+    installIntoInnermost();
+    tries++;
+    if(tries>180) clearInterval(timer);
+  },250);
+}
+outer.addEventListener('load',installLoop);
+installLoop();
+setInterval(installIntoInnermost,1500);
+</script>
+</body>
+</html>
