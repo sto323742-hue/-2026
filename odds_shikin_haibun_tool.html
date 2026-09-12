@@ -1,0 +1,276 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>オッズ資金配分計算ツール</title>
+<style>
+:root{
+  --bg:#07111d;
+  --card:#101b2b;
+  --card2:#152338;
+  --line:#29405f;
+  --text:#f7fbff;
+  --muted:#9fb4ca;
+  --accent:#35d6ff;
+  --accent2:#60efb2;
+  --danger:#ff7f8d;
+}
+*{box-sizing:border-box}
+body{
+  margin:0;
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans JP",sans-serif;
+  background:linear-gradient(180deg,#06101b 0%,#0b1524 55%,#08111d 100%);
+  color:var(--text);
+}
+.wrap{max-width:760px;margin:0 auto;padding:18px 12px 40px}
+.badge{
+  display:inline-block;background:#12324b;color:#7edfff;border:1px solid #275273;
+  padding:5px 10px;border-radius:999px;font-size:12px;font-weight:700;margin-bottom:8px
+}
+h1{font-size:24px;margin:4px 0 6px}
+.desc{font-size:13px;line-height:1.6;color:var(--muted);margin-bottom:14px}
+.card{
+  background:rgba(16,27,43,.97);
+  border:1px solid var(--line);
+  border-radius:18px;
+  padding:14px;
+  margin-bottom:12px;
+  box-shadow:0 10px 30px rgba(0,0,0,.18);
+}
+label{font-size:12px;color:var(--muted);display:block;margin-bottom:6px}
+input,select{
+  width:100%;height:48px;padding:10px 12px;border-radius:12px;
+  border:1px solid #34506f;background:#091523;color:white;font-size:17px;outline:none
+}
+input:focus{border-color:var(--accent)}
+.topgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.odds-row{
+  display:grid;grid-template-columns:1fr 48px;gap:8px;align-items:end;margin-bottom:8px
+}
+.remove{
+  height:48px;border:none;border-radius:12px;background:#34212a;color:#ffb4be;
+  font-size:20px;font-weight:bold
+}
+.actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
+button{border:none;border-radius:13px;padding:13px 14px;font-weight:800;font-size:15px}
+.add{background:#21344f;color:#d9e8f8}
+.calc{background:linear-gradient(90deg,#34d4ff,#5ce7c5);color:#05111b}
+.summary{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
+.stat{background:#0a1625;border:1px solid #263c59;border-radius:14px;padding:12px}
+.stat .k{font-size:11px;color:var(--muted)}
+.stat .v{font-size:21px;font-weight:900;margin-top:3px}
+table{width:100%;border-collapse:collapse;margin-top:12px;font-size:14px}
+th,td{padding:10px 6px;border-bottom:1px solid #263a55;text-align:right}
+th:first-child,td:first-child{text-align:left}
+.good{color:var(--accent2);font-weight:800}
+.note{font-size:12px;color:var(--muted);line-height:1.6;margin-top:10px}
+.example{
+  background:#0a1727;border:1px solid #29415f;border-radius:14px;padding:10px 12px;
+  font-size:12px;color:#b7c9da;line-height:1.7;margin-top:12px
+}
+@media(max-width:560px){
+  .wrap{padding:14px 10px 28px}
+  h1{font-size:22px}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="badge">資金配分</div>
+  <h1>オッズ資金配分計算ツール</h1>
+  <div class="desc">
+    購入資金とオッズを入力すると、<b>どれが当たっても払戻額がなるべく同じ</b>になるように、
+    100円単位で購入額を自動計算します。
+  </div>
+
+  <div class="card">
+    <div class="topgrid">
+      <div>
+        <label>購入資金</label>
+        <input id="budget" type="number" min="100" step="100" value="5000">
+      </div>
+      <div>
+        <label>購入単位</label>
+        <select id="unit">
+          <option value="100" selected>100円</option>
+          <option value="200">200円</option>
+          <option value="500">500円</option>
+          <option value="1000">1,000円</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+      <strong>オッズ入力</strong>
+      <span style="font-size:12px;color:var(--muted)">2点以上入力</span>
+    </div>
+
+    <div id="oddsList"></div>
+
+    <div class="actions">
+      <button class="add" onclick="addOdds()">＋ オッズ追加</button>
+      <button class="calc" onclick="calculate()">自動計算</button>
+    </div>
+
+    <div class="example">
+      例：5,000円／2.9倍・10倍・6倍・3倍<br>
+      → おおよそ 1,800円・500円・900円・1,800円 のように自動配分します。
+    </div>
+  </div>
+
+  <div class="card" id="resultCard" style="display:none">
+    <strong>計算結果</strong>
+
+    <div class="summary">
+      <div class="stat">
+        <div class="k">使用資金</div>
+        <div class="v" id="used">-</div>
+      </div>
+      <div class="stat">
+        <div class="k">残り資金</div>
+        <div class="v" id="remain">-</div>
+      </div>
+      <div class="stat">
+        <div class="k">最低払戻</div>
+        <div class="v" id="minPayout">-</div>
+      </div>
+      <div class="stat">
+        <div class="k">最高払戻</div>
+        <div class="v" id="maxPayout">-</div>
+      </div>
+    </div>
+
+    <div style="overflow:auto">
+      <table>
+        <thead>
+          <tr>
+            <th>オッズ</th>
+            <th>購入額</th>
+            <th>想定払戻</th>
+            <th>収支</th>
+          </tr>
+        </thead>
+        <tbody id="resultBody"></tbody>
+      </table>
+    </div>
+
+    <div class="note">
+      ※ オッズは購入後も変動するため、実際の払戻額とは異なる場合があります。<br>
+      ※ 購入単位に合わせて丸めるため、払戻額は完全には同額にならない場合があります。
+    </div>
+  </div>
+</div>
+
+<script>
+const initialOdds = [2.9, 10, 6, 3];
+
+function addOdds(value=""){
+  const row = document.createElement("div");
+  row.className = "odds-row";
+  row.innerHTML = `
+    <div>
+      <label>オッズ</label>
+      <input class="odds" type="number" min="1.01" step="0.1" placeholder="例 10.0" value="${value}">
+    </div>
+    <button class="remove" onclick="this.parentElement.remove()">×</button>`;
+  document.getElementById("oddsList").appendChild(row);
+}
+
+initialOdds.forEach(addOdds);
+
+function yen(n){
+  return Math.round(n).toLocaleString("ja-JP") + "円";
+}
+
+function calculate(){
+  const budget = Number(document.getElementById("budget").value);
+  const unit = Number(document.getElementById("unit").value);
+  const odds = [...document.querySelectorAll(".odds")]
+    .map(el => Number(el.value))
+    .filter(v => v > 1);
+
+  if (odds.length < 2){
+    alert("オッズを2つ以上入力してください。");
+    return;
+  }
+  if (budget < unit * odds.length){
+    alert("購入資金が少なすぎます。各買い目に最低1単位ずつ配分できる金額を入力してください。");
+    return;
+  }
+
+  // Ideal equal-payout allocation: stake_i ∝ 1 / odds_i
+  const weights = odds.map(o => 1 / o);
+  const weightSum = weights.reduce((a,b)=>a+b,0);
+
+  // Start by flooring to the purchase unit.
+  let stakes = weights.map(w => Math.floor((budget * w / weightSum) / unit) * unit);
+
+  // Ensure every selection gets at least one unit.
+  for(let i=0;i<stakes.length;i++){
+    if(stakes[i] < unit) stakes[i] = unit;
+  }
+
+  // If guaranteeing minimum stakes caused an overrun, reduce largest stakes first.
+  let used = stakes.reduce((a,b)=>a+b,0);
+  while(used > budget){
+    let idx = -1;
+    let largest = -1;
+    for(let i=0;i<stakes.length;i++){
+      if(stakes[i] > unit && stakes[i] > largest){
+        largest = stakes[i];
+        idx = i;
+      }
+    }
+    if(idx < 0) break;
+    stakes[idx] -= unit;
+    used -= unit;
+  }
+
+  // Allocate leftover units to the choice that currently has the lowest payout.
+  let remaining = budget - used;
+  while(remaining >= unit){
+    let idx = 0;
+    let minPayout = Infinity;
+    for(let i=0;i<odds.length;i++){
+      const payout = stakes[i] * odds[i];
+      if(payout < minPayout){
+        minPayout = payout;
+        idx = i;
+      }
+    }
+    stakes[idx] += unit;
+    remaining -= unit;
+  }
+
+  used = stakes.reduce((a,b)=>a+b,0);
+
+  const payouts = stakes.map((s,i)=>s*odds[i]);
+  const profits = payouts.map(p=>p-used);
+
+  const body = document.getElementById("resultBody");
+  body.innerHTML = "";
+
+  odds.forEach((o,i)=>{
+    const tr = document.createElement("tr");
+    const profitText = (profits[i] >= 0 ? "+" : "") + yen(profits[i]);
+    tr.innerHTML = `
+      <td>${o.toFixed(1)}倍</td>
+      <td><b>${yen(stakes[i])}</b></td>
+      <td>${yen(payouts[i])}</td>
+      <td class="${profits[i] >= 0 ? "good" : ""}">${profitText}</td>`;
+    body.appendChild(tr);
+  });
+
+  document.getElementById("used").textContent = yen(used);
+  document.getElementById("remain").textContent = yen(budget-used);
+  document.getElementById("minPayout").textContent = yen(Math.min(...payouts));
+  document.getElementById("maxPayout").textContent = yen(Math.max(...payouts));
+  document.getElementById("resultCard").style.display = "block";
+  document.getElementById("resultCard").scrollIntoView({behavior:"smooth", block:"start"});
+}
+</script>
+</body>
+</html>
