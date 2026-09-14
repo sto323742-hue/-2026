@@ -4,14 +4,14 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#050505">
-<title>BOAT RACE AI予想 Ver.3・3連単10点・3軸最終判定版</title>
+<title>BOAT RACE AI予想 Ver.3・3連単10点・3軸＋直前補正版</title>
 <style>
 html,body{margin:0;height:100%;background:#050505;overflow:hidden}
 #app{position:fixed;inset:0;width:100%;height:100%;border:0;background:#050505}
 </style>
 </head>
 <body>
-<iframe id="app" src="./index.html?v=trifecta-3axis-final-20260914"></iframe>
+<iframe id="app" src="./index.html?v=trifecta-3axis-livecorr-20260914"></iframe>
 <script>
 const frame=document.getElementById('app');
 
@@ -430,16 +430,73 @@ function installFinal5Decision(){
           }catch(e){return {score:50,data:false,targetBoat:null,reasons:['市場乖離計算不可']};}
         }
 
+        // ④ 直前補正：展示・進入・選手コース適性・風波
+        // 取得できる実データだけで補正し、欠損項目は0点（推測しない）。
+        function liveContextDecision(a){
+          try{
+            const boats=Array.isArray(a?.boats)?a.boats:[];
+            const r=a?.race||{};
+            let adj=0, used=0; const reasons=[];
+
+            // 展示：6艇内の展示タイム差と展示STを相対評価
+            const disp=boats.map(b=>({boat:Number(b?.boat),v:firstNum(b,['exhibitionTime','displayTime','tenjiTime','ex_time','exhibition_time'])})).filter(x=>x.v!==null);
+            if(disp.length>=4){
+              used++; const sorted=[...disp].sort((x,y)=>x.v-y.v), best=sorted[0], second=sorted[1];
+              if(best){adj+=3;reasons.push('展示 '+best.boat+'号艇トップ');}
+              if(best&&second&&second.v-best.v>=0.04){adj+=2;reasons.push('展示タイム差 '+(second.v-best.v).toFixed(2)+'秒');}
+            }
+            const exst=boats.map(b=>({boat:Number(b?.boat),v:firstNum(b,['exhibitionST','displayST','tenjiST','ex_st','exhibition_st'])})).filter(x=>x.v!==null);
+            if(exst.length>=4){
+              used++; const clean=exst.filter(x=>x.v>=0).sort((x,y)=>x.v-y.v);
+              if(clean[0]){adj+=2;reasons.push('展示ST '+clean[0].boat+'号艇上位');}
+              // 展示Fは速さとして加点しない
+              if(exst.some(x=>x.v<0))reasons.push('展示Fは加点対象外');
+            }
+
+            // 進入：想定コースと枠番が変わる艇がある場合は展開変化として評価
+            const entry=boats.map(b=>({boat:Number(b?.boat),course:firstNum(b,['course','entryCourse','exhibitionCourse','tenjiCourse','lane','actualCourse'])})).filter(x=>x.course!==null);
+            if(entry.length>=4){
+              used++; const changed=entry.filter(x=>x.boat!==x.course);
+              if(changed.length){adj+=3;reasons.push('進入変化 '+changed.map(x=>x.boat+'→'+x.course).join(','));}
+              else reasons.push('進入は枠なり');
+            }
+
+            // 選手×コース適性：コース別1着率/勝率など、存在する値のみ利用
+            const courseRows=[];
+            for(const b of boats){
+              const v=firstNum(b,['courseWinRate','course1stRate','courseFirstRate','course_rate','laneWinRate','lane1stRate','courseAbility','courseScore']);
+              if(v!==null)courseRows.push({boat:Number(b?.boat),v});
+            }
+            if(courseRows.length>=3){
+              used++; const sorted=[...courseRows].sort((x,y)=>y.v-x.v);
+              if(sorted[0]){adj+=3;reasons.push('コース適性 '+sorted[0].boat+'号艇上位');}
+              if(sorted[0]&&sorted[1]&&sorted[0].v-sorted[1].v>=10)adj+=2;
+            }
+
+            // 風・波：強い水面では固定的に荒れ扱いせず、最終確信を少し抑える
+            const wind=firstNum(r,['wind_speed','windSpeed','wind','windspeed']) ?? firstNum(a,['wind_speed','windSpeed','wind']);
+            const wave=firstNum(r,['wave_height','waveHeight','wave','waveheight']) ?? firstNum(a,['wave_height','waveHeight','wave']);
+            if(wind!==null || wave!==null){
+              used++;
+              if(wind!==null&&wind>=6){adj-=3;reasons.push('強風 '+wind+'m/s');}
+              else if(wind!==null&&wind>=4){adj-=1;reasons.push('風 '+wind+'m/s');}
+              if(wave!==null&&wave>=5){adj-=2;reasons.push('波 '+wave+'cm');}
+            }
+            return {adjustment:Math.max(-8,Math.min(10,adj)),data:used>0,dataCount:used,reasons};
+          }catch(e){return {adjustment:0,data:false,dataCount:0,reasons:['直前補正計算不可']};}
+        }
+
         function threeAxisDecision(a){
           const rough=roughDecision(a);
           const perf=boatPerformanceDecision(a);
           const gap=marketGapDecision(a,perf);
-          // 初期配分：荒れ35%・艇性能40%・市場乖離25%
-          const composite=clamp(rough.score*0.35 + perf.score*0.40 + gap.score*0.25);
-          // データ欠損時に過度な確信を出さない
+          const live=liveContextDecision(a);
+          // 主軸は維持：荒れ35%・艇性能40%・市場乖離25%。直前4材料は±補正として追加。
+          const base=clamp(rough.score*0.35 + perf.score*0.40 + gap.score*0.25);
+          const composite=clamp(base + live.adjustment);
           const dataCount=[rough.data,perf.data,gap.data].filter(Boolean).length;
           const pass=dataCount>=2 && composite>=60 && rough.score>=45 && perf.score>=50;
-          return {pass,composite,rough,perf,gap,dataCount};
+          return {pass,base,composite,rough,perf,gap,live,dataCount};
         }
 
         let locks=readLocks();
@@ -463,14 +520,14 @@ function installFinal5Decision(){
             else if(axis.dataCount<2)hold='3軸データ不足';
             else if(!axis.pass)hold='3軸スコア未達';
             const label=passed
-              ? '✅ 5分前最終確定｜総合 '+axis.composite.toFixed(0)+'｜荒 '+axis.rough.score.toFixed(0)+' 艇 '+axis.perf.score.toFixed(0)+' 乖 '+axis.gap.score.toFixed(0)
-              : '⚠️ 5分前最終見送り｜'+hold+'｜総合 '+axis.composite.toFixed(0)+'｜荒 '+axis.rough.score.toFixed(0)+' 艇 '+axis.perf.score.toFixed(0)+' 乖 '+axis.gap.score.toFixed(0);
+              ? '✅ 5分前最終確定｜総合 '+axis.composite.toFixed(0)+'｜荒 '+axis.rough.score.toFixed(0)+' 艇 '+axis.perf.score.toFixed(0)+' 乖 '+axis.gap.score.toFixed(0)+' 直 '+(axis.live.adjustment>=0?'+':'')+axis.live.adjustment.toFixed(0)
+              : '⚠️ 5分前最終見送り｜'+hold+'｜総合 '+axis.composite.toFixed(0)+'｜荒 '+axis.rough.score.toFixed(0)+' 艇 '+axis.perf.score.toFixed(0)+' 乖 '+axis.gap.score.toFixed(0)+' 直 '+(axis.live.adjustment>=0?'+':'')+axis.live.adjustment.toFixed(0);
             const decision={
               status:passed?'confirmed':'hold',label,minutes:m,strictPass:passed,final5:true,
               threeAxisScore:Number(axis.composite.toFixed(1)),roughScore:Number(axis.rough.score.toFixed(1)),
-              boatPerformanceScore:Number(axis.perf.score.toFixed(1)),marketGapScore:Number(axis.gap.score.toFixed(1)),
+              boatPerformanceScore:Number(axis.perf.score.toFixed(1)),marketGapScore:Number(axis.gap.score.toFixed(1)),liveContextAdjustment:Number(axis.live.adjustment.toFixed(1)),
               performanceTopBoat:axis.perf.bestBoat,marketGapTargetBoat:axis.gap.targetBoat,
-              threeAxisReasons:[...(axis.rough.reasons||[]),...(axis.perf.reasons||[]),...(axis.gap.reasons||[])],
+              threeAxisReasons:[...(axis.rough.reasons||[]),...(axis.perf.reasons||[]),...(axis.gap.reasons||[]),...(axis.live.reasons||[])],
               fixedAt:new Date().toISOString()
             };
             locks[key]={date:todayJST5(),decision}; writeLocks(locks); return decision;
