@@ -4,14 +4,14 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#050505">
-<title>BOAT RACE AI予想 Ver.3・3連単10点・低配当レース回避版</title>
+<title>BOAT RACE AI予想 Ver.3・3連単10点・3軸最終判定版</title>
 <style>
 html,body{margin:0;height:100%;background:#050505;overflow:hidden}
 #app{position:fixed;inset:0;width:100%;height:100%;border:0;background:#050505}
 </style>
 </head>
 <body>
-<iframe id="app" src="./index.html?v=trifecta-lowodds-racefilter-20260914"></iframe>
+<iframe id="app" src="./index.html?v=trifecta-3axis-final-20260914"></iframe>
 <script>
 const frame=document.getElementById('app');
 
@@ -271,18 +271,19 @@ function installTrifectaLowOdds(){
   }
 }
 
-/* 5分前最終確定 */
+/* 5分前最終確定：荒れ期待度＋艇性能＋市場乖離 */
 function installFinal5Decision(){
   const w=frame.contentWindow;
   if(!w)return false;
   try{
     w.eval(`
       (function(){
-        if(window.__FINAL5_LOW_PAYOUT_PATCH_V3__)return;
+        if(window.__FINAL5_THREE_AXIS_V4__)return;
         if(typeof minutesToClose!=='function')return;
-        window.__FINAL5_LOW_PAYOUT_PATCH_V3__=true;
+        window.__FINAL5_THREE_AXIS_V4__=true;
 
-        const LOCK_KEY='boat_ai_final5_simple_locks_v2';
+        // 既存の成績データには触れず、最終判定ロックだけ専用キーで保存
+        const LOCK_KEY='boat_ai_final5_three_axis_locks_v4';
         function readLocks(){try{return JSON.parse(localStorage.getItem(LOCK_KEY)||'{}')}catch(e){return{}}}
         function writeLocks(v){try{localStorage.setItem(LOCK_KEY,JSON.stringify(v))}catch(e){}}
         function todayJST5(){
@@ -299,122 +300,180 @@ function installFinal5Decision(){
             return !!v?.pass || v?.status==='pass';
           }catch(e){return false;}
         }
-
+        function n(v){const x=Number(v);return Number.isFinite(x)?x:null;}
+        function clamp(v,min=0,max=100){return Math.max(min,Math.min(max,v));}
+        function firstNum(obj,names){
+          for(const k of names){const v=n(obj?.[k]);if(v!==null)return v;}
+          return null;
+        }
         function comboKey5(v){
-          const s=String(v||'').trim();
-          const m=s.match(/([1-6])[^1-6]+([1-6])[^1-6]+([1-6])/);
-          if(!m)return '';
-          if(new Set([m[1],m[2],m[3]]).size!==3)return '';
+          const m=String(v||'').match(/([1-6])[^1-6]+([1-6])[^1-6]+([1-6])/);
+          if(!m||new Set([m[1],m[2],m[3]]).size!==3)return '';
           return m[1]+'-'+m[2]+'-'+m[3];
         }
         function oddsOf5(p){
-          const n=Number(p?.odds ?? p?.trifectaOdds ?? p?.marketOdds ?? p?.oddsValue ?? p?.expectedOdds ?? 0);
-          return Number.isFinite(n)?n:0;
+          const x=n(p?.odds ?? p?.trifectaOdds ?? p?.marketOdds ?? p?.oddsValue ?? p?.expectedOdds);
+          return x===null?0:x;
         }
-        function lowPayoutRaceDecision(a){
+
+        // ① 荒れ期待度：オッズ集中・イン固定・AIと市場の一致度を見る
+        function roughDecision(a){
           try{
             const pool=(Array.isArray(a?.comboPool)?a.comboPool:[])
               .map(p=>({combo:comboKey5(p?.combo),odds:oddsOf5(p)}))
-              .filter(x=>x.combo && x.odds>0)
-              .sort((x,y)=>x.odds-y.odds);
-
-            if(pool.length<4){
-              return {pass:true,roughScore:65,solidScore:35,label:'データ不足のため通常判定',reasons:[]};
-            }
-
-            let solid=0;
-            const reasons=[];
+              .filter(x=>x.combo&&x.odds>0).sort((x,y)=>x.odds-y.odds);
+            if(pool.length<4)return {score:55,data:false,reasons:['オッズデータ不足']};
+            let solid=0; const reasons=[];
             const top10=pool.slice(0,Math.min(10,pool.length));
             const top5=pool.slice(0,Math.min(5,pool.length));
-            const favorite=pool[0];
-            const medianTop10=top10[Math.floor((top10.length-1)/2)]?.odds||999;
-            const under15=top10.filter(x=>x.odds<=15).length;
-            const under20=top10.filter(x=>x.odds<=20).length;
-
-            if(favorite.odds<=6){solid+=25;reasons.push('1番人気が6倍以下');}
-            else if(favorite.odds<=9){solid+=18;reasons.push('1番人気が9倍以下');}
-            else if(favorite.odds<=12){solid+=10;reasons.push('1番人気が12倍以下');}
-
-            if(under15>=5){solid+=25;reasons.push('上位オッズが15倍以下に集中');}
-            else if(under15>=3){solid+=15;reasons.push('15倍以下の人気目が多い');}
-
-            if(under20>=7){solid+=18;reasons.push('20倍以下が上位に集中');}
-            if(medianTop10<=18){solid+=18;reasons.push('上位10点の中央値が18倍以下');}
-            else if(medianTop10<=25){solid+=8;reasons.push('上位10点の中央値が25倍以下');}
-
-            const aiTop=(a?.boats||[]).slice(0,3).map(x=>Number(x?.boat)).filter(n=>n>=1&&n<=6);
-            const favBoats=favorite.combo.split('-').map(Number);
+            const fav=pool[0];
+            const median=top10[Math.floor((top10.length-1)/2)]?.odds||999;
+            const u15=top10.filter(x=>x.odds<=15).length;
+            const u20=top10.filter(x=>x.odds<=20).length;
+            if(fav.odds<=6){solid+=25;reasons.push('1番人気6倍以下');}
+            else if(fav.odds<=9){solid+=18;reasons.push('1番人気9倍以下');}
+            else if(fav.odds<=12){solid+=10;reasons.push('1番人気12倍以下');}
+            if(u15>=5){solid+=25;reasons.push('15倍以下へ人気集中');}
+            else if(u15>=3){solid+=15;reasons.push('15倍以下が多い');}
+            if(u20>=7){solid+=18;reasons.push('20倍以下へ上位集中');}
+            if(median<=18){solid+=18;reasons.push('上位10点中央値18倍以下');}
+            else if(median<=25){solid+=8;reasons.push('上位10点中央値25倍以下');}
+            const aiTop=(a?.boats||[]).slice(0,3).map(x=>Number(x?.boat)).filter(x=>x>=1&&x<=6);
+            const favBoats=fav.combo.split('-').map(Number);
             if(aiTop.length===3){
-              const sameSet=[...aiTop].sort().join('-')===[...favBoats].sort().join('-');
-              if(sameSet){solid+=18;reasons.push('AI上位3艇と市場人気3艇が一致');}
-              const topBoat=aiTop[0];
-              if(topBoat===1 && favBoats[0]===1 && favorite.odds<=12){
-                solid+=12;reasons.push('1号艇中心で市場評価も強い');
-              }
+              if([...aiTop].sort().join('-')===[...favBoats].sort().join('-')){solid+=18;reasons.push('AI上位3艇と市場人気が一致');}
+              if(aiTop[0]===1&&favBoats[0]===1&&fav.odds<=12){solid+=12;reasons.push('1号艇中心で市場も強い');}
             }
+            if(top5.filter(x=>x.combo.startsWith('1-')).length>=4){solid+=12;reasons.push('人気上位が1号艇1着中心');}
+            return {score:clamp(100-solid),data:true,reasons};
+          }catch(e){return {score:55,data:false,reasons:['荒れ度計算不可']};}
+        }
 
-            const firstHeads=top5.filter(x=>x.combo.startsWith('1-')).length;
-            if(firstHeads>=4){solid+=12;reasons.push('上位5点の大半が1号艇1着');}
+        // ② 艇性能：実際に存在するモーター・ボート・展示・STだけを使って評価
+        function boatPerformanceDecision(a){
+          try{
+            const boats=Array.isArray(a?.boats)?a.boats:[];
+            if(!boats.length)return {score:50,data:false,bestBoat:null,reasons:['艇性能データ不足']};
+            const rows=[];
+            for(const b of boats){
+              const vals=[];
+              const motor=firstNum(b,['motor2','motor2Rate','motor_rate','motorRate','motor_second_rate','motor2ren','motor']);
+              const boat=firstNum(b,['boat2','boat2Rate','boat_rate','boatRate','boat_second_rate','boat2ren']);
+              const disp=firstNum(b,['exhibitionTime','displayTime','tenjiTime','ex_time','exhibition_time']);
+              const st=firstNum(b,['exhibitionST','displayST','tenjiST','ex_st','exhibition_st','st']);
+              const national=firstNum(b,['nationalWinRate','winRate','national_rate','rate']);
+              if(motor!==null)vals.push({type:'high',v:motor,w:0.30,label:'モーター'});
+              if(boat!==null)vals.push({type:'high',v:boat,w:0.20,label:'ボート'});
+              if(disp!==null)vals.push({type:'low',v:disp,w:0.22,label:'展示'});
+              if(st!==null)vals.push({type:'low',v:st,w:0.18,label:'展示ST'});
+              if(national!==null)vals.push({type:'high',v:national,w:0.10,label:'勝率'});
+              rows.push({boat:Number(b?.boat),raw:b,vals,score:50});
+            }
+            // 項目ごとに6艇内順位を0-100化。欠損項目は無視する
+            const labels=[...new Set(rows.flatMap(r=>r.vals.map(v=>v.label)))];
+            for(const r of rows){let sw=0,ss=0;
+              for(const label of labels){
+                const rv=r.vals.find(v=>v.label===label); if(!rv)continue;
+                const all=rows.map(x=>x.vals.find(v=>v.label===label)).filter(Boolean);
+                if(all.length<2)continue;
+                const sorted=[...all].sort((x,y)=>rv.type==='low'?x.v-y.v:y.v-x.v);
+                const rank=sorted.findIndex(x=>x===rv);
+                const score=100-(rank/(Math.max(1,sorted.length-1)))*100;
+                ss+=score*rv.w; sw+=rv.w;
+              }
+              r.score=sw?ss/sw:50;
+            }
+            const ranked=[...rows].sort((x,y)=>y.score-x.score);
+            const best=ranked[0];
+            const top2=ranked.slice(0,2);
+            const score=clamp(top2.reduce((s,r)=>s+r.score,0)/Math.max(1,top2.length));
+            const reasons=[];
+            if(best?.boat)reasons.push(best.boat+'号艇が艇性能トップ '+best.score.toFixed(0));
+            return {score,data:rows.some(r=>r.vals.length>0),bestBoat:best?.boat||null,ranking:ranked.map(r=>({boat:r.boat,score:Math.round(r.score)})),reasons};
+          }catch(e){return {score:50,data:false,bestBoat:null,reasons:['艇性能計算不可']};}
+        }
 
-            solid=Math.max(0,Math.min(100,solid));
-            const rough=Math.max(0,100-solid);
-            // 荒れ期待度55以上を勝負対象にする
-            const pass=rough>=55;
-            return {
-              pass,
-              roughScore:rough,
-              solidScore:solid,
-              label:pass?'荒れ期待度PASS':'低配当レース見送り',
-              reasons
-            };
-          }catch(e){
-            return {pass:true,roughScore:60,solidScore:40,label:'通常判定',reasons:[]};
-          }
+        // ③ 市場乖離：AI・艇性能順位と、3連単オッズから推定した市場人気順位との差
+        function marketGapDecision(a,boatPerf){
+          try{
+            const pool=(Array.isArray(a?.comboPool)?a.comboPool:[])
+              .map(p=>({combo:comboKey5(p?.combo),odds:oddsOf5(p)}))
+              .filter(x=>x.combo&&x.odds>0);
+            if(pool.length<5)return {score:50,data:false,targetBoat:null,reasons:['市場データ不足']};
+            const pop={1:0,2:0,3:0,4:0,5:0,6:0};
+            for(const p of pool){
+              const imp=1/Math.max(p.odds,1);
+              p.combo.split('-').map(Number).forEach((b,i)=>{pop[b]+=imp*(i===0?1.6:i===1?1.15:0.9);});
+            }
+            const marketRank=Object.keys(pop).map(Number).sort((x,y)=>pop[y]-pop[x]);
+            const aiRank=(a?.boats||[]).map(x=>Number(x?.boat)).filter(x=>x>=1&&x<=6);
+            const perfRank=(boatPerf?.ranking||[]).map(x=>x.boat);
+            let bestGap=-99,target=null;
+            for(let b=1;b<=6;b++){
+              const mr=marketRank.indexOf(b); if(mr<0)continue;
+              const ar=aiRank.indexOf(b);
+              const pr=perfRank.indexOf(b);
+              let modelRank=99;
+              if(ar>=0&&pr>=0)modelRank=(ar+pr)/2;
+              else if(ar>=0)modelRank=ar;
+              else if(pr>=0)modelRank=pr;
+              if(modelRank===99)continue;
+              const gap=mr-modelRank; // 正なら市場よりAI/性能が高評価
+              if(gap>bestGap){bestGap=gap;target=b;}
+            }
+            let score=50+bestGap*13;
+            score=clamp(score);
+            const reasons=[];
+            if(target&&bestGap>=1)reasons.push(target+'号艇を市場よりAIが'+bestGap.toFixed(1)+'順位高評価');
+            else if(bestGap<0.5)reasons.push('AIと市場評価の差が小さい');
+            return {score,data:true,targetBoat:target,gap:bestGap,marketRank,aiRank,reasons};
+          }catch(e){return {score:50,data:false,targetBoat:null,reasons:['市場乖離計算不可']};}
+        }
+
+        function threeAxisDecision(a){
+          const rough=roughDecision(a);
+          const perf=boatPerformanceDecision(a);
+          const gap=marketGapDecision(a,perf);
+          // 初期配分：荒れ35%・艇性能40%・市場乖離25%
+          const composite=clamp(rough.score*0.35 + perf.score*0.40 + gap.score*0.25);
+          // データ欠損時に過度な確信を出さない
+          const dataCount=[rough.data,perf.data,gap.data].filter(Boolean).length;
+          const pass=dataCount>=2 && composite>=60 && rough.score>=45 && perf.score>=50;
+          return {pass,composite,rough,perf,gap,dataCount};
         }
 
         let locks=readLocks();
         const today=todayJST5();
-        for(const k of Object.keys(locks)){ if(locks[k]?.date!==today)delete locks[k]; }
+        for(const k of Object.keys(locks)){if(locks[k]?.date!==today)delete locks[k];}
         writeLocks(locks);
 
         finalDecision=function(a){
-          const m=minutesToClose(a?.race);
-          const key=keyOf(a);
-          const saved=locks[key];
-          if(saved?.decision && Number.isFinite(m) && m>=0)return {...saved.decision,minutes:m};
-
+          const m=minutesToClose(a?.race), key=keyOf(a), saved=locks[key];
+          if(saved?.decision&&Number.isFinite(m)&&m>=0)return {...saved.decision,minutes:m};
           if(Number.isFinite(m)&&m>5){
-            return {status:m<=15?'checking':'waiting',label:m<=15?'⏳ 5分前最終確定待ち':'⏳ 最終判定待ち',minutes:m,strictPass:false,final5:true};
+            return {status:m<=15?'checking':'waiting',label:m<=15?'⏳ 5分前・3軸最終判定待ち':'⏳ 最終判定待ち',minutes:m,strictPass:false,final5:true};
           }
           if(Number.isFinite(m)&&m>=0&&m<=5){
-            const rough=lowPayoutRaceDecision(a);
-            a.roughDecision=rough;
-            const sPass=a?.grade==='S';
-            const evPass=valuePass(a);
-            const passed=sPass && evPass && rough.pass;
-
-            let holdReason='';
-            if(!sPass)holdReason='S判定未達';
-            else if(!evPass)holdReason='期待値未達';
-            else if(!rough.pass)holdReason='低配当レース';
-
+            const axis=threeAxisDecision(a); a.threeAxisDecision=axis;
+            const sPass=a?.grade==='S', evPass=valuePass(a);
+            const passed=sPass&&evPass&&axis.pass;
+            let hold='';
+            if(!sPass)hold='S判定未達';
+            else if(!evPass)hold='期待値未達';
+            else if(axis.dataCount<2)hold='3軸データ不足';
+            else if(!axis.pass)hold='3軸スコア未達';
+            const label=passed
+              ? '✅ 5分前最終確定｜総合 '+axis.composite.toFixed(0)+'｜荒 '+axis.rough.score.toFixed(0)+' 艇 '+axis.perf.score.toFixed(0)+' 乖 '+axis.gap.score.toFixed(0)
+              : '⚠️ 5分前最終見送り｜'+hold+'｜総合 '+axis.composite.toFixed(0)+'｜荒 '+axis.rough.score.toFixed(0)+' 艇 '+axis.perf.score.toFixed(0)+' 乖 '+axis.gap.score.toFixed(0);
             const decision={
-              status:passed?'confirmed':'hold',
-              label:passed
-                ? '✅ 5分前最終確定｜荒れ期待度 '+rough.roughScore
-                : '⚠️ 5分前最終見送り｜'+holdReason+'｜荒れ期待度 '+rough.roughScore,
-              minutes:m,
-              strictPass:passed,
-              final5:true,
-              roughScore:rough.roughScore,
-              solidScore:rough.solidScore,
-              lowPayoutPass:rough.pass,
-              lowPayoutReasons:rough.reasons,
+              status:passed?'confirmed':'hold',label,minutes:m,strictPass:passed,final5:true,
+              threeAxisScore:Number(axis.composite.toFixed(1)),roughScore:Number(axis.rough.score.toFixed(1)),
+              boatPerformanceScore:Number(axis.perf.score.toFixed(1)),marketGapScore:Number(axis.gap.score.toFixed(1)),
+              performanceTopBoat:axis.perf.bestBoat,marketGapTargetBoat:axis.gap.targetBoat,
+              threeAxisReasons:[...(axis.rough.reasons||[]),...(axis.perf.reasons||[]),...(axis.gap.reasons||[])],
               fixedAt:new Date().toISOString()
             };
-            locks[key]={date:todayJST5(),decision};
-            writeLocks(locks);
-            return decision;
+            locks[key]={date:todayJST5(),decision}; writeLocks(locks); return decision;
           }
           return {status:'closed',label:'締切済み',minutes:m,strictPass:false,final5:true};
         };
@@ -430,14 +489,11 @@ function installFinal5Decision(){
           }catch(e){}
         }
         refreshFinal5();
-        window.__FINAL5_LOW_PAYOUT_TIMER_V3__=setInterval(refreshFinal5,5000);
+        window.__FINAL5_THREE_AXIS_TIMER_V4__=setInterval(refreshFinal5,5000);
       })();
     `);
     return true;
-  }catch(e){
-    console.warn('final5 decision install failed',e);
-    return false;
-  }
+  }catch(e){console.warn('three axis final decision install failed',e);return false;}
 }
 
 /* 締切が近い順に表示 */
