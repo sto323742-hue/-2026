@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#050505">
+<title>BOAT RACE AI予想・艇性能＋市場乖離 強化版</title>
+<style>
+html,body{margin:0;height:100%;background:#050505;overflow:hidden}
+#outer{position:fixed;inset:0;width:100%;height:100%;border:0;background:#050505}
+</style>
+</head>
+<body>
+<!-- デザインは既存の最終配置版をそのまま使用 -->
+<iframe id="outer" src="./index-final5-trifecta-final-simple-layout.html?v=perf-gap-strong-20260915"></iframe>
+
+<script>
+const outer=document.getElementById('outer');
+
+function deepestWindow(){
+  try{
+    let w=outer.contentWindow;
+    for(let i=0;i<8;i++){
+      const d=w.document;
+      const f=d.querySelector('iframe#outer,iframe#app,iframe');
+      if(!f || !f.contentWindow) break;
+      w=f.contentWindow;
+    }
+    return w;
+  }catch(e){ return null; }
+}
+
+function installStrongPerformanceGap(){
+  const w=deepestWindow();
+  if(!w || !w.document) return false;
+  if(w.__PERF_GAP_STRONG_V1__) return true;
+
+  // 元の3連単10点ロジックが入ってから上乗せする
+  if(typeof w.makeTickets!=='function' || !w.__TRIFECTA_LOW_ODDS_V3__) return false;
+
+  try{
+    w.eval(`
+      (function(){
+        if(window.__PERF_GAP_STRONG_V1__)return;
+        window.__PERF_GAP_STRONG_V1__=true;
+
+        const previousMakeTickets=makeTickets;
+
+        function n(v,d=null){
+          const x=Number(v);
+          return Number.isFinite(x)?x:d;
+        }
+        function clamp(v,min,max){return Math.max(min,Math.min(max,v));}
+        function z(v,mid,scale){return clamp((v-mid)/scale,-2.5,2.5);}
+        function comboKeyStrong(v){
+          const m=String(v||'').match(/([1-6])[^1-6]+([1-6])[^1-6]+([1-6])/);
+          if(!m || new Set([m[1],m[2],m[3]]).size!==3)return '';
+          return m[1]+'-'+m[2]+'-'+m[3];
+        }
+        function oddsStrong(p){
+          return n(p?.odds ?? p?.trifectaOdds ?? p?.marketOdds ?? p?.oddsValue ?? p?.expectedOdds,0)||0;
+        }
+
+        // -----------------------------
+        // 1) 艇性能を強化
+        // モーター2連率/3連率、ボート2連率、
+        // 展示タイム、展示ST、選手地力、進入を統合
+        // -----------------------------
+        function strongBoatPerformance(a){
+          const boats=Array.isArray(a?.boats)?a.boats:[];
+          if(!boats.length)return {};
+
+          const exSorted=[...boats].sort((x,y)=>
+            n(x?.preview?.exhibition_time,99)-n(y?.preview?.exhibition_time,99)
+          );
+          const stSorted=[...boats].sort((x,y)=>
+            n(x?.preview?.start_timing,9)-n(y?.preview?.start_timing,9)
+          );
+          const exPos=new Map(exSorted.map((x,i)=>[Number(x.boat),i]));
+          const stPos=new Map(stSorted.map((x,i)=>[Number(x.boat),i]));
+
+          const result={};
+
+          for(const b of boats){
+            const r=b?.racer||{};
+            const p=b?.preview||{};
+            const boat=Number(b.boat);
+
+            const motor2=n(r.motor_top_2_percent,30);
+            const motor3=n(r.motor_top_3_percent,45);
+            const boat2=n(r.boat_top_2_percent,30);
+            const national=n(r.national_win_rate,5.0);
+            const local=n(r.local_win_rate,national);
+            const avgST=n(r.average_start_timing,.18);
+            const ex=n(p.exhibition_time,6.85);
+            const est=n(p.start_timing,avgST);
+            const course=n(p.course_number,boat);
+
+            // 基礎50。モーターを最重要視しつつ直前展示を強める
+            let score=50;
+            score += z(motor2,30,8)*11.0;
+            score += z(motor3,45,10)*5.0;
+            score += z(boat2,30,8)*3.5;
+            score += z(national,5.0,1.1)*4.0;
+            score += z(local,national,1.0)*3.0;
+            score += z(.18-avgST,0,.035)*3.0;
+
+            // 展示順位を強化
+            const ep=exPos.get(boat)??5;
+            const sp=stPos.get(boat)??5;
+            score += [13,8,4,1,-4,-8][ep]||0;
+            score += [8,5,3,1,-2,-5][sp]||0;
+
+            // 展示絶対値
+            score += clamp((6.85-ex)*22,-6,8);
+            score += clamp((.18-est)*28,-5,6);
+
+            // 進入コース補正は控えめ
+            score += ({1:4,2:2,3:1,4:1,5:0,6:-1}[course]||0);
+
+            result[boat]={
+              boat,
+              score:clamp(score,18,92),
+              motor2,motor3,boat2,national,local,avgST,ex,est,course,
+              exRank:ep+1,stRank:sp+1
+            };
+          }
+
+          // 相対順位も保持
+          const ranked=Object.values(result).sort((a,b)=>b.score-a.score);
+          ranked.forEach((x,i)=>x.perfRank=i+1);
+          return result;
+        }
+
+        // -----------------------------
+        // 2) 市場評価を3連単オッズから推定
+        // 低オッズほど市場から高評価されているとみなす
+        // -----------------------------
+        function marketPopularity(a){
+          const market={1:0,2:0,3:0,4:0,5:0,6:0};
+          const pool=Array.isArray(a?.comboPool)?a.comboPool:[];
+          let valid=0;
+
+          for(const p of pool){
+            const combo=comboKeyStrong(p?.combo);
+            const odds=oddsStrong(p);
+            if(!combo || !(odds>0))continue;
+
+            const bs=combo.split('-').map(Number);
+            const imp=1/Math.max(odds,1.01);
+
+            // 1着人気を最も強く、市場の艇評価に変換
+            market[bs[0]] += imp*0.58;
+            market[bs[1]] += imp*0.27;
+            market[bs[2]] += imp*0.15;
+            valid++;
+          }
+
+          if(!valid)return {scores:market,ranks:{}};
+
+          const ranked=Object.entries(market)
+            .map(([boat,score])=>({boat:Number(boat),score}))
+            .sort((a,b)=>b.score-a.score);
+
+          const ranks={};
+          ranked.forEach((x,i)=>ranks[x.boat]=i+1);
+          return {scores:market,ranks};
+        }
+
+        // -----------------------------
+        // 3) AI性能順位と市場順位の差＝市場乖離
+        // プラスほど「性能の割に売れていない」
+        // -----------------------------
+        function gapMap(a,perf){
+          const market=marketPopularity(a);
+          const out={};
+
+          for(let boat=1;boat<=6;boat++){
+            const pr=perf[boat]?.perfRank||6;
+            const mr=market.ranks[boat]||6;
+            const rankGap=mr-pr; // +ならAI性能順位の方が上
+
+            // 人気シェアの絶対差も加える
+            const marketScore=market.scores[boat]||0;
+            const all=Object.values(market.scores).reduce((s,v)=>s+v,0)||1;
+            const share=marketScore/all;
+
+            // 性能スコアを0-1化
+            const perfNorm=clamp(((perf[boat]?.score||50)-25)/65,0,1);
+            const gapScore=
+              rankGap*9 +
+              (perfNorm-share)*28;
+
+            out[boat]={
+              rankGap,
+              marketRank:mr,
+              perfRank:pr,
+              marketShare:share,
+              gapScore:clamp(gapScore,-28,38)
+            };
+          }
+          return out;
+        }
+
+        // -----------------------------
+        // 4) 組み合わせ単位で艇性能＋市場乖離を加点
+        // 1着艇を最重視
+        // -----------------------------
+        function comboFactor(combo,odds,perf,gap){
+          const m=String(combo||'').match(/([1-6])[^1-6]+([1-6])[^1-6]+([1-6])/);
+          if(!m)return 1;
+
+          const b=[Number(m[1]),Number(m[2]),Number(m[3])];
+
+          const perfWeighted=
+            (perf[b[0]]?.score||50)*0.55 +
+            (perf[b[1]]?.score||50)*0.28 +
+            (perf[b[2]]?.score||50)*0.17;
+
+          const gapWeighted=
+            (gap[b[0]]?.gapScore||0)*0.58 +
+            (gap[b[1]]?.gapScore||0)*0.27 +
+            (gap[b[2]]?.gapScore||0)*0.15;
+
+          let adj=0;
+
+          // 艇性能：最大±12%程度
+          adj += clamp((perfWeighted-55)*0.005,-0.09,0.12);
+
+          // 市場乖離：最大+15%程度
+          adj += clamp(gapWeighted*0.0042,-0.08,0.15);
+
+          // 強いモーター/展示なのに中〜高オッズなら追加
+          if((perf[b[0]]?.score||0)>=72 && odds>=25) adj+=0.045;
+          if((perf[b[0]]?.score||0)>=78 && odds>=50) adj+=0.035;
+
+          // 2着/3着に性能上位の人気薄が入る形も少し評価
+          if(((gap[b[1]]?.rankGap||0)>=2 || (gap[b[2]]?.rankGap||0)>=2) && odds>=40){
+            adj+=0.025;
+          }
+
+          // 低性能艇が1着の高配当だけを理由に拾い過ぎない
+          if((perf[b[0]]?.score||50)<40) adj-=0.08;
+
+          return clamp(1+adj,0.78,1.25);
+        }
+
+        makeTickets=function(a){
+          const pool=Array.isArray(a?.comboPool)?a.comboPool:null;
+          if(!pool?.length)return previousMakeTickets(a);
+
+          const perf=strongBoatPerformance(a);
+          const gap=gapMap(a,perf);
+
+          // 解析結果へ保持（内部利用のみ。画面デザインは変えない）
+          a.strongBoatPerformance=perf;
+          a.strongMarketGap=gap;
+
+          const backup=pool.map(p=>({
+            p,
+            probability:p?.probability,
+            prob:p?.prob,
+            winProb:p?.winProb,
+            pval:p?.p,
+            score:p?.score
+          }));
+
+          try{
+            for(const p of pool){
+              const odds=oddsStrong(p);
+              const factor=comboFactor(p?.combo,odds,perf,gap);
+
+              if(Number.isFinite(Number(p?.probability)))p.probability=Number(p.probability)*factor;
+              if(Number.isFinite(Number(p?.prob)))p.prob=Number(p.prob)*factor;
+              if(Number.isFinite(Number(p?.winProb)))p.winProb=Number(p.winProb)*factor;
+              if(Number.isFinite(Number(p?.p)))p.p=Number(p.p)*factor;
+              if(Number.isFinite(Number(p?.score)))p.score=Number(p.score)+(factor-1)*90;
+
+              // デバッグ/検証用。表示には使わない
+              p.__perfGapFactor=factor;
+            }
+
+            return previousMakeTickets(a);
+          }finally{
+            for(const b of backup){
+              if(b.probability===undefined)delete b.p.probability; else b.p.probability=b.probability;
+              if(b.prob===undefined)delete b.p.prob; else b.p.prob=b.prob;
+              if(b.winProb===undefined)delete b.p.winProb; else b.p.winProb=b.winProb;
+              if(b.pval===undefined)delete b.p.p; else b.p.p=b.pval;
+              if(b.score===undefined)delete b.p.score; else b.p.score=b.score;
+            }
+          }
+        };
+
+        // 読み込み済みレースへ即適用
+        try{
+          if(Array.isArray(analyses)){
+            for(const a of analyses){
+              try{a.tickets=makeTickets(a);}catch(e){}
+            }
+          }
+          if(typeof display==='function')display();
+        }catch(e){}
+      })();
+    `);
+    return true;
+  }catch(e){
+    console.warn('performance + market gap strong patch failed',e);
+    return false;
+  }
+}
+
+function boot(){
+  let tries=0;
+  const timer=setInterval(()=>{
+    tries++;
+    if(installStrongPerformanceGap() || tries>180) clearInterval(timer);
+  },250);
+}
+outer.addEventListener('load',()=>setTimeout(boot,900));
+setTimeout(boot,1600);
+</script>
+</body>
+</html>
