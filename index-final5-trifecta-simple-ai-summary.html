@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#050505">
+<title>BOAT RACE AI予想 Ver.3・シンプル表示版</title>
+<style>
+html,body{margin:0;height:100%;background:#050505;overflow:hidden}
+#outer{position:fixed;inset:0;width:100%;height:100%;border:0;background:#050505}
+</style>
+</head>
+<body>
+<iframe id="outer" src="./index-final5-trifecta-lowodds-adjusted.html?v=simple-status-20260915"></iframe>
+<script>
+const outer=document.getElementById('outer');
+
+function appDoc(){
+  try{
+    const d=outer.contentWindow.document;
+    const inner=d.getElementById('app');
+    return inner && inner.contentWindow ? inner.contentWindow.document : d;
+  }catch(e){ return null; }
+}
+
+function extractCounts(text){
+  const get=(re)=>{ const m=text.match(re); return m ? m[1] : '0'; };
+  return {
+    s:get(/S評価\s*[:：]\s*(\d+)/),
+    pass:get(/期待値通過\s*[:：]\s*(\d+)/),
+    skip:get(/見送り\s*[:：]\s*(\d+)/)
+  };
+}
+
+function install(){
+  const d=appDoc();
+  if(!d) return false;
+  const status=d.getElementById('status');
+  if(!status) return false;
+
+  if(!d.getElementById('simple-status-style')){
+    const st=d.createElement('style');
+    st.id='simple-status-style';
+    st.textContent=`
+      #status.simple-ai-status{padding:0!important;background:transparent!important;border:0!important}
+      .simple-ai-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}
+      .simple-ai-card{min-width:0;padding:13px 4px 11px;text-align:center;background:#0a0a0a;border:1px solid #5a4718;border-radius:12px}
+      .simple-ai-card .lab{display:block;color:#ddd;font-size:11px;font-weight:900;white-space:nowrap}
+      .simple-ai-card .ico{font-size:18px;margin-right:3px}
+      .simple-ai-card strong{display:block;margin-top:6px;color:#f2cd67;font-size:24px;font-weight:950}
+      .simple-ai-card small{font-size:10px;color:#d4b85e;margin-left:2px}
+      .simple-ai-flags{display:flex;justify-content:center;align-items:center;gap:15px;margin-top:10px;padding-top:10px;border-top:1px solid #3c3012;color:#ddd;font-size:11px;font-weight:900}
+      .simple-ai-flags b{color:#fff}
+      .simple-ai-flags .sep{color:#6c571e}
+      @media(max-width:360px){.simple-ai-card .lab{font-size:10px}.simple-ai-card strong{font-size:21px}.simple-ai-flags{gap:9px;font-size:10px}}
+    `;
+    d.head.appendChild(st);
+  }
+
+  function render(){
+    const raw=status.dataset.rawStatus || status.textContent || '';
+    if(!status.dataset.rawStatus || !status.querySelector('.simple-ai-grid')){
+      status.dataset.rawStatus=raw;
+    }
+    const c=extractCounts(status.dataset.rawStatus);
+    status.classList.add('simple-ai-status');
+    status.innerHTML=`
+      <div class="simple-ai-grid">
+        <div class="simple-ai-card"><span class="lab"><span class="ico">🔥</span>S評価</span><strong>${c.s}<small>レース</small></strong></div>
+        <div class="simple-ai-card"><span class="lab"><span class="ico">💰</span>期待値通過</span><strong>${c.pass}<small>レース</small></strong></div>
+        <div class="simple-ai-card"><span class="lab"><span class="ico">💤</span>見送り</span><strong>${c.skip}<small>レース</small></strong></div>
+      </div>
+      <div class="simple-ai-flags"><span>🗄️ オッズ連動 <b>ON</b></span><span class="sep">｜</span><span>↻ 自動更新 <b>ON</b></span></div>`;
+  }
+
+  // 長い説明文は表示だけ隠す（ロジックは変更しない）
+  const panel=status.closest('.panel');
+  if(panel){
+    [...panel.querySelectorAll('.notice')].forEach(n=>n.style.display='none');
+  }
+
+  render();
+
+  if(!status.__simpleObserver){
+    const obs=new MutationObserver(()=>{
+      if(status.__busy) return;
+      const t=status.textContent||'';
+      if(!status.querySelector('.simple-ai-grid') || /S評価\s*[:：]/.test(t)){
+        status.dataset.rawStatus=t;
+        status.__busy=true;
+        render();
+        status.__busy=false;
+      }
+    });
+    obs.observe(status,{childList:true,subtree:true,characterData:true});
+    status.__simpleObserver=obs;
+  }
+  return true;
+}
+
+function boot(){
+  let n=0;
+  const timer=setInterval(()=>{
+    n++;
+    if(install() || n>120) clearInterval(timer);
+  },250);
+}
+outer.addEventListener('load',()=>setTimeout(boot,500));
+setTimeout(boot,1200);
+</script>
+</body>
+</html>
