@@ -4,14 +4,14 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#050505">
-<title>BOAT RACE AI予想 Ver.3・3連単10点・低オッズ回避版</title>
+<title>BOAT RACE AI予想 Ver.3・3連単10点・低配当レース回避版</title>
 <style>
 html,body{margin:0;height:100%;background:#050505;overflow:hidden}
 #app{position:fixed;inset:0;width:100%;height:100%;border:0;background:#050505}
 </style>
 </head>
 <body>
-<iframe id="app" src="./index.html?v=trifecta-lowodds-20260914"></iframe>
+<iframe id="app" src="./index.html?v=trifecta-lowodds-racefilter-20260914"></iframe>
 <script>
 const frame=document.getElementById('app');
 
@@ -278,9 +278,9 @@ function installFinal5Decision(){
   try{
     w.eval(`
       (function(){
-        if(window.__FINAL5_SIMPLE_PATCH_V2__)return;
+        if(window.__FINAL5_LOW_PAYOUT_PATCH_V3__)return;
         if(typeof minutesToClose!=='function')return;
-        window.__FINAL5_SIMPLE_PATCH_V2__=true;
+        window.__FINAL5_LOW_PAYOUT_PATCH_V3__=true;
 
         const LOCK_KEY='boat_ai_final5_simple_locks_v2';
         function readLocks(){try{return JSON.parse(localStorage.getItem(LOCK_KEY)||'{}')}catch(e){return{}}}
@@ -300,6 +300,78 @@ function installFinal5Decision(){
           }catch(e){return false;}
         }
 
+        function comboKey5(v){
+          const s=String(v||'').trim();
+          const m=s.match(/([1-6])[^1-6]+([1-6])[^1-6]+([1-6])/);
+          if(!m)return '';
+          if(new Set([m[1],m[2],m[3]]).size!==3)return '';
+          return m[1]+'-'+m[2]+'-'+m[3];
+        }
+        function oddsOf5(p){
+          const n=Number(p?.odds ?? p?.trifectaOdds ?? p?.marketOdds ?? p?.oddsValue ?? p?.expectedOdds ?? 0);
+          return Number.isFinite(n)?n:0;
+        }
+        function lowPayoutRaceDecision(a){
+          try{
+            const pool=(Array.isArray(a?.comboPool)?a.comboPool:[])
+              .map(p=>({combo:comboKey5(p?.combo),odds:oddsOf5(p)}))
+              .filter(x=>x.combo && x.odds>0)
+              .sort((x,y)=>x.odds-y.odds);
+
+            if(pool.length<4){
+              return {pass:true,roughScore:65,solidScore:35,label:'データ不足のため通常判定',reasons:[]};
+            }
+
+            let solid=0;
+            const reasons=[];
+            const top10=pool.slice(0,Math.min(10,pool.length));
+            const top5=pool.slice(0,Math.min(5,pool.length));
+            const favorite=pool[0];
+            const medianTop10=top10[Math.floor((top10.length-1)/2)]?.odds||999;
+            const under15=top10.filter(x=>x.odds<=15).length;
+            const under20=top10.filter(x=>x.odds<=20).length;
+
+            if(favorite.odds<=6){solid+=25;reasons.push('1番人気が6倍以下');}
+            else if(favorite.odds<=9){solid+=18;reasons.push('1番人気が9倍以下');}
+            else if(favorite.odds<=12){solid+=10;reasons.push('1番人気が12倍以下');}
+
+            if(under15>=5){solid+=25;reasons.push('上位オッズが15倍以下に集中');}
+            else if(under15>=3){solid+=15;reasons.push('15倍以下の人気目が多い');}
+
+            if(under20>=7){solid+=18;reasons.push('20倍以下が上位に集中');}
+            if(medianTop10<=18){solid+=18;reasons.push('上位10点の中央値が18倍以下');}
+            else if(medianTop10<=25){solid+=8;reasons.push('上位10点の中央値が25倍以下');}
+
+            const aiTop=(a?.boats||[]).slice(0,3).map(x=>Number(x?.boat)).filter(n=>n>=1&&n<=6);
+            const favBoats=favorite.combo.split('-').map(Number);
+            if(aiTop.length===3){
+              const sameSet=[...aiTop].sort().join('-')===[...favBoats].sort().join('-');
+              if(sameSet){solid+=18;reasons.push('AI上位3艇と市場人気3艇が一致');}
+              const topBoat=aiTop[0];
+              if(topBoat===1 && favBoats[0]===1 && favorite.odds<=12){
+                solid+=12;reasons.push('1号艇中心で市場評価も強い');
+              }
+            }
+
+            const firstHeads=top5.filter(x=>x.combo.startsWith('1-')).length;
+            if(firstHeads>=4){solid+=12;reasons.push('上位5点の大半が1号艇1着');}
+
+            solid=Math.max(0,Math.min(100,solid));
+            const rough=Math.max(0,100-solid);
+            // 荒れ期待度55以上を勝負対象にする
+            const pass=rough>=55;
+            return {
+              pass,
+              roughScore:rough,
+              solidScore:solid,
+              label:pass?'荒れ期待度PASS':'低配当レース見送り',
+              reasons
+            };
+          }catch(e){
+            return {pass:true,roughScore:60,solidScore:40,label:'通常判定',reasons:[]};
+          }
+        }
+
         let locks=readLocks();
         const today=todayJST5();
         for(const k of Object.keys(locks)){ if(locks[k]?.date!==today)delete locks[k]; }
@@ -315,8 +387,31 @@ function installFinal5Decision(){
             return {status:m<=15?'checking':'waiting',label:m<=15?'⏳ 5分前最終確定待ち':'⏳ 最終判定待ち',minutes:m,strictPass:false,final5:true};
           }
           if(Number.isFinite(m)&&m>=0&&m<=5){
-            const passed=a?.grade==='S' && valuePass(a);
-            const decision={status:passed?'confirmed':'hold',label:passed?'✅ 5分前最終確定':'⚠️ 5分前最終見送り',minutes:m,strictPass:passed,final5:true,fixedAt:new Date().toISOString()};
+            const rough=lowPayoutRaceDecision(a);
+            a.roughDecision=rough;
+            const sPass=a?.grade==='S';
+            const evPass=valuePass(a);
+            const passed=sPass && evPass && rough.pass;
+
+            let holdReason='';
+            if(!sPass)holdReason='S判定未達';
+            else if(!evPass)holdReason='期待値未達';
+            else if(!rough.pass)holdReason='低配当レース';
+
+            const decision={
+              status:passed?'confirmed':'hold',
+              label:passed
+                ? '✅ 5分前最終確定｜荒れ期待度 '+rough.roughScore
+                : '⚠️ 5分前最終見送り｜'+holdReason+'｜荒れ期待度 '+rough.roughScore,
+              minutes:m,
+              strictPass:passed,
+              final5:true,
+              roughScore:rough.roughScore,
+              solidScore:rough.solidScore,
+              lowPayoutPass:rough.pass,
+              lowPayoutReasons:rough.reasons,
+              fixedAt:new Date().toISOString()
+            };
             locks[key]={date:todayJST5(),decision};
             writeLocks(locks);
             return decision;
@@ -335,7 +430,7 @@ function installFinal5Decision(){
           }catch(e){}
         }
         refreshFinal5();
-        window.__FINAL5_SIMPLE_TIMER_V2__=setInterval(refreshFinal5,5000);
+        window.__FINAL5_LOW_PAYOUT_TIMER_V3__=setInterval(refreshFinal5,5000);
       })();
     `);
     return true;
