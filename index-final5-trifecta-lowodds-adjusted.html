@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#050505">
+<title>BOAT RACE AI予想 Ver.3・3連単10点・低オッズ回避版</title>
+<style>
+html,body{margin:0;height:100%;background:#050505;overflow:hidden}
+#app{position:fixed;inset:0;width:100%;height:100%;border:0;background:#050505}
+</style>
+</head>
+<body>
+<iframe id="app" src="./index.html?v=trifecta-lowodds-20260914"></iframe>
+<script>
+const frame=document.getElementById('app');
+
+/* =========================================================
+   3連単10点・低オッズ回避パッチ
+   - 3連複を予想対象から除外
+   - 3連単10点のみ
+   - 10倍以下を原則除外
+   - 期待値・的中確率・オッズのバランスで再選定
+   - 本線2 / 狙い4 / 穴4
+   ========================================================= */
+function installTrifectaLowOdds(){
+  const w=frame.contentWindow;
+  if(!w)return false;
+
+  try{
+    w.eval(`
+      (function(){
+        if(window.__TRIFECTA_LOW_ODDS_V3__)return;
+        if(typeof makeTickets!=='function')return;
+
+        window.__TRIFECTA_LOW_ODDS_V3__=true;
+        const originalMakeTickets=makeTickets;
+        const MIN_ODDS=10;
+        const MAIN_MIN_ODDS=10;
+        const AIM_MIN_ODDS=15;
+        const HOLE_MIN_ODDS=30;
+
+        function comboKey(v){
+          const s=String(v||'').trim();
+          const m=s.match(/([1-6])[^1-6]+([1-6])[^1-6]+([1-6])/);
+          if(!m)return '';
+          if(new Set([m[1],m[2],m[3]]).size!==3)return '';
+          return m[1]+'-'+m[2]+'-'+m[3];
+        }
+
+        function num(v){
+          const n=Number(v);
+          return Number.isFinite(n)?n:0;
+        }
+
+        function readOdds(p){
+          return num(
+            p?.odds ?? p?.trifectaOdds ?? p?.marketOdds ??
+            p?.oddsValue ?? p?.expectedOdds ?? 0
+          );
+        }
+
+        function readProb(p){
+          let x=num(p?.probability ?? p?.prob ?? p?.winProb ?? p?.p ?? 0);
+          if(x>1)x/=100;
+          return Math.max(0,x);
+        }
+
+        function buildPool(a){
+          const pool=Array.isArray(a?.comboPool)?a.comboPool:[];
+          const byCombo=new Map();
+
+          for(const p of pool){
+            const combo=comboKey(p?.combo);
+            if(!combo)continue;
+            const odds=readOdds(p);
+            const probability=readProb(p);
+            if(!(odds>0))continue;
+
+            const ev=probability>0 ? probability*odds : 0;
+            const score=
+              (probability*100) +
+              (Math.log10(Math.max(odds,1))*7) +
+              (ev*13);
+
+            const row={
+              combo,
+              odds,
+              probability,
+              ev,
+              score,
+              raw:p
+            };
+            const old=byCombo.get(combo);
+            if(!old || row.score>old.score)byCombo.set(combo,row);
+          }
+
+          return [...byCombo.values()];
+        }
+
+        function fallbackFromOriginal(a){
+          try{
+            const t=originalMakeTickets(a)||{};
+            const rows=[];
+            const groups=[
+              ['main',t.main||[]],
+              ['cover',t.cover||[]],
+              ['hole',t.hole||[]]
+            ];
+            for(const [type,list] of groups){
+              for(const c of list){
+                const combo=comboKey(c?.combo||c);
+                if(combo)rows.push({combo,odds:readOdds(c),probability:readProb(c),ev:0,score:0,type});
+              }
+            }
+            return rows;
+          }catch(e){ return []; }
+        }
+
+        function unique(rows){
+          const out=[];
+          const seen=new Set();
+          for(const r of rows){
+            const k=comboKey(r?.combo);
+            if(!k||seen.has(k))continue;
+            seen.add(k);
+            out.push({...r,combo:k});
+          }
+          return out;
+        }
+
+        function take(rows,count,minOdds,used){
+          const out=[];
+          for(const r of rows){
+            if(out.length>=count)break;
+            if(used.has(r.combo))continue;
+            if(num(r.odds)<minOdds)continue;
+            used.add(r.combo);
+            out.push(r);
+          }
+          return out;
+        }
+
+        function displayRows(rows){
+          return rows.map(r=>{
+            const raw=r?.raw;
+            if(raw && typeof raw==='object'){
+              return {...raw,combo:r.combo,odds:r.odds,probability:r.probability};
+            }
+            return r.combo;
+          });
+        }
+
+        makeTickets=function(a){
+          let pool=buildPool(a);
+
+          // 本体側にcomboPoolが無い場合は元ロジックを候補として利用
+          if(pool.length<10){
+            const fallback=fallbackFromOriginal(a);
+            const mapped=fallback.map(r=>({
+              ...r,
+              score:(r.probability*100)+Math.log10(Math.max(r.odds||10,1))*5
+            }));
+            pool=unique([...pool,...mapped]);
+          }
+
+          // 10倍以下は原則候補から除外
+          let eligible=pool.filter(r=>num(r.odds)>=MIN_ODDS);
+
+          // 候補不足時のみ、10倍未満を最後の補欠として許可
+          // （通常は使われない）
+          const low=pool
+            .filter(r=>num(r.odds)>0 && num(r.odds)<MIN_ODDS)
+            .sort((a,b)=>b.score-a.score);
+
+          // 本線: 的中確率を重視しつつ10倍以上
+          const mainRank=[...eligible].sort((a,b)=>
+            b.probability-a.probability ||
+            b.ev-a.ev ||
+            b.score-a.score ||
+            b.odds-a.odds
+          );
+
+          // 狙い: 期待値中心。極端な低配当を避ける
+          const aimRank=[...eligible].sort((a,b)=>
+            b.ev-a.ev ||
+            b.score-a.score ||
+            b.probability-a.probability ||
+            b.odds-a.odds
+          );
+
+          // 穴: 30倍以上を優先。確率を捨てすぎない
+          const holeRank=[...eligible].sort((a,b)=>{
+            const as=(a.probability*60)+(Math.log10(Math.max(a.odds,1))*18)+(a.ev*14);
+            const bs=(b.probability*60)+(Math.log10(Math.max(b.odds,1))*18)+(b.ev*14);
+            return bs-as || b.odds-a.odds;
+          });
+
+          const used=new Set();
+          let main=take(mainRank,2,MAIN_MIN_ODDS,used);
+          let cover=take(aimRank,4,AIM_MIN_ODDS,used);
+          let hole=take(holeRank,4,HOLE_MIN_ODDS,used);
+
+          // 各カテゴリが不足したら10倍以上の中から期待値順で補充
+          const fillRank=[...eligible].sort((a,b)=>
+            b.ev-a.ev || b.score-a.score || b.probability-a.probability || b.odds-a.odds
+          );
+
+          function fill(target,count){
+            for(const r of fillRank){
+              if(target.length>=count)break;
+              if(used.has(r.combo))continue;
+              used.add(r.combo);
+              target.push(r);
+            }
+          }
+          fill(main,2);
+          fill(cover,4);
+          fill(hole,4);
+
+          // それでも10点揃わない時のみ低オッズを最後尾へ
+          const all=[main,cover,hole];
+          const limits=[2,4,4];
+          for(let i=0;i<all.length;i++){
+            for(const r of low){
+              if(all[i].length>=limits[i])break;
+              if(used.has(r.combo))continue;
+              used.add(r.combo);
+              all[i].push(r);
+            }
+          }
+
+          return {
+            main:displayRows(main.slice(0,2)),
+            cover:displayRows(cover.slice(0,4)),
+            hole:displayRows(hole.slice(0,4))
+          };
+        };
+
+        // 3連複生成を停止
+        try{
+          if(typeof makeTrioLongshots==='function'){
+            makeTrioLongshots=function(){ return []; };
+          }
+        }catch(e){}
+
+        function refresh(){
+          try{
+            if(Array.isArray(analyses)){
+              for(const a of analyses){
+                try{
+                  const t=makeTickets(a);
+                  a.tickets=t;
+                  a.trioLongshots=[];
+                  if(a.predictionMeta)a.predictionMeta.trioLongshots=[];
+                }catch(e){}
+              }
+            }
+            if(typeof display==='function')display();
+          }catch(e){}
+        }
+
+        refresh();
+        setTimeout(refresh,600);
+      })();
+    `);
+    return true;
+  }catch(e){
+    console.warn('trifecta low odds install failed',e);
+    return false;
+  }
+}
+
+/* 5分前最終確定 */
+function installFinal5Decision(){
+  const w=frame.contentWindow;
+  if(!w)return false;
+  try{
+    w.eval(`
+      (function(){
+        if(window.__FINAL5_SIMPLE_PATCH_V2__)return;
+        if(typeof minutesToClose!=='function')return;
+        window.__FINAL5_SIMPLE_PATCH_V2__=true;
+
+        const LOCK_KEY='boat_ai_final5_simple_locks_v2';
+        function readLocks(){try{return JSON.parse(localStorage.getItem(LOCK_KEY)||'{}')}catch(e){return{}}}
+        function writeLocks(v){try{localStorage.setItem(LOCK_KEY,JSON.stringify(v))}catch(e){}}
+        function todayJST5(){
+          return new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Tokyo',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
+        }
+        function keyOf(a){
+          try{if(typeof raceKey==='function')return raceKey(a?.race||{});}catch(e){}
+          const r=a?.race||{};
+          return [r.date||todayJST5(),r.stadium_number||'',r.race_number||''].join('_');
+        }
+        function valuePass(a){
+          try{
+            const v=a?.valueDecision || (typeof expectedValueDecision==='function'?expectedValueDecision(a):null);
+            return !!v?.pass || v?.status==='pass';
+          }catch(e){return false;}
+        }
+
+        let locks=readLocks();
+        const today=todayJST5();
+        for(const k of Object.keys(locks)){ if(locks[k]?.date!==today)delete locks[k]; }
+        writeLocks(locks);
+
+        finalDecision=function(a){
+          const m=minutesToClose(a?.race);
+          const key=keyOf(a);
+          const saved=locks[key];
+          if(saved?.decision && Number.isFinite(m) && m>=0)return {...saved.decision,minutes:m};
+
+          if(Number.isFinite(m)&&m>5){
+            return {status:m<=15?'checking':'waiting',label:m<=15?'⏳ 5分前最終確定待ち':'⏳ 最終判定待ち',minutes:m,strictPass:false,final5:true};
+          }
+          if(Number.isFinite(m)&&m>=0&&m<=5){
+            const passed=a?.grade==='S' && valuePass(a);
+            const decision={status:passed?'confirmed':'hold',label:passed?'✅ 5分前最終確定':'⚠️ 5分前最終見送り',minutes:m,strictPass:passed,final5:true,fixedAt:new Date().toISOString()};
+            locks[key]={date:todayJST5(),decision};
+            writeLocks(locks);
+            return decision;
+          }
+          return {status:'closed',label:'締切済み',minutes:m,strictPass:false,final5:true};
+        };
+
+        function refreshFinal5(){
+          try{
+            if(!Array.isArray(analyses))return;
+            for(const a of analyses){
+              if(typeof expectedValueDecision==='function')a.valueDecision=a.valueDecision||expectedValueDecision(a);
+              a.finalDecision=finalDecision(a);
+            }
+            if(typeof display==='function')display();
+          }catch(e){}
+        }
+        refreshFinal5();
+        window.__FINAL5_SIMPLE_TIMER_V2__=setInterval(refreshFinal5,5000);
+      })();
+    `);
+    return true;
+  }catch(e){
+    console.warn('final5 decision install failed',e);
+    return false;
+  }
+}
+
+/* 締切が近い順に表示 */
+function installCloseTimeSort(){
+  const w=frame.contentWindow;
+  if(!w)return false;
+  try{
+    w.eval(`
+      (function(){
+        if(window.__CLOSE_TIME_SORT_V2__)return;
+        if(typeof display!=='function'||typeof minutesToClose!=='function')return;
+        window.__CLOSE_TIME_SORT_V2__=true;
+        const originalDisplay=display;
+        function sortByCloseTime(){
+          try{
+            if(!Array.isArray(analyses))return;
+            analyses.sort((a,b)=>{
+              const am=minutesToClose(a?.race), bm=minutesToClose(b?.race);
+              const av=Number.isFinite(am)?am:999999, bv=Number.isFinite(bm)?bm:999999;
+              if(av!==bv)return av-bv;
+              const at=new Date(String(a?.race?.closed_at||'').replace(' ','T')+'+09:00').getTime();
+              const bt=new Date(String(b?.race?.closed_at||'').replace(' ','T')+'+09:00').getTime();
+              if(Number.isFinite(at)&&Number.isFinite(bt)&&at!==bt)return at-bt;
+              return Number(b?.rating||0)-Number(a?.rating||0);
+            });
+          }catch(e){}
+        }
+        display=function(){sortByCloseTime();return originalDisplay.apply(this,arguments);};
+        sortByCloseTime();
+        originalDisplay();
+      })();
+    `);
+    return true;
+  }catch(e){
+    console.warn('close time sort install failed',e);
+    return false;
+  }
+}
+
+/* 3連複の表示・成績UIを隠す */
+function installHideTrioUI(){
+  const w=frame.contentWindow;
+  if(!w)return false;
+  try{
+    w.eval(`
+      (function(){
+        if(window.__HIDE_TRIO_UI_V1__)return;
+        window.__HIDE_TRIO_UI_V1__=true;
+
+        function hide(){
+          try{
+            const ids=['trioStatsBox','trioBox','trioSection','trioResults','trioHistory','trioToggle'];
+            ids.forEach(id=>{const el=document.getElementById(id);if(el)el.style.display='none';});
+
+            document.querySelectorAll('*').forEach(el=>{
+              const txt=(el.textContent||'').trim();
+              if(!txt)return;
+              if((txt.includes('3連複5点')||txt==='🟣 3連複' || txt==='3連複成績を見る') && el.children.length<8){
+                el.style.display='none';
+              }
+            });
+          }catch(e){}
+        }
+        hide();
+        setInterval(hide,1500);
+      })();
+    `);
+    return true;
+  }catch(e){return false;}
+}
+
+function installLoop(){
+  const a=installTrifectaLowOdds();
+  const b=installFinal5Decision();
+  const c=installCloseTimeSort();
+  const d=installHideTrioUI();
+  if(a&&b&&c&&d)return;
+  setTimeout(installLoop,200);
+}
+
+frame.addEventListener('load',()=>setTimeout(installLoop,100));
+setTimeout(installLoop,300);
+setInterval(()=>{
+  installTrifectaLowOdds();
+  installFinal5Decision();
+  installCloseTimeSort();
+  installHideTrioUI();
+},5000);
+</script>
+</body>
+</html>
