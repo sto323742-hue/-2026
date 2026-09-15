@@ -142,13 +142,9 @@ function installTrifectaLowOdds(){
         }
 
         function displayRows(rows){
-          return rows.map(r=>{
-            const raw=r?.raw;
-            if(raw && typeof raw==='object'){
-              return {...raw,combo:r.combo,odds:r.odds,probability:r.probability};
-            }
-            return r.combo;
-          });
+          // 本体UIは買い目を文字列として描画するため、必ず「1-2-3」形式で返す。
+          // オブジェクトを返すと画面に [object Object] と表示される。
+          return rows.map(r=>comboKey(r?.combo)).filter(Boolean);
         }
 
         makeTickets=function(a){
