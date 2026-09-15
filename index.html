@@ -397,11 +397,24 @@ function unifiedDecision(a){
   const f=a.finalDecision||finalDecision(a);
   const v=a.valueDecision||expectedValueDecision(a);
   const mins=Number.isFinite(f.minutes)?Math.max(0,Math.ceil(f.minutes)):null;
+  const finalWindow=Number.isFinite(f.minutes)&&f.minutes<=5;
+
+  // 締切5分前以降は「判定待ち」を残さない。
+  if(finalWindow){
+    if(v.status==='wait'){
+      return{status:'skip',pass:false,label:'💤 最終AI見送り',minutes:f.minutes,expectedRoi:v.expectedRoi||0,reasons:[...(v.reasons||[]),'締切5分前のため判定待ちを終了']};
+    }
+    if(!v.pass){
+      return{status:'skip',pass:false,label:'💤 最終AI見送り',minutes:f.minutes,expectedRoi:v.expectedRoi||0,reasons:v.reasons||[]};
+    }
+    if(f.status==='confirmed'){
+      return{status:'confirmed',pass:true,label:'✅ 最終AI確定',minutes:f.minutes,expectedRoi:v.expectedRoi||0,reasons:[]};
+    }
+    return{status:'skip',pass:false,label:'💤 最終AI見送り',minutes:f.minutes,expectedRoi:v.expectedRoi||0,reasons:['締切5分前の直前条件が不足']};
+  }
 
   if(v.status==='wait')return{status:'waiting',pass:false,label:'⏳ 最終AI判定待ち',minutes:f.minutes,expectedRoi:v.expectedRoi||0,reasons:v.reasons||[]};
   if(!v.pass)return{status:'skip',pass:false,label:'💤 最終AI見送り',minutes:f.minutes,expectedRoi:v.expectedRoi||0,reasons:v.reasons||[]};
-  if(f.status==='confirmed')return{status:'confirmed',pass:true,label:'✅ 最終AI確定',minutes:f.minutes,expectedRoi:v.expectedRoi||0,reasons:[]};
-  if(f.status==='hold')return{status:'skip',pass:false,label:'⚠️ 最終AI見送り',minutes:f.minutes,expectedRoi:v.expectedRoi||0,reasons:['締切5分前の直前条件が不足']};
   if(f.status==='checking')return{status:'checking',pass:false,label:'🔥 最終AI判定中',minutes:f.minutes,expectedRoi:v.expectedRoi||0,reasons:[]};
   return{status:'waiting',pass:false,label:'⏳ 最終AI判定待ち',minutes:f.minutes,expectedRoi:v.expectedRoi||0,reasons:[]};
 }
