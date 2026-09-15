@@ -1,433 +1,292 @@
-name: BOATRACE AI LINE Notification
+name: BOATRACE AI Discord Notification
 
 on:
   workflow_dispatch:
-  workflow_run:
-    workflows:
-      - "BOATRACE Odds Collector"
-    types:
-      - completed
+  schedule:
+    - cron: "*/5 * * * *"
 
 permissions:
   contents: write
 
 concurrency:
-  group: boatrace-ai-line
+  group: boatrace-ai-discord
   cancel-in-progress: false
 
 jobs:
   notify:
-    if: ${{ github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
         with:
-          fetch-depth: 0
+          python-version: "3.12"
 
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: "20"
-
-      - name: Install Playwright
+      - name: Install packages
         run: |
-          npm install playwright
-          npx playwright install --with-deps chromium
+          python -m pip install --upgrade pip
+          pip install requests playwright
+          python -m playwright install --with-deps chromium
 
-      - name: Create WEB-synced LINE notifier
+      - name: Create Discord notifier
+        env:
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
         run: |
-          cat > line_notify_web.js <<'JS'
-          const fs = require("fs");
-          const { chromium } = require("playwright");
+          cat > discord_notify.py <<'PY'
+          import os
+          import re
+          import json
+          import time
+          from pathlib import Path
+          from datetime import datetime, timedelta, timezone
 
-          const SITE_URL = "https://sto323742-hue.github.io/-2026/";
-          const STATE_FILE = "boatrace_line_state.json";
-          const LINE_TOKEN = (process.env.LINE_CHANNEL_ACCESS_TOKEN || "").trim();
-          const LINE_USER_ID = (process.env.LINE_USER_ID || "").trim();
+          import requests
+          from playwright.sync_api import sync_playwright
 
-          const VENUE_NO = {
-            "桐生":1,"戸田":2,"江戸川":3,"平和島":4,"多摩川":5,"浜名湖":6,
-            "蒲郡":7,"常滑":8,"津":9,"三国":10,"びわこ":11,"住之江":12,
-            "尼崎":13,"鳴門":14,"丸亀":15,"児島":16,"宮島":17,"徳山":18,
-            "下関":19,"若松":20,"芦屋":21,"福岡":22,"唐津":23,"大村":24
-          };
+          JST = timezone(timedelta(hours=9))
+          TOOL_URL = "https://sto323742-hue.github.io/-2026/"
+          STATE_FILE = Path("boatrace_discord_state.json")
 
-          function jstDate() {
-            return new Intl.DateTimeFormat("sv-SE", {
-              timeZone: "Asia/Tokyo",
-              year: "numeric",
-              month: "2-digit",
-              day: "2-digit"
-            }).format(new Date());
-          }
+          WEBHOOK = (
+              os.getenv("DISCORD_WEBHOOK_URL", "").strip()
+              or os.getenv("DISCORD_WEBHOOK", "").strip()
+          )
 
-          function loadState() {
-            try {
-              const x = JSON.parse(fs.readFileSync(STATE_FILE, "utf8"));
-              if (x && typeof x === "object") return x;
-            } catch (_) {}
-            return { date: jstDate(), sent: {} };
-          }
+          def now_jst():
+              return datetime.now(JST)
 
-          function saveState(state) {
-            fs.writeFileSync(STATE_FILE, JSON.stringify(state, null, 2), "utf8");
-          }
+          def today_jst():
+              return now_jst().strftime("%Y-%m-%d")
 
-          function raceKey(name) {
-            const m = String(name).match(/^(.+?)\s*(\d+)R$/);
-            if (!m) return `${jstDate()}_${name.replace(/\s+/g, "_")}`;
-            const venue = m[1].trim();
-            const raceNo = Number(m[2]);
-            const venueNo = VENUE_NO[venue] || venue;
-            return `${jstDate()}_${venueNo}_${raceNo}`;
-          }
+          def load_state():
+              try:
+                  if STATE_FILE.exists():
+                      x = json.loads(STATE_FILE.read_text(encoding="utf-8"))
+                      if x.get("date") == today_jst():
+                          return x
+              except Exception as e:
+                  print("STATE LOAD ERROR", repr(e))
+              return {"date": today_jst(), "sent": {}}
 
-          function comboTuple(c) {
-            return c.split("-").map(Number);
-          }
+          def save_state(state):
+              STATE_FILE.write_text(
+                  json.dumps(state, ensure_ascii=False, indent=2),
+                  encoding="utf-8"
+              )
 
-          function sortCombos(combos) {
-            return [...combos].sort((a, b) => {
-              const A = comboTuple(a), B = comboTuple(b);
-              return (A[0]-B[0]) || (A[1]-B[1]) || (A[2]-B[2]);
-            });
-          }
+          def webhook_send(payload):
+              if not WEBHOOK:
+                  raise RuntimeError(
+                      "Discord Webhook Secret がありません。"
+                      "DISCORD_WEBHOOK_URL または DISCORD_WEBHOOK を登録してください。"
+                  )
+              r = requests.post(WEBHOOK, json=payload, timeout=25)
+              print("DISCORD", r.status_code)
+              if r.status_code not in (200, 204):
+                  raise RuntimeError(f"Discord送信失敗: {r.status_code} {r.text[:300]}")
 
-          function parseMeta(meta) {
-            const close = (meta.match(/締切\s*([0-9]{1,2}:[0-9]{2})/) || [])[1] || "--:--";
-            const rating = Number((meta.match(/AI評価\s*(\d+)/) || [])[1] || 0);
-            return { close, rating };
-          }
+          def parse_odds(text):
+              m = re.search(r"([0-9]+(?:\.[0-9]+)?)倍", text or "")
+              return m.group(1) if m else "-"
 
-          async function pushLine(message) {
-            if (!LINE_TOKEN || !LINE_USER_ID) {
-              throw new Error("GitHub Secrets BOATAI または LINE_USER_ID が未設定です");
-            }
-            const res = await fetch("https://api.line.me/v2/bot/message/push", {
-              method: "POST",
-              headers: {
-                "Authorization": `Bearer ${LINE_TOKEN}`,
-                "Content-Type": "application/json"
-              },
-              body: JSON.stringify({
-                to: LINE_USER_ID,
-                messages: [message]
-              })
-            });
-            const body = await res.text();
-            console.log("LINE", res.status, body.slice(0, 500));
-            if (!res.ok) throw new Error(`LINE送信失敗 HTTP ${res.status}`);
-          }
+          def scrape_confirmed():
+              found = []
+              with sync_playwright() as p:
+                  browser = p.chromium.launch(headless=True)
+                  page = browser.new_page(
+                      viewport={"width": 390, "height": 844},
+                      locale="ja-JP",
+                      timezone_id="Asia/Tokyo",
+                  )
 
-          function makeColumn(title, combos, bg) {
-            return {
-              type: "box",
-              layout: "vertical",
-              flex: 1,
-              backgroundColor: bg,
-              paddingAll: "10px",
-              cornerRadius: "10px",
-              contents: [
-                { type: "text", text: title, weight: "bold", align: "center", size: "md" },
-                {
-                  type: "text",
-                  text: combos.join("\n"),
-                  weight: "bold",
-                  align: "center",
-                  size: "lg",
-                  wrap: true,
-                  margin: "md"
-                }
-              ]
-            };
-          }
+                  page.goto(
+                      TOOL_URL + "?discord=" + str(int(time.time())),
+                      wait_until="domcontentloaded",
+                      timeout=60000,
+                  )
 
-          function makeFlex(race) {
-            const { close, rating } = parseMeta(race.meta);
-            const all = sortCombos([...race.main, ...race.cover, ...race.hole]);
-            const left = all.slice(0, 5).map((x, i) => `${i+1}  ${x}`).join("\n");
-            const right = all.slice(5, 10).map((x, i) => `${i+6}  ${x}`).join("\n");
+                  # 最新データ・odds_today.json・展示情報の反映を待つ
+                  try:
+                      page.wait_for_selector("#results", timeout=30000)
+                  except Exception:
+                      pass
 
-            const detail = (race.detail || "")
-              .replace(/\s+/g, " ")
-              .trim()
-              .slice(0, 550);
+                  # ページ側の初回解析を待つ
+                  page.wait_for_timeout(15000)
 
-            return {
-              type: "flex",
-              altText: `BOATRACE AI予想 ${race.name} 締切${close}`,
-              contents: {
-                type: "bubble",
-                size: "mega",
-                body: {
-                  type: "box",
-                  layout: "vertical",
-                  paddingAll: "18px",
-                  backgroundColor: "#FFFFFF",
-                  contents: [
-                    {
-                      type: "box",
-                      layout: "horizontal",
-                      contents: [
-                        {
-                          type: "text",
-                          text: "🚤 BOATRACE AI予想",
-                          weight: "bold",
-                          size: "xl",
-                          color: "#1F1F1F",
-                          flex: 4
-                        },
-                        {
-                          type: "text",
-                          text: "Ver.3 Learning",
-                          weight: "bold",
-                          size: "xs",
-                          color: "#1473B9",
-                          align: "end",
-                          gravity: "center",
-                          flex: 2
-                        }
-                      ]
-                    },
-                    { type: "separator", margin: "md", color: "#E5E7EB" },
-                    {
-                      type: "text",
-                      text: race.name,
-                      weight: "bold",
-                      size: "xxl",
-                      margin: "lg",
-                      color: "#111111"
-                    },
-                    {
-                      type: "box",
-                      layout: "horizontal",
-                      margin: "md",
-                      contents: [
-                        {
-                          type: "text",
-                          text: `⏰ 締切予定 ${close}`,
-                          weight: "bold",
-                          size: "md",
-                          flex: 3,
-                          color: "#222222"
-                        },
-                        {
-                          type: "text",
-                          text: `AI評価 ${rating}点`,
-                          weight: "bold",
-                          size: "md",
-                          align: "end",
-                          flex: 2,
-                          color: "#222222"
-                        }
-                      ]
-                    },
-                    {
-                      type: "box",
-                      layout: "horizontal",
-                      margin: "xl",
-                      spacing: "sm",
-                      contents: [
-                        makeColumn("本命🚤", race.main, "#FFF0F2"),
-                        makeColumn("狙い🚤", race.cover, "#EAF5FF"),
-                        makeColumn("穴🚤", race.hole, "#ECF9EE")
-                      ]
-                    },
-                    {
-                      type: "box",
-                      layout: "horizontal",
-                      margin: "xl",
-                      contents: [
-                        {
-                          type: "text",
-                          text: "🎫 投票",
-                          weight: "bold",
-                          size: "xl",
-                          color: "#222222",
-                          flex: 3
-                        },
-                        {
-                          type: "text",
-                          text: "合計10点",
-                          weight: "bold",
-                          size: "xl",
-                          color: "#1473B9",
-                          align: "end",
-                          flex: 2
-                        }
-                      ]
-                    },
-                    {
-                      type: "box",
-                      layout: "horizontal",
-                      margin: "md",
-                      spacing: "md",
-                      contents: [
-                        {
-                          type: "box",
-                          layout: "vertical",
-                          flex: 1,
-                          backgroundColor: "#F4F8FD",
-                          paddingAll: "12px",
-                          cornerRadius: "10px",
-                          contents: [
-                            { type: "text", text: left, color: "#111827", weight: "bold", size: "md", wrap: true }
-                          ]
-                        },
-                        {
-                          type: "box",
-                          layout: "vertical",
-                          flex: 1,
-                          backgroundColor: "#F4F8FD",
-                          paddingAll: "12px",
-                          cornerRadius: "10px",
-                          contents: [
-                            { type: "text", text: right, color: "#111827", weight: "bold", size: "md", wrap: true }
-                          ]
-                        }
-                      ]
-                    },
-                    {
-                      type: "box",
-                      layout: "vertical",
-                      margin: "xl",
-                      backgroundColor: "#F6F8FC",
-                      paddingAll: "12px",
-                      cornerRadius: "10px",
-                      contents: [
-                        { type: "text", text: "🧠 WEBと同じAI分析", weight: "bold", size: "lg", color: "#1473B9" },
-                        {
-                          type: "text",
-                          text: detail || `AI評価 ${rating}点`,
-                          size: "sm",
-                          wrap: true,
-                          margin: "sm",
-                          color: "#333333"
-                        }
-                      ]
-                    }
-                  ]
-                }
+                  cards = page.locator("#results article.race")
+                  print("VISIBLE RACE CARDS", cards.count())
+
+                  for idx in range(cards.count()):
+                      card = cards.nth(idx)
+                      badge = card.locator(".final-badge").inner_text().strip()
+
+                      # Webツールと完全同期：
+                      # 「✅ 最終AI確定」と表示されたレースだけ通知
+                      if "最終AI確定" not in badge:
+                          continue
+
+                      race_name = card.locator(".race-name").inner_text().strip()
+                      meta = card.locator(".race-meta").inner_text().strip()
+
+                      # 締切時刻
+                      m_close = re.search(r"締切\s*([0-9]{2}:[0-9]{2})", meta)
+                      close_time = m_close.group(1) if m_close else "--:--"
+
+                      # 残り分
+                      m_min = re.search(r"締切まで約([0-9]+)分", badge)
+                      remain = m_min.group(1) if m_min else "5分以内"
+
+                      # 3列をWebツールの順番のまま取得
+                      columns = []
+                      for selector in (".main-col", ".cover-col", ".hole-col"):
+                          col = card.locator(selector)
+                          rows = []
+                          tickets = col.locator(".ticket")
+                          for j in range(tickets.count()):
+                              t = tickets.nth(j)
+                              combo = t.locator(".combo").inner_text().strip().replace(" ★", "")
+                              sub = t.locator(".ticket-sub").inner_text().strip()
+                              odds = parse_odds(sub)
+                              rows.append({"combo": combo, "odds": odds})
+                          columns.append(rows)
+
+                      total = sum(len(x) for x in columns)
+                      if total != 10:
+                          print("SKIP ticket count", race_name, total)
+                          continue
+
+                      found.append({
+                          "race_name": race_name,
+                          "close_time": close_time,
+                          "remain": remain,
+                          "columns": columns,
+                      })
+
+                  browser.close()
+              return found
+
+          def format_column(rows):
+              return "\n".join(
+                  f"**{x['combo']}**  ({x['odds']}倍)"
+                  for x in rows
+              ) or "-"
+
+          def make_payload(item):
+              now = now_jst()
+              date_text = f"{now.month}月{now.day}日"
+              left, middle, right = item["columns"]
+
+              # ご指定のシンプル版：
+              # 天候なし / AI分析なし / フッターなし /
+              # 本線・狙い・穴の見出しなし / 買い目は横3列
+              embed = {
+                  "title": f"🚤 {item['race_name']}　🔴 S 勝負レース",
+                  "description": (
+                      f"📅 {date_text}\n"
+                      f"🕒 締切予定 **{item['close_time']}**　"
+                      f"（残り {item['remain']}）"
+                  ),
+                  "color": 15158332,
+                  "fields": [
+                      {
+                          "name": "\u200b",
+                          "value": format_column(left),
+                          "inline": True,
+                      },
+                      {
+                          "name": "\u200b",
+                          "value": format_column(middle),
+                          "inline": True,
+                      },
+                      {
+                          "name": "\u200b",
+                          "value": format_column(right),
+                          "inline": True,
+                      },
+                  ],
               }
-            };
-          }
-
-          async function scrape(page) {
-            await page.goto(`${SITE_URL}?line=${Date.now()}`, {
-              waitUntil: "networkidle",
-              timeout: 90000
-            });
-
-            await page.waitForTimeout(2500);
-
-            return await page.locator(".race").evaluateAll(cards => cards.map(card => {
-              const txt = sel => card.querySelector(sel)?.textContent?.trim() || "";
-              const combos = col =>
-                [...(card.querySelector(col)?.querySelectorAll(".combo") || [])]
-                  .map(x => x.textContent.trim())
-                  .filter(Boolean);
 
               return {
-                name: txt(".race-name"),
-                meta: txt(".race-meta"),
-                s: txt(".smark"),
-                main: combos(".main-col"),
-                cover: combos(".cover-col"),
-                hole: combos(".hole-col"),
-                detail: txt(".ai-detail")
-              };
-            }));
-          }
-
-          async function main() {
-            console.log("WEB-SYNC LINE START", new Date().toISOString());
-
-            let state = loadState();
-            const today = jstDate();
-            if (state.date !== today) state = { date: today, sent: {} };
-            if (!state.sent || typeof state.sent !== "object") state.sent = {};
-
-            const browser = await chromium.launch({ headless: true });
-            const page = await browser.newPage({
-              viewport: { width: 430, height: 1800 }
-            });
-
-            try {
-              const maxAttempts = 8;
-              const waitMs = 45000;
-
-              for (let attempt = 1; attempt <= maxAttempts; attempt++) {
-                console.log(`WEB CHECK ${attempt}/${maxAttempts}`);
-                const races = await scrape(page);
-
-                const validS = races.filter(r =>
-                  r.s === "S" &&
-                  r.name &&
-                  r.main.length === 3 &&
-                  r.cover.length === 4 &&
-                  r.hole.length === 3
-                );
-
-                console.log("WEB S races:", validS.map(r => r.name).join(", ") || "none");
-
-                const unsent = validS.filter(r => !(raceKey(r.name) in state.sent));
-                console.log("WEB 未通知:", unsent.map(r => r.name).join(", ") || "0");
-
-                if (unsent.length) {
-                  for (const race of unsent) {
-                    const key = raceKey(race.name);
-                    console.log("SEND", key, race.name);
-                    await pushLine(makeFlex(race));
-                    state.sent[key] = {
-                      notified_at: new Date().toISOString(),
-                      once_only: true,
-                      source: "web-rendered"
-                    };
-                    saveState(state);
-                    await new Promise(r => setTimeout(r, 1000));
-                  }
-                  break;
-                }
-
-                if (attempt < maxAttempts) {
-                  await new Promise(r => setTimeout(r, waitMs));
-                }
+                  "username": "BOAT2026 AI予想",
+                  "embeds": [embed],
+                  "allowed_mentions": {"parse": []},
               }
-            } finally {
-              await browser.close();
-            }
 
-            saveState(state);
-            console.log("WEB-SYNC LINE END");
-          }
+          def main():
+              state = load_state()
+              sent = state.setdefault("sent", {})
 
-          main().catch(err => {
-            console.error(err);
-            process.exit(1);
-          });
-          JS
+              # GitHub Actionsの開始時刻が少しズレても
+              # 締切5分前の「最終AI確定」を取りこぼしにくくする
+              max_attempts = 8
+              wait_seconds = 60
 
-      - name: Run WEB-synced BOATRACE AI LINE
+              for attempt in range(1, max_attempts + 1):
+                  print(
+                      f"CHECK {attempt}/{max_attempts}",
+                      now_jst().isoformat()
+                  )
+
+                  try:
+                      items = scrape_confirmed()
+                  except Exception as e:
+                      print("SCRAPE ERROR", repr(e))
+                      items = []
+
+                  unsent = []
+                  for item in items:
+                      key = f"{today_jst()}|{item['race_name']}"
+                      if key in sent:
+                          print("SKIP already sent", key)
+                          continue
+                      unsent.append((key, item))
+
+                  print("CONFIRMED", len(items), "UNSENT", len(unsent))
+
+                  if unsent:
+                      for key, item in unsent:
+                          webhook_send(make_payload(item))
+                          sent[key] = {
+                              "notified_at": now_jst().isoformat(),
+                              "once_only": True,
+                          }
+                          save_state(state)
+                          time.sleep(1)
+
+                  # 1回で終了せず、8分間は新しい最終確定を監視
+                  if attempt < max_attempts:
+                      time.sleep(wait_seconds)
+
+              save_state(state)
+              print("BOATRACE AI DISCORD END")
+
+          if __name__ == "__main__":
+              main()
+          PY
+
+      - name: Run Discord notifier
         env:
-          LINE_CHANNEL_ACCESS_TOKEN: ${{ secrets.BOATAI }}
-          LINE_USER_ID: ${{ secrets.LINE_USER_ID }}
-        run: node line_notify_web.js
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+        run: python discord_notify.py
 
-      - name: Save notification state
+      - name: Save Discord notification state
         run: |
-          if [ -f boatrace_line_state.json ]; then
+          if [ -f boatrace_discord_state.json ]; then
             git config user.name "github-actions[bot]"
             git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-
-            git pull --rebase origin main || true
-            git add boatrace_line_state.json
+            git add boatrace_discord_state.json
 
             if git diff --cached --quiet; then
               echo "通知状態に変更なし"
             else
-              git commit -m "Update BOATRACE LINE notification state"
+              git commit -m "Update BOATRACE Discord notification state"
+              git pull --rebase
               git push
             fi
           else
