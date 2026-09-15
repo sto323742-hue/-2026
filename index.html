@@ -169,20 +169,26 @@ function minutesToClose(r){
 }
 function finalDecision(a){
   const m=minutesToClose(a.race);
+  const previewComplete=previewReady(a.race);
   const oddsReady=num(a.oddsCoverage)>=80;
   const topProb=num(a.scenario?.top?.probability);
   const stableWater=num(a.weather?.windSpeed)<8&&num(a.weather?.wave)<7;
   const entryStable=(a.courseChanges||[]).length<=1;
   const exhibitionAligned=(a.exhibitionRank||[]).slice(0,3).includes(a.boats?.[0]?.boat);
   const stAligned=(a.startRank||[]).slice(0,3).includes(a.boats?.[0]?.boat);
-  const strictPass=a.grade==='S'&&stableWater&&entryStable&&topProb>=.28&&exhibitionAligned&&stAligned&&oddsReady;
-  if(m<=5&&m>=0){
-    return {status:strictPass?'confirmed':'hold',label:strictPass?'✅ 最終確定':'⚠️ 最終見送り',minutes:m,strictPass};
+  const strictPass=previewComplete&&a.grade==='S'&&stableWater&&entryStable&&topProb>=.28&&exhibitionAligned&&stAligned&&oddsReady;
+
+  // 6艇分の直前情報（展示タイム・展示ST・進入）が揃った時点で即最終判定。
+  // 締切5分前まで待たない。
+  if(!previewComplete){
+    return {status:'waiting',label:'⏳ 6艇直前情報待ち',minutes:m,strictPass:false};
   }
-  if(m<=15&&m>5){
-    return {status:'checking',label:'🔥 最終判定中',minutes:m,strictPass};
-  }
-  return {status:'waiting',label:'⏳ 最終判定待ち',minutes:m,strictPass};
+  return {
+    status:strictPass?'confirmed':'hold',
+    label:strictPass?'✅ 最終確定':'⚠️ 最終見送り',
+    minutes:m,
+    strictPass
+  };
 }
 function previewReady(r){const p=r?.preview?.racers;if(!p)return false;for(let i=1;i<=6;i++){const x=p[String(i)];if(!x)return false;const e=Number(x.exhibition_time),s=Number(x.start_timing);if(!Number.isFinite(e)||e<=0||!Number.isFinite(s))return false}return true}
 function weatherInfo(r){const p=r?.preview||{};return{windSpeed:num(p.wind_speed),windDirection:num(p.wind_direction_number),wave:num(p.wave_height),weather:num(p.weather_number),air:num(p.air_temperature),water:num(p.water_temperature)}}
@@ -423,27 +429,21 @@ function expectedValueDecision(a){
 function unifiedDecision(a){
   const f=a.finalDecision||finalDecision(a);
   const v=a.valueDecision||expectedValueDecision(a);
-  const mins=Number.isFinite(f.minutes)?Math.max(0,Math.ceil(f.minutes)):null;
-  const finalWindow=Number.isFinite(f.minutes)&&f.minutes<=5;
 
-  // 締切5分前以降は「判定待ち」を残さない。
-  if(finalWindow){
-    if(v.status==='wait'){
-      return{status:'skip',pass:false,label:'💤 最終AI見送り',minutes:f.minutes,expectedRoi:v.expectedRoi||0,reasons:[...(v.reasons||[]),'締切5分前のため判定待ちを終了']};
-    }
-    if(!v.pass){
-      return{status:'skip',pass:false,label:'💤 最終AI見送り',minutes:f.minutes,expectedRoi:v.expectedRoi||0,reasons:v.reasons||[]};
-    }
-    if(f.status==='confirmed'){
-      return{status:'confirmed',pass:true,label:'✅ 最終AI確定',minutes:f.minutes,expectedRoi:v.expectedRoi||0,reasons:[]};
-    }
-    return{status:'skip',pass:false,label:'💤 最終AI見送り',minutes:f.minutes,expectedRoi:v.expectedRoi||0,reasons:['締切5分前の直前条件が不足']};
+  // 6艇分の直前情報が揃ったら、その時点でS条件＋期待値条件をまとめて最終判定。
+  if(!previewReady(a.race)){
+    return{status:'waiting',pass:false,label:'⏳ 6艇直前情報待ち',minutes:f.minutes,expectedRoi:v.expectedRoi||0,reasons:['6艇分の展示タイム・展示ST・進入情報待ち']};
   }
-
-  if(v.status==='wait')return{status:'waiting',pass:false,label:'⏳ 最終AI判定待ち',minutes:f.minutes,expectedRoi:v.expectedRoi||0,reasons:v.reasons||[]};
-  if(!v.pass)return{status:'skip',pass:false,label:'💤 最終AI見送り',minutes:f.minutes,expectedRoi:v.expectedRoi||0,reasons:v.reasons||[]};
-  if(f.status==='checking')return{status:'checking',pass:false,label:'🔥 最終AI判定中',minutes:f.minutes,expectedRoi:v.expectedRoi||0,reasons:[]};
-  return{status:'waiting',pass:false,label:'⏳ 最終AI判定待ち',minutes:f.minutes,expectedRoi:v.expectedRoi||0,reasons:[]};
+  if(v.status==='wait'){
+    return{status:'waiting',pass:false,label:'⏳ 3連単オッズ待ち',minutes:f.minutes,expectedRoi:v.expectedRoi||0,reasons:v.reasons||[]};
+  }
+  if(!v.pass){
+    return{status:'skip',pass:false,label:'💤 最終AI見送り',minutes:f.minutes,expectedRoi:v.expectedRoi||0,reasons:v.reasons||[]};
+  }
+  if(f.status==='confirmed'){
+    return{status:'confirmed',pass:true,label:'✅ 最終AI確定',minutes:f.minutes,expectedRoi:v.expectedRoi||0,reasons:[]};
+  }
+  return{status:'skip',pass:false,label:'💤 最終AI見送り',minutes:f.minutes,expectedRoi:v.expectedRoi||0,reasons:['6艇直前情報を反映した最終条件が不足']};
 }
 
 function allocate(t,budget,a){
@@ -552,7 +552,7 @@ function raceHTML(a,i){
         ${scenarioHTML(a)}
       </div>
       <div class="reason"><b>今回のAI判断根拠</b><br>${a.reasons.map(x=>'・'+x).join('<br>')}</div>
-      <div class="logic"><b>Ver.3 展開予測ロジック</b><br><br>艇の単純な能力順位だけではなく、1マークの「逃げ・差し・まくり・まくり差し・展開突き」を推定し、3連単120通りへ反映します。買い目は本線2点・狙い4点・穴4点。目安オッズを本線10〜40倍、狙い40〜100倍、穴100倍以上へ引き上げ、AI確率・期待値・人気1位3艇セットの並び替えを再評価します。10倍未満は原則として最終補欠まで使いません。水面が荒れている・進入変化が大きい・展開予測が分散している場合はS評価から外して見送ります。最終AI判定では、S評価に加えて選定10点のAI推定期待回収率105%以上・期待値1.0以上4点以上・10倍未満最大1点・本線10〜40倍1点以上・狙い40〜100倍2点以上・穴100倍以上2点以上を確認し、締切5分前の展示・ST・進入・風波・展開が揃ったレースだけを最終確定して実戦成績へ保存します。</div>
+      <div class="logic"><b>Ver.3 展開予測ロジック</b><br><br>艇の単純な能力順位だけではなく、1マークの「逃げ・差し・まくり・まくり差し・展開突き」を推定し、3連単120通りへ反映します。買い目は本線2点・狙い4点・穴4点。目安オッズを本線10〜40倍、狙い40〜100倍、穴100倍以上へ引き上げ、AI確率・期待値・人気1位3艇セットの並び替えを再評価します。10倍未満は原則として最終補欠まで使いません。水面が荒れている・進入変化が大きい・展開予測が分散している場合はS評価から外して見送ります。最終AI判定では、S評価に加えて選定10点のAI推定期待回収率105%以上・期待値1.0以上4点以上・10倍未満最大1点・本線10〜40倍1点以上・狙い40〜100倍2点以上・穴100倍以上2点以上を確認し、6艇分の直前情報（展示タイム・展示ST・進入）が揃った時点で、展示・ST・進入・風波・展開と期待値条件をまとめて最終判定し、合格したレースだけを実戦成績へ保存します。</div>
     </div>
   </article>`;
 }
@@ -573,7 +573,7 @@ if(a.unifiedDecision.status==='confirmed'){
   if(rec&&!rec.done){rec.finalConfirmed=false;rec.finalStatus='skip';save(rs)}
   removePendingPrediction(a);
 }else{
-  // 最終判定前にも一時保存しておき、5分前判定を取りこぼさない。
+  // 最終判定前にも一時保存し、6艇分の直前情報・オッズが揃った時点の判定を取りこぼさない。
   savePrediction(a);
   const rs=records(),rec=rs.find(x=>x.key===raceKey(a.race));
   if(rec&&!rec.done){rec.finalConfirmed=false;rec.finalStatus=a.unifiedDecision.status;save(rs)}
