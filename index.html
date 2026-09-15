@@ -52,6 +52,29 @@
 const API_BASE='https://boatraceopenapi.github.io/api/v1';
 const ODDS_URL='./odds_today.json';
 const STORAGE_KEY='boat_ai_gold_v1_records';
+const DAILY_COUNT_KEY='boat_ai_gold_v1_daily_counts';
+function dailyCounts(){
+  const d=todayJST();
+  try{
+    const x=JSON.parse(localStorage.getItem(DAILY_COUNT_KEY)||'{}');
+    if(x.date!==d)return{date:d,s:[],candidate:[],skip:[]};
+    return{date:d,s:Array.isArray(x.s)?x.s:[],candidate:Array.isArray(x.candidate)?x.candidate:[],skip:Array.isArray(x.skip)?x.skip:[]};
+  }catch{return{date:d,s:[],candidate:[],skip:[]}}
+}
+function rememberDaily(a){
+  const x=dailyCounts(),key=raceKey(a.race),u=a.unifiedDecision||unifiedDecision(a);
+  if(!x.s.includes(key))x.s.push(key);
+  if(!x.candidate.includes(key))x.candidate.push(key);
+  if(u.status==='skip'&&!x.skip.includes(key))x.skip.push(key);
+  localStorage.setItem(DAILY_COUNT_KEY,JSON.stringify(x));
+}
+function renderDailyCounts(){
+  const x=dailyCounts();
+  if($('summaryS'))$('summaryS').textContent=x.s.length+'R';
+  if($('summaryCandidate'))$('summaryCandidate').textContent=x.candidate.length+'R';
+  if($('summarySkip'))$('summarySkip').textContent=x.skip.length+'R';
+}
+
 const MODEL_NAME='gold-v3-unified-final-learning';
 const EVALUATION_STAKE=1000;
 const STADIUMS={1:'桐生',2:'戸田',3:'江戸川',4:'平和島',5:'多摩川',6:'浜名湖',7:'蒲郡',8:'常滑',9:'津',10:'三国',11:'びわこ',12:'住之江',13:'尼崎',14:'鳴門',15:'丸亀',16:'児島',17:'宮島',18:'徳山',19:'下関',20:'若松',21:'芦屋',22:'福岡',23:'唐津',24:'大村'};
@@ -473,7 +496,7 @@ function removePendingPrediction(a){
 }
 function savePrediction(a){const r=a.race,key=raceKey(r),rs=records(),ticketSet=makeTickets(a),tickets=allocate(ticketSet,EVALUATION_STAKE,a),stake=tickets.reduce((s,x)=>s+x.money,0),w=a.weather,predictionMeta={finalDecision:a.finalDecision||finalDecision(a),valueDecision:a.valueDecision||expectedValueDecision(a),windSpeed:w.windSpeed,windDirection:w.windDirection,wave:w.wave,weather:w.weather,airTemperature:w.air,waterTemperature:w.water,exhibitionRank:a.exhibitionRank,startRank:a.startRank,courseChanges:a.courseChanges.map(x=>({boat:x.boat,course:num(x.preview?.course_number,x.boat)})),scenario:a.scenario.candidates.slice(0,6).map(x=>({boat:x.boat,tactic:x.tactic,probability:x.probability})),attacker:a.scenario?.attacker?{boat:a.scenario.attacker.boat,tactic:a.scenario.attacker.tactic}:null,reasons:a.reasons,specialHole:ticketSet.special},old=rs.find(x=>x.key===key);if(old){if(!old.done){Object.assign(old,{tickets,stake,rating:a.rating,predictionMeta,savedAt:new Date().toISOString(),model:MODEL_NAME,learningSnapshot:{model:MODEL_NAME,savedAt:new Date().toISOString(),rating:a.rating,grade:'S',tickets:tickets.map(t=>({combo:t.combo,group:t.group||'',probability:num(t.probability),special:!!t.special,money:num(t.money)})),predictionMeta}});save(rs)}return}rs.push({key,date:r.date||todayJST(),stadium:r.stadium_number,venue:STADIUMS[r.stadium_number]||'会場',raceNumber:r.race_number,grade:'S',rating:a.rating,tickets,stake,done:false,hit:false,result:'',payout:0,resultOdds:0,returnAmount:0,savedAt:new Date().toISOString(),model:MODEL_NAME,predictionMeta,learningSnapshot:{model:MODEL_NAME,savedAt:new Date().toISOString(),rating:a.rating,grade:'S',tickets:tickets.map(t=>({combo:t.combo,group:t.group||'',probability:num(t.probability),special:!!t.special,money:num(t.money)})),predictionMeta}});save(rs)}
 function payouts(r){const t=r?.result?.payouts?.trifecta;return Array.isArray(t)?t:[]}
-function settle(races){const rs=records();let ch=false;for(const rec of rs){if(rec.done)continue;const r=races.find(x=>raceKey(x)===rec.key);if(!r)continue;const p=payouts(r);if(!p.length)continue;const w=p[0],combo=String(w.combination||''),pay=num(w.amount);if(!combo)continue;rec.done=true;rec.result=combo;rec.payout=pay;rec.resultOdds=pay>0?pay/100:0;const ht=rec.tickets?.find(t=>t.combo===combo);rec.hit=!!ht;rec.hitGroup=ht?.group||'';rec.returnAmount=ht?Math.round(pay/100*ht.money):0;rec.proximity=analyzePredictionCloseness(rec,combo);
+function settle(races){const rs=records();let ch=false;for(const rec of rs){if(rec.done||rec.finalConfirmed===false)continue;const r=races.find(x=>raceKey(x)===rec.key);if(!r)continue;const p=payouts(r);if(!p.length)continue;const w=p[0],combo=String(w.combination||''),pay=num(w.amount);if(!combo)continue;rec.done=true;rec.result=combo;rec.payout=pay;rec.resultOdds=pay>0?pay/100:0;const ht=rec.tickets?.find(t=>t.combo===combo);rec.hit=!!ht;rec.hitGroup=ht?.group||'';rec.returnAmount=ht?Math.round(pay/100*ht.money):0;rec.proximity=analyzePredictionCloseness(rec,combo);
 rec.settledAt=new Date().toISOString();ch=true}if(ch)save(rs)}
 function ticketRows(arr,g){
   return arr.filter(x=>x.group===g).map(x=>{
@@ -536,7 +559,21 @@ function dataSignature(races,oddsData){
     : [];
   return JSON.stringify([races.map(r=>[raceKey(r),r.closed_at,r.preview?.wind_speed,r.preview?.wind_direction_number,r.preview?.wave_height,r.preview?.weather_number,r.preview?.air_temperature,r.preview?.water_temperature,...Array.from({length:6},(_,i)=>{const p=r.preview?.racers?.[String(i+1)];return[p?.exhibition_time,p?.start_timing,p?.course_number]}),r.result?.payouts?.trifecta?.[0]?.combination,r.result?.payouts?.trifecta?.[0]?.amount]),oddsSig]);
 }
-function analyzeRaces(races,oddsData){settle(races);const arr=[];for(const r of races){if(!upcoming(r)||!previewReady(r))continue;const a=evaluate(r,oddsData);if(a?.grade==='S'){a.finalDecision=finalDecision(a);a.valueDecision=expectedValueDecision(a);a.unifiedDecision=unifiedDecision(a);arr.push(a);if(a.unifiedDecision.pass)savePrediction(a);else removePendingPrediction(a)}}arr.sort((a,b)=>b.rating-a.rating);analyses=arr;display();renderStats();return arr}
+function analyzeRaces(races,oddsData){settle(races);const arr=[];for(const r of races){if(!upcoming(r)||!previewReady(r))continue;const a=evaluate(r,oddsData);if(a?.grade==='S'){a.finalDecision=finalDecision(a);a.valueDecision=expectedValueDecision(a);a.unifiedDecision=unifiedDecision(a);arr.push(a);rememberDaily(a);
+if(a.unifiedDecision.status==='confirmed'){
+  savePrediction(a);
+  const rs=records(),rec=rs.find(x=>x.key===raceKey(a.race));
+  if(rec&&!rec.done){rec.finalConfirmed=true;rec.finalStatus='confirmed';save(rs)}
+}else if(a.unifiedDecision.status==='skip'){
+  const rs=records(),rec=rs.find(x=>x.key===raceKey(a.race));
+  if(rec&&!rec.done){rec.finalConfirmed=false;rec.finalStatus='skip';save(rs)}
+  removePendingPrediction(a);
+}else{
+  // 最終判定前にも一時保存しておき、5分前判定を取りこぼさない。
+  savePrediction(a);
+  const rs=records(),rec=rs.find(x=>x.key===raceKey(a.race));
+  if(rec&&!rec.done){rec.finalConfirmed=false;rec.finalStatus=a.unifiedDecision.status;save(rs)}
+}}}arr.sort((a,b)=>b.rating-a.rating);analyses=arr;display();renderStats();return arr}
 async function autoRefresh(force=false){
   if(autoUpdateBusy)return;
   autoUpdateBusy=true;
@@ -548,7 +585,7 @@ async function autoRefresh(force=false){
     if(kEl)kEl.textContent=`${skipCount}R`;
   };
   try{
-    if(force&&!analyses.length)updateSummary(0,0,0);
+    if(force&&!analyses.length)renderDailyCounts();
     const [data,oddsData]=await Promise.all([fetchToday(),fetchOddsToday()]);
     lastOddsData=oddsData;
     const races=flatten(data);
@@ -558,14 +595,14 @@ async function autoRefresh(force=false){
     if(force||sig!==lastDataSignature){
       lastDataSignature=sig;
       const arr=analyzeRaces(races,oddsData);
-      const confirmed=arr.filter(x=>(x.finalDecision||finalDecision(x)).status==='confirmed').length,passed=arr.filter(x=>(x.valueDecision||expectedValueDecision(x)).pass).length,skipped=arr.length-passed;updateSummary(arr.length,passed,skipped);
+      renderDailyCounts();
     }else{
       renderStats();
-      analyses.forEach(x=>{x.finalDecision=finalDecision(x);x.valueDecision=expectedValueDecision(x);x.unifiedDecision=unifiedDecision(x)});display();const confirmed=analyses.filter(x=>x.finalDecision.status==='confirmed').length,passed=analyses.filter(x=>x.valueDecision.pass).length,skipped=analyses.length-passed;updateSummary(analyses.length,passed,skipped);
+      analyses.forEach(x=>{x.finalDecision=finalDecision(x);x.valueDecision=expectedValueDecision(x);x.unifiedDecision=unifiedDecision(x)});display();renderDailyCounts();
     }
   }catch(e){
     console.error(e);
-    updateSummary(analyses.length,analyses.filter(x=>(x.valueDecision||expectedValueDecision(x)).pass).length,analyses.filter(x=>!(x.valueDecision||expectedValueDecision(x)).pass).length);
+    renderDailyCounts();
   }finally{
     autoUpdateBusy=false;
   }
