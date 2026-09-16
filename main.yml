@@ -1,0 +1,379 @@
+name: BOATRACE AI Discord Notification
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "*/5 * * * *"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: boatrace-ai-discord
+  cancel-in-progress: false
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install packages
+        run: |
+          python -m pip install --upgrade pip
+          pip install requests playwright pillow
+          sudo apt-get update -y
+          sudo apt-get install -y fonts-noto-cjk
+          python -m playwright install --with-deps chromium
+
+      - name: Create Discord notifier
+        env:
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+        run: |
+          cat > discord_notify.py <<'PY'
+          import os
+          import re
+          import json
+          import time
+          from pathlib import Path
+          from datetime import datetime, timedelta, timezone
+
+          import requests
+          from PIL import Image, ImageDraw, ImageFont
+          from playwright.sync_api import sync_playwright
+
+          JST = timezone(timedelta(hours=9))
+          TOOL_URL = "https://sto323742-hue.github.io/-2026/"
+          STATE_FILE = Path("boatrace_discord_state.json")
+
+          WEBHOOK = (
+              os.getenv("DISCORD_WEBHOOK_URL", "").strip()
+              or os.getenv("DISCORD_WEBHOOK", "").strip()
+          )
+
+          def now_jst():
+              return datetime.now(JST)
+
+          def today_jst():
+              return now_jst().strftime("%Y-%m-%d")
+
+          def load_state():
+              try:
+                  if STATE_FILE.exists():
+                      x = json.loads(STATE_FILE.read_text(encoding="utf-8"))
+                      if x.get("date") == today_jst():
+                          return x
+              except Exception as e:
+                  print("STATE LOAD ERROR", repr(e))
+              return {"date": today_jst(), "sent": {}}
+
+          def save_state(state):
+              STATE_FILE.write_text(
+                  json.dumps(state, ensure_ascii=False, indent=2),
+                  encoding="utf-8"
+              )
+
+          def webhook_send(payload, image_bytes=None):
+              if not WEBHOOK:
+                  raise RuntimeError(
+                      "Discord Webhook Secret がありません。"
+                      "DISCORD_WEBHOOK_URL または DISCORD_WEBHOOK を登録してください。"
+                  )
+
+              if image_bytes is None:
+                  r = requests.post(WEBHOOK, json=payload, timeout=25)
+              else:
+                  # Discordへ画像そのものを添付。これで端末幅に左右されず
+                  # 5点＋5点の左右2列デザインを固定表示できる。
+                  files = {
+                      "files[0]": ("boatrace_ai.png", image_bytes, "image/png")
+                  }
+                  data = {
+                      "payload_json": json.dumps(payload, ensure_ascii=False)
+                  }
+                  r = requests.post(WEBHOOK, data=data, files=files, timeout=25)
+
+              print("DISCORD", r.status_code)
+              if r.status_code not in (200, 204):
+                  raise RuntimeError(f"Discord送信失敗: {r.status_code} {r.text[:300]}")
+
+          def parse_odds(text):
+              m = re.search(r"([0-9]+(?:\.[0-9]+)?)倍", text or "")
+              return m.group(1) if m else "-"
+
+          def scrape_confirmed():
+              found = []
+              with sync_playwright() as p:
+                  browser = p.chromium.launch(headless=True)
+                  page = browser.new_page(
+                      viewport={"width": 390, "height": 844},
+                      locale="ja-JP",
+                      timezone_id="Asia/Tokyo",
+                  )
+
+                  page.goto(
+                      TOOL_URL + "?discord=" + str(int(time.time())),
+                      wait_until="domcontentloaded",
+                      timeout=60000,
+                  )
+
+                  # 最新データ・odds_today.json・展示情報の反映を待つ
+                  try:
+                      page.wait_for_selector("#results", timeout=30000)
+                  except Exception:
+                      pass
+
+                  # ページ側の初回解析を待つ
+                  page.wait_for_timeout(15000)
+
+                  cards = page.locator("#results article.race")
+                  print("VISIBLE RACE CARDS", cards.count())
+
+                  for idx in range(cards.count()):
+                      card = cards.nth(idx)
+                      badge = card.locator(".final-badge").inner_text().strip()
+
+                      # Webツールと完全同期：
+                      # 「✅ 最終AI確定」と表示されたレースだけ通知
+                      if "最終AI確定" not in badge:
+                          continue
+
+                      race_name = card.locator(".race-name").inner_text().strip()
+                      meta = card.locator(".race-meta").inner_text().strip()
+
+                      # 締切時刻
+                      m_close = re.search(r"締切\s*([0-9]{2}:[0-9]{2})", meta)
+                      close_time = m_close.group(1) if m_close else "--:--"
+
+                      # 残り分
+                      m_min = re.search(r"締切まで約([0-9]+)分", badge)
+                      remain = (m_min.group(1) + "分") if m_min else "5分以内"
+
+                      # 3列をWebツールの順番のまま取得
+                      columns = []
+                      for selector in (".main-col", ".cover-col", ".hole-col"):
+                          col = card.locator(selector)
+                          rows = []
+                          tickets = col.locator(".ticket")
+                          for j in range(tickets.count()):
+                              t = tickets.nth(j)
+                              combo = t.locator(".combo").inner_text().strip().replace(" ★", "")
+                              sub = t.locator(".ticket-sub").inner_text().strip()
+                              odds = parse_odds(sub)
+                              rows.append({"combo": combo, "odds": odds})
+
+                          # 投票しやすいように各列の買い目を数字の小さい順に並べる
+                          rows.sort(
+                              key=lambda x: tuple(
+                                  int(n) for n in re.findall(r"[0-9]+", x["combo"])
+                              )
+                          )
+                          columns.append(rows)
+
+                      total = sum(len(x) for x in columns)
+                      if total != 10:
+                          print("SKIP ticket count", race_name, total)
+                          continue
+
+                      found.append({
+                          "race_name": race_name,
+                          "close_time": close_time,
+                          "remain": remain,
+                          "columns": columns,
+                      })
+
+                  browser.close()
+              return found
+
+          def _font(size, bold=False):
+              candidates = [
+                  "/usr/share/fonts/opentype/noto/NotoSansCJK-Bold.ttc" if bold else "/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc",
+                  "/usr/share/fonts/truetype/noto/NotoSansCJK-Bold.ttc" if bold else "/usr/share/fonts/truetype/noto/NotoSansCJK-Regular.ttc",
+                  "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf" if bold else "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+              ]
+              for path in candidates:
+                  if Path(path).exists():
+                      return ImageFont.truetype(path, size=size)
+              return ImageFont.load_default()
+
+          def _rounded(draw, box, radius, fill, outline=None, width=1):
+              draw.rounded_rectangle(box, radius=radius, fill=fill, outline=outline, width=width)
+
+          def make_notification_image(item):
+              # 参考画像の右側デザイン：黒基調＋赤アクセント＋5点×2列
+              W, H = 1200, 760
+              img = Image.new("RGB", (W, H), (15, 19, 23))
+              d = ImageDraw.Draw(img)
+
+              # 外枠・左アクセント
+              _rounded(d, (18, 18, W-18, H-18), 34, (17, 22, 27), (48, 57, 66), 3)
+              d.rounded_rectangle((18, 18, 34, H-18), radius=8, fill=(255, 59, 69))
+
+              title_f = _font(46, True)
+              meta_f = _font(30, True)
+              rank_f = _font(25, True)
+              combo_f = _font(31, True)
+              odds_f = _font(28, True)
+
+              now = now_jst()
+              jp_week = "月火水木金土日"[now.weekday()]
+              date_text = f"{now.month}月{now.day}日（{jp_week}）"
+
+              # 絵文字はGitHub Actions環境で豆腐（□）になるため使わず、
+              # Pillowで記号を直接描画して端末に依存しない表示にする。
+              d.text((68, 58), item['race_name'], font=title_f, fill=(245, 245, 245))
+              title_w = d.textbbox((0, 0), item['race_name'], font=title_f)[2]
+              red_x = 92 + title_w
+              d.ellipse((red_x, 65, red_x + 42, 107), fill=(235, 45, 55))
+              d.text((red_x + 55, 58), "S勝負レース", font=title_f, fill=(245, 245, 245))
+
+              # 日付
+              d.rounded_rectangle((72, 137, 103, 166), radius=5, outline=(238,238,238), width=3)
+              d.line((72, 145, 103, 145), fill=(238,238,238), width=3)
+              d.text((120, 128), date_text, font=meta_f, fill=(238, 238, 238))
+
+              # 時計
+              d.ellipse((72, 188, 105, 221), outline=(245,220,125), width=3)
+              d.line((88, 204, 88, 194), fill=(245,220,125), width=3)
+              d.line((88, 204, 97, 204), fill=(245,220,125), width=3)
+              d.text((120, 180), f"締切予定  {item['close_time']}   （残り {item['remain']}）", font=meta_f, fill=(245, 220, 125))
+
+              # Webツールの3列順を維持したまま10点を1〜10にする
+              rows = []
+              for col in item["columns"]:
+                  rows.extend(col)
+              rows = rows[:10]
+
+              # 買い目エリア
+              top = 270
+              left_x, right_x = 58, 616
+              col_w, row_h, gap = 520, 76, 10
+              boat_bg = {
+                  "1": (242,242,242), "2": (55,55,60), "3": (235,55,60),
+                  "4": (38,115,215), "5": (244,205,65), "6": (24,174,91),
+              }
+              boat_fg = {"1": (25,25,25), "2": (245,245,245), "3": (255,255,255), "4": (255,255,255), "5": (30,30,30), "6": (255,255,255)}
+
+              for i, x in enumerate(rows):
+                  side = 0 if i < 5 else 1
+                  pos = i if i < 5 else i - 5
+                  x0 = left_x if side == 0 else right_x
+                  y0 = top + pos * (row_h + gap)
+                  _rounded(d, (x0, y0, x0+col_w, y0+row_h), 14, (13,18,22), (64,70,76), 2)
+
+                  # 順位番号（1〜10）は表示しない
+                  # 買い目3艇を左側から大きく表示
+                  parts = re.findall(r"[1-6]", x.get("combo", ""))[:3]
+                  bx = x0 + 24
+                  for n in parts:
+                      _rounded(d, (bx, y0+12, bx+58, y0+64), 8, boat_bg[n], (90,90,90), 1)
+                      bb = d.textbbox((0,0), n, font=combo_f)
+                      d.text((bx+29-(bb[2]-bb[0])/2, y0+38-(bb[3]-bb[1])/2-3), n, font=combo_f, fill=boat_fg[n])
+                      bx += 66
+
+                  odds = f"{x.get('odds','-')}倍"
+                  bb = d.textbbox((0,0), odds, font=odds_f)
+                  d.text((x0+col_w-18-(bb[2]-bb[0]), y0+23), odds, font=odds_f, fill=(248,224,145))
+
+              import io
+              buf = io.BytesIO()
+              img.save(buf, format="PNG", optimize=True)
+              return buf.getvalue()
+
+          def make_payload(item):
+              # 文字Embedではなく画像を主役にするため、本文は最小限。
+              # 添付画像をEmbed内に表示して1枚の通知カードとして見せる。
+              return {
+                  "username": "BOAT2026 AI予想",
+                  "embeds": [{
+                      "color": 0xFF3B45,
+                      "image": {"url": "attachment://boatrace_ai.png"}
+                  }],
+                  "allowed_mentions": {"parse": []},
+              }
+
+          def main():
+              state = load_state()
+              sent = state.setdefault("sent", {})
+
+              # GitHub Actionsは5分ごとに起動。
+              # 各起動内でも1分間隔で最大4回確認し、
+              # Webツールの「最終AI確定」をできるだけ早くDiscordへ通知する。
+              max_attempts = 4
+              wait_seconds = 60
+
+              for attempt in range(1, max_attempts + 1):
+                  print(
+                      f"CHECK {attempt}/{max_attempts}",
+                      now_jst().isoformat()
+                  )
+
+                  try:
+                      items = scrape_confirmed()
+                  except Exception as e:
+                      print("SCRAPE ERROR", repr(e))
+                      items = []
+
+                  unsent = []
+                  for item in items:
+                      key = f"{today_jst()}|{item['race_name']}"
+                      if key in sent:
+                          print("SKIP already sent", key)
+                          continue
+                      unsent.append((key, item))
+
+                  print("CONFIRMED", len(items), "UNSENT", len(unsent))
+
+                  if unsent:
+                      for key, item in unsent:
+                          image_bytes = make_notification_image(item)
+                          webhook_send(make_payload(item), image_bytes=image_bytes)
+                          sent[key] = {
+                              "notified_at": now_jst().isoformat(),
+                              "once_only": True,
+                          }
+                          save_state(state)
+                          time.sleep(1)
+
+                  # 次の確認まで1分待機
+                  if attempt < max_attempts and wait_seconds:
+                      time.sleep(wait_seconds)
+
+              save_state(state)
+              print("BOATRACE AI DISCORD END")
+
+          if __name__ == "__main__":
+              main()
+          PY
+
+      - name: Run Discord notifier
+        env:
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+        run: python discord_notify.py
+
+      - name: Save Discord notification state
+        run: |
+          if [ -f boatrace_discord_state.json ]; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add boatrace_discord_state.json
+
+            if git diff --cached --quiet; then
+              echo "通知状態に変更なし"
+            else
+              git commit -m "Update BOATRACE Discord notification state"
+              git pull --rebase
+              git push
+            fi
+          else
+            echo "state file not found"
+          fi
