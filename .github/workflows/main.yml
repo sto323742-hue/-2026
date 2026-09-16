@@ -177,45 +177,45 @@ jobs:
                   browser.close()
               return found
 
-          def format_column(rows):
-              return "\n".join(
-                  f"**{x['combo']}**  ({x['odds']}倍)"
-                  for x in rows
-              ) or "-"
+          BOAT_COLORS = {
+              "1": 0xF4F4F4,
+              "2": 0x444444,
+              "3": 0xE83A3A,
+              "4": 0x2878D8,
+              "5": 0xE8C43A,
+              "6": 0x20A85A,
+          }
+
+          def combo_parts(combo):
+              return re.findall(r"[1-6]", combo or "")[:3]
 
           def make_payload(item):
               now = now_jst()
               date_text = f"{now.month}月{now.day}日"
-              left, middle, right = item["columns"]
 
-              # ご指定のシンプル版：
-              # 天候なし / AI分析なし / フッターなし /
-              # 本線・狙い・穴の見出しなし / 買い目は横3列
+              # 画像右側デザインに寄せたDiscord Embed。
+              # 買い目は左→中央→右の列順を維持し、各列内は既存どおり昇順。
+              rows = []
+              rank = 1
+              for col in item["columns"]:
+                  for x in col:
+                      parts = combo_parts(x["combo"])
+                      combo = " - ".join(parts) if parts else x["combo"]
+                      rows.append(
+                          f"`{rank:>2}`  **{combo}**　`{x['odds']}倍`"
+                      )
+                      rank += 1
+
+              # Discord標準Embedで、参考画像の黒×金×赤の雰囲気を再現。
               embed = {
-                  "title": f"🚤 {item['race_name']}　🔴 S 勝負レース",
+                  "title": f"🚤 {item['race_name']}　🔴 S勝負レース",
                   "description": (
-                      f"📅 {date_text}\n"
+                      f"📅 **{date_text}**\n"
                       f"🕒 締切予定 **{item['close_time']}**　"
-                      f"（残り {item['remain']}）"
+                      f"（残り **{item['remain']}**）\n\n"
+                      + "\n".join(rows)
                   ),
-                  "color": 15158332,
-                  "fields": [
-                      {
-                          "name": "\u200b",
-                          "value": format_column(left),
-                          "inline": True,
-                      },
-                      {
-                          "name": "\u200b",
-                          "value": format_column(middle),
-                          "inline": True,
-                      },
-                      {
-                          "name": "\u200b",
-                          "value": format_column(right),
-                          "inline": True,
-                      },
-                  ],
+                  "color": 0xFF3B45,
               }
 
               return {
