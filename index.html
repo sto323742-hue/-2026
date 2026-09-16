@@ -500,7 +500,7 @@ function removePendingPrediction(a){
 }
 function savePrediction(a){const r=a.race,key=raceKey(r),rs=records(),ticketSet=makeTickets(a),tickets=allocate(ticketSet,EVALUATION_STAKE,a),stake=tickets.reduce((s,x)=>s+x.money,0),w=a.weather,predictionMeta={finalDecision:a.finalDecision||finalDecision(a),valueDecision:a.valueDecision||expectedValueDecision(a),windSpeed:w.windSpeed,windDirection:w.windDirection,wave:w.wave,weather:w.weather,airTemperature:w.air,waterTemperature:w.water,exhibitionRank:a.exhibitionRank,startRank:a.startRank,courseChanges:a.courseChanges.map(x=>({boat:x.boat,course:num(x.preview?.course_number,x.boat)})),scenario:a.scenario.candidates.slice(0,6).map(x=>({boat:x.boat,tactic:x.tactic,probability:x.probability})),attacker:a.scenario?.attacker?{boat:a.scenario.attacker.boat,tactic:a.scenario.attacker.tactic}:null,reasons:a.reasons,specialHole:ticketSet.special},old=rs.find(x=>x.key===key);if(old){if(!old.done){Object.assign(old,{tickets,stake,rating:a.rating,predictionMeta,savedAt:new Date().toISOString(),model:MODEL_NAME,learningSnapshot:{model:MODEL_NAME,savedAt:new Date().toISOString(),rating:a.rating,grade:'S',tickets:tickets.map(t=>({combo:t.combo,group:t.group||'',probability:num(t.probability),special:!!t.special,money:num(t.money)})),predictionMeta}});save(rs)}return}rs.push({key,date:r.date||todayJST(),stadium:r.stadium_number,venue:STADIUMS[r.stadium_number]||'会場',raceNumber:r.race_number,grade:'S',rating:a.rating,tickets,stake,done:false,hit:false,result:'',payout:0,resultOdds:0,returnAmount:0,savedAt:new Date().toISOString(),model:MODEL_NAME,predictionMeta,learningSnapshot:{model:MODEL_NAME,savedAt:new Date().toISOString(),rating:a.rating,grade:'S',tickets:tickets.map(t=>({combo:t.combo,group:t.group||'',probability:num(t.probability),special:!!t.special,money:num(t.money)})),predictionMeta}});save(rs)}
 function payouts(r){const t=r?.result?.payouts?.trifecta;return Array.isArray(t)?t:[]}
-function settle(races){const rs=records();let ch=false;for(const rec of rs){if(rec.done||rec.finalStatus==='skip')continue;const r=races.find(x=>raceKey(x)===rec.key);if(!r)continue;const p=payouts(r);if(!p.length)continue;const w=p[0],combo=String(w.combination||''),pay=num(w.amount);if(!combo)continue;rec.done=true;rec.result=combo;rec.payout=pay;rec.resultOdds=pay>0?pay/100:0;const ht=rec.tickets?.find(t=>t.combo===combo);rec.hit=!!ht;rec.hitGroup=ht?.group||'';rec.returnAmount=ht?Math.round(pay/100*ht.money):0;rec.proximity=analyzePredictionCloseness(rec,combo);
+function settle(races){const rs=records();let ch=false;for(const rec of rs){if(rec.done)continue;if(rec.finalStatus==='skip'&&rec.finalConfirmed!==true)continue;const r=races.find(x=>raceKey(x)===rec.key);if(!r)continue;const p=payouts(r);if(!p.length)continue;const w=p[0],combo=String(w.combination||''),pay=num(w.amount);if(!combo)continue;rec.done=true;rec.result=combo;rec.payout=pay;rec.resultOdds=pay>0?pay/100:0;const ht=rec.tickets?.find(t=>t.combo===combo);rec.hit=!!ht;rec.hitGroup=ht?.group||'';rec.returnAmount=ht?Math.round(pay/100*ht.money):0;rec.proximity=analyzePredictionCloseness(rec,combo);
 rec.settledAt=new Date().toISOString();ch=true}if(ch){save(rs);renderDailyCounts()}}
 function ticketRows(arr,g){
   return arr.filter(x=>x.group===g).map(x=>{
@@ -570,8 +570,14 @@ if(a.unifiedDecision.status==='confirmed'){
   if(rec&&!rec.done){rec.finalConfirmed=true;rec.finalStatus='confirmed';save(rs)}
 }else if(a.unifiedDecision.status==='skip'){
   const rs=records(),rec=rs.find(x=>x.key===raceKey(a.race));
-  if(rec&&!rec.done){rec.finalConfirmed=false;rec.finalStatus='skip';save(rs)}
-  removePendingPrediction(a);
+  // 一度「最終AI確定」になったレースは、その後の自動更新で見送りへ戻さない。
+  // 確定済みレコードを残すことで、終了後の結果取得・成績反映を取りこぼさない。
+  if(rec?.finalConfirmed===true||rec?.finalStatus==='confirmed'){
+    // confirmed をロックして結果確定を待つ
+  }else{
+    if(rec&&!rec.done){rec.finalConfirmed=false;rec.finalStatus='skip';save(rs)}
+    removePendingPrediction(a);
+  }
 }else{
   // 最終判定前にも一時保存し、6艇分の直前情報・オッズが揃った時点の判定を取りこぼさない。
   savePrediction(a);
