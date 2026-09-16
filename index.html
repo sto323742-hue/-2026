@@ -393,6 +393,56 @@ function applyVenueCourseLearning(scored,a){
   return model;
 }
 
+// === 会場別 展示・ST信頼度学習 v1 ===
+// 保存済みの展示順位/ST順位と確定着順を照合し、会場ごとの「直前情報の効き方」を弱く学習する。
+function buildPreviewRankLearning(a){
+  const venue=STADIUMS[a?.race?.stadium_number]||'';
+  const ex=Array.from({length:3},()=>[0,0,0]);
+  const st=Array.from({length:3},()=>[0,0,0]);
+  let venueRaces=0,evidence=0;
+  for(const rec of records().filter(r=>r.done&&r.result)){
+    const meta=rec?.predictionMeta||rec?.learningSnapshot?.predictionMeta||{};
+    const er=Array.isArray(meta.exhibitionRank)?meta.exhibitionRank:[];
+    const sr=Array.isArray(meta.startRank)?meta.startRank:[];
+    const actual=comboParts(rec.result);if(actual.length!==3||er.length<3||sr.length<3)continue;
+    const same=venue&&rec.venue===venue;if(same)venueRaces++;
+    const w=(same?1:.15)*(1+Math.min(.15,Math.log10(Math.max(1,num(rec.resultOdds,num(rec.payout)/100)))*.05));
+    for(let rank=0;rank<3;rank++){
+      const ep=actual.indexOf(num(er[rank])),sp=actual.indexOf(num(sr[rank]));
+      if(ep>=0){ex[rank][ep]+=w;evidence+=w}
+      if(sp>=0){st[rank][sp]+=w;evidence+=w}
+    }
+  }
+  return{venue,venueRaces,evidence,ex,st};
+}
+function previewRankLearningFactor(combo,a,m){
+  if(!m||m.evidence<=0)return 1;const parts=comboParts(combo);if(parts.length!==3)return 1;
+  let logAdj=0,used=0;
+  const apply=(ranks,cells,scale)=>{for(let rank=0;rank<3;rank++){const boat=num(ranks?.[rank]);if(!boat)continue;const target=parts.indexOf(boat);if(target<0)continue;const row=cells[rank],total=row.reduce((x,y)=>x+y,0);if(total<=0)continue;const rate=(row[target]+2)/(total+6),rel=rate/(1/3),conf=(total/(total+40))*(m.venueRaces/(m.venueRaces+55));logAdj+=Math.log(clamp(rel,.74,1.26))*conf*scale;used++}};
+  apply(a.exhibitionRank,m.ex,.95);apply(a.startRank,m.st,1.05);
+  return used?clamp(Math.exp(logAdj/used),.93,1.07):1;
+}
+function applyPreviewRankLearning(scored,a){const m=buildPreviewRankLearning(a);for(const x of scored){x.previewLearningFactor=previewRankLearningFactor(x.combo,a,m);x.orderLearningFactor=clamp(num(x.orderLearningFactor,1)*x.previewLearningFactor,.82,1.18);x.orderLearningScore=x.probability*x.orderLearningFactor}return m}
+
+// === 会場別 展開学習 v1 ===
+// 過去にAIが最有力とした「逃げ/差し/まくり/まくり差し/展開突き」が、同会場で実際に1着へ結びついた度合いを学習。
+function buildScenarioLearning(a){
+  const venue=STADIUMS[a?.race?.stadium_number]||'',stats={};let venueRaces=0,evidence=0;
+  for(const rec of records().filter(r=>r.done&&r.result)){
+    const meta=rec?.predictionMeta||rec?.learningSnapshot?.predictionMeta||{},top=meta?.scenario?.[0];if(!top?.tactic||!top?.boat)continue;
+    const actual=comboParts(rec.result);if(actual.length!==3)continue;const same=venue&&rec.venue===venue;if(same)venueRaces++;
+    const w=same?1:.12,key=String(top.tactic);stats[key]??={n:0,win:0};stats[key].n+=w;stats[key].win+=(actual[0]===num(top.boat)?w:0);evidence+=w;
+  }
+  return{venue,venueRaces,evidence,stats};
+}
+function scenarioLearningFactor(combo,a,m){
+  const top=a?.scenario?.top;if(!top?.tactic||!m)return 1;const row=m.stats?.[top.tactic];if(!row||row.n<=0)return 1;
+  const first=comboParts(combo)[0],smoothed=(row.win+3)/(row.n+6),baseline=.5,rel=smoothed/baseline,conf=(row.n/(row.n+35))*(m.venueRaces/(m.venueRaces+55));
+  // 最有力展開艇を1着に置く組み合わせだけ、過去の展開成功率に応じて上下させる。
+  const signed=first===num(top.boat)?1:-.35;return clamp(Math.exp(Math.log(clamp(rel,.75,1.25))*conf*signed),.94,1.06);
+}
+function applyScenarioLearning(scored,a){const m=buildScenarioLearning(a);for(const x of scored){x.scenarioLearningFactor=scenarioLearningFactor(x.combo,a,m);x.orderLearningFactor=clamp(num(x.orderLearningFactor,1)*x.scenarioLearningFactor,.80,1.20);x.orderLearningScore=x.probability*x.orderLearningFactor}return m}
+
 function makeTickets(a){
   const source=Array.isArray(a.comboPool)&&a.comboPool.length
     ? a.comboPool.map(x=>({...x}))
@@ -402,6 +452,8 @@ function makeTickets(a){
   // 現在AI評価→候補120通り→着順補正学習→最終10点、の順で弱く補正。
   applyFinishOrderLearning(scored,a);
   applyVenueCourseLearning(scored,a);
+  applyPreviewRankLearning(scored,a);
+  applyScenarioLearning(scored,a);
   const withOdds=scored.filter(x=>x.odds>0).length>=80;
   const setInfo=withOdds?popularThreeBoatSet(scored):null;
 
@@ -646,7 +698,7 @@ function renderOrderLearningStats(rs){
   const root=$('orderLearningStats');if(!root)return;
   const d=orderLearningDisplayData(rs);
   if(!d.total){root.innerHTML='<div class="empty">確定レースが蓄積すると、会場別の着順補正学習状況を表示します。</div>';return}
-  root.innerHTML=`<div class="learning-grid"><div class="learning-card"><small>学習元の確定レース</small><b>${d.total}R</b></div><div class="learning-card"><small>着順補正の学習対象</small><b>${d.usableCount}R</b></div><div class="learning-card"><small>3艇一致・順番違い</small><b>${d.three}R</b></div><div class="learning-card"><small>会場別学習</small><b>${d.rows.length}会場</b></div></div><div class="learning-summary"><b>会場別 着順補正</b><br>${d.rows.map(x=>`${x.venue}：${x.count}R ／ 補正 ${x.strength} ／ 学習対象 ${x.usable}R<br><span class="learning-note">1着だけ外れ ${x.one}R・2着だけ外れ ${x.two}R・3着だけ外れ ${x.threePos}R・3艇順番違い ${x.three}R</span>`).join('<br>')}</div><div class="learning-note">※補正強度は会場別の確定データ量を目安表示しています。実際の予想補正は少数データで暴走しないよう弱く制限し、同会場データを強め・他会場データを弱めに利用します。</div>${(()=>{const cr=venueCourseDisplayData(rs);return cr.length?`<div class="learning-summary"><b>会場別 × コース別 着順学習</b><br>${cr.map(x=>`${x.venue}：${x.count}R ／ 1着傾向 ${x.leaders[0].course}コース ／ 2着傾向 ${x.leaders[1].course}コース ／ 3着傾向 ${x.leaders[2].course}コース`).join('<br>')}</div><div class="learning-note">※各会場で1〜6コースの1着・2着・3着傾向を蓄積し、データ量に応じて最終10点の並び順へ弱く反映します。</div>`:''})()}`;
+  root.innerHTML=`<div class="learning-grid"><div class="learning-card"><small>学習元の確定レース</small><b>${d.total}R</b></div><div class="learning-card"><small>着順補正の学習対象</small><b>${d.usableCount}R</b></div><div class="learning-card"><small>3艇一致・順番違い</small><b>${d.three}R</b></div><div class="learning-card"><small>会場別学習</small><b>${d.rows.length}会場</b></div></div><div class="learning-summary"><b>会場別 着順補正</b><br>${d.rows.map(x=>`${x.venue}：${x.count}R ／ 補正 ${x.strength} ／ 学習対象 ${x.usable}R<br><span class="learning-note">1着だけ外れ ${x.one}R・2着だけ外れ ${x.two}R・3着だけ外れ ${x.threePos}R・3艇順番違い ${x.three}R</span>`).join('<br>')}</div><div class="learning-note">※補正強度は会場別の確定データ量を目安表示しています。実際の予想補正は少数データで暴走しないよう弱く制限し、同会場データを強め・他会場データを弱めに利用します。</div>${(()=>{const cr=venueCourseDisplayData(rs);return cr.length?`<div class="learning-summary"><b>会場別 × コース別 着順学習</b><br>${cr.map(x=>`${x.venue}：${x.count}R ／ 1着傾向 ${x.leaders[0].course}コース ／ 2着傾向 ${x.leaders[1].course}コース ／ 3着傾向 ${x.leaders[2].course}コース`).join('<br>')}</div><div class="learning-note">※各会場で1〜6コースの1着・2着・3着傾向を蓄積し、データ量に応じて最終10点の並び順へ弱く反映します。</div>`:''})()}${(()=>{const done=rs.filter(x=>x.done&&x.result), venues=Object.values(STADIUMS).map(venue=>{const vr=done.filter(x=>x.venue===venue), ex=[0,0,0],st=[0,0,0],sc={};for(const r of vr){const m=r.predictionMeta||r.learningSnapshot?.predictionMeta||{},res=comboParts(r.result);if(res.length!==3)continue;(m.exhibitionRank||[]).slice(0,3).forEach((b,i)=>{if(res.includes(num(b)))ex[i]++});(m.startRank||[]).slice(0,3).forEach((b,i)=>{if(res.includes(num(b)))st[i]++});const top=m.scenario?.[0];if(top?.tactic){sc[top.tactic]??={n:0,w:0};sc[top.tactic].n++;if(res[0]===num(top.boat))sc[top.tactic].w++}}const best=Object.entries(sc).sort((a,b)=>(b[1].n?b[1].w/b[1].n:0)-(a[1].n?a[1].w/a[1].n:0))[0];return{venue,n:vr.length,ex,st,best}}).filter(x=>x.n>0).sort((a,b)=>b.n-a.n);return venues.length?`<div class="learning-summary"><b>会場別 展示・ST信頼度学習</b><br>${venues.map(x=>`${x.venue}：${x.n}R ／ 展示1位3着内 ${x.n?(x.ex[0]/x.n*100).toFixed(0):0}% ／ ST1位3着内 ${x.n?(x.st[0]/x.n*100).toFixed(0):0}%`).join('<br>')}</div><div class="learning-summary"><b>会場別 展開学習</b><br>${venues.map(x=>`${x.venue}：${x.best?`${x.best[0]} ${x.best[1].w}/${x.best[1].n}R 1着一致`:'学習データ蓄積中'}`).join('<br>')}</div><div class="learning-note">※展示/ST・展開とも少数データでは補正を弱く制限し、蓄積量に応じて最終10点の順位付けへ反映します。</div>`:''})()}`;
 }
 function renderLearningProgress(rs){const root=$('learningProgress');if(!root)return;const done=rs.filter(x=>x.done),rows=Object.values(STADIUMS).map(venue=>{const a=done.filter(x=>x.venue===venue),s=calc(a),count=a.length,pct=Math.min(100,count),status=count>=100?'100R到達':count>=50?'蓄積中':'収集中';return{venue,count,pct,status,hitRate:s.hitRate,roi:s.roi}}).sort((a,b)=>b.count-a.count||a.venue.localeCompare(b.venue,'ja'));root.innerHTML=`<div class="progress-list">${rows.map(x=>`<div class="progress-item"><div class="progress-top"><b>${x.venue}</b><span class="${x.count>=100?'learn-ready':x.count>=50?'learn-mid':'learn-low'}">${x.count}/100R ${x.status}</span></div><div class="progress-track"><div class="progress-fill" style="width:${x.pct}%"></div></div><div class="learning-note">的中率 ${x.hitRate.toFixed(1)}% ／ 回収率 ${x.roi.toFixed(1)}%</div></div>`).join('')}</div><div class="learning-note">100Rは会場別の初回分析ライン。100R到達後も200R・300Rと継続して累計データを残します。</div>`}
 function removePendingPrediction(a){
