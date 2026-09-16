@@ -56,6 +56,7 @@ const API_BASE='https://boatraceopenapi.github.io/api/v1';
 const ODDS_URL='./odds_today.json';
 const STORAGE_KEY='boat_ai_gold_v1_records';
 const DAILY_COUNT_KEY='boat_ai_gold_v1_daily_counts';
+const DAILY_FINAL_COUNT_KEY='boat_ai_gold_v1_daily_final_confirmed';
 function dailyCounts(){
   const d=todayJST();
   try{
@@ -67,18 +68,37 @@ function dailyCounts(){
 function rememberDaily(a){
   const x=dailyCounts(),key=raceKey(a.race),u=a.unifiedDecision||unifiedDecision(a);
   if(!x.s.includes(key))x.s.push(key);
-  if(!x.candidate.includes(key))x.candidate.push(key);
   if(u.status==='skip'&&!x.skip.includes(key))x.skip.push(key);
   localStorage.setItem(DAILY_COUNT_KEY,JSON.stringify(x));
+}
+function dailyFinalConfirmed(){
+  const d=todayJST();
+  try{
+    const x=JSON.parse(localStorage.getItem(DAILY_FINAL_COUNT_KEY)||'{}');
+    if(x.date!==d)return{date:d,keys:[]};
+    return{date:d,keys:Array.isArray(x.keys)?x.keys:[]};
+  }catch{return{date:d,keys:[]}}
+}
+function rememberFinalConfirmed(a){
+  const x=dailyFinalConfirmed(),key=raceKey(a.race);
+  if(!x.keys.includes(key))x.keys.push(key);
+  localStorage.setItem(DAILY_FINAL_COUNT_KEY,JSON.stringify(x));
 }
 function renderDailyCounts(){
   const x=dailyCounts();
   const rs=records().filter(r=>r.date===todayJST());
-  // 既存データとの互換性を維持：
-  // finalConfirmed=true は新方式の確定、フラグ未設定でも done=true の既存確定結果は有効。
-  const confirmed=rs.filter(r=>r.finalConfirmed===true||(r.finalConfirmed==null&&r.done===true));
+  // 「最終AI確定」は当日累計として専用保存し、締切後にカードが消えても減らさない。
+  // 既存の確定済みレコードも合流して、更新前に確定したレースとの互換性を維持する。
+  const finalDaily=dailyFinalConfirmed();
+  const confirmedKeys=new Set(finalDaily.keys);
+  for(const r of rs){
+    if(r.finalConfirmed===true||(r.finalConfirmed==null&&r.done===true))confirmedKeys.add(r.key);
+  }
+  if(confirmedKeys.size!==finalDaily.keys.length){
+    localStorage.setItem(DAILY_FINAL_COUNT_KEY,JSON.stringify({date:todayJST(),keys:[...confirmedKeys]}));
+  }
   if($('summaryS'))$('summaryS').textContent=x.s.length+'R';
-  if($('summaryCandidate'))$('summaryCandidate').textContent=confirmed.length+'R';
+  if($('summaryCandidate'))$('summaryCandidate').textContent=confirmedKeys.size+'R';
   if($('summarySkip'))$('summarySkip').textContent=(x.skip||[]).length+'R';
 }
 
@@ -806,6 +826,7 @@ if(a.unifiedDecision.status==='confirmed'){
   savePrediction(a);
   const rs=records(),rec=rs.find(x=>x.key===raceKey(a.race));
   if(rec&&!rec.done){rec.finalConfirmed=true;rec.finalStatus='confirmed';save(rs)}
+  rememberFinalConfirmed(a);
 }else if(a.unifiedDecision.status==='skip'){
   const rs=records(),rec=rs.find(x=>x.key===raceKey(a.race));
   // 一度「最終AI確定」になったレースは、その後の自動更新で見送りへ戻さない。
