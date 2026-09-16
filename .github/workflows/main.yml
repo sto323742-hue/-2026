@@ -139,7 +139,7 @@ jobs:
 
                       # 残り分
                       m_min = re.search(r"締切まで約([0-9]+)分", badge)
-                      remain = m_min.group(1) if m_min else "5分以内"
+                      remain = (m_min.group(1) + "分") if m_min else "5分以内"
 
                       # 3列をWebツールの順番のまま取得
                       columns = []
@@ -153,6 +153,13 @@ jobs:
                               sub = t.locator(".ticket-sub").inner_text().strip()
                               odds = parse_odds(sub)
                               rows.append({"combo": combo, "odds": odds})
+
+                          # 投票しやすいように各列の買い目を数字の小さい順に並べる
+                          rows.sort(
+                              key=lambda x: tuple(
+                                  int(n) for n in re.findall(r"[0-9]+", x["combo"])
+                              )
+                          )
                           columns.append(rows)
 
                       total = sum(len(x) for x in columns)
