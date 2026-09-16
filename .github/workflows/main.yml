@@ -29,6 +29,8 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install requests playwright pillow
+          sudo apt-get update -y
+          sudo apt-get install -y fonts-noto-cjk
           python -m playwright install --with-deps chromium
 
       - name: Create Discord notifier
@@ -222,11 +224,27 @@ jobs:
               odds_f = _font(28, True)
 
               now = now_jst()
-              date_text = f"{now.month}月{now.day}日"
-              race_title = f"🚤 {item['race_name']}   🔴 S勝負レース"
-              d.text((68, 58), race_title, font=title_f, fill=(245, 245, 245))
-              d.text((72, 132), f"📅 {date_text}", font=meta_f, fill=(238, 238, 238))
-              d.text((72, 184), f"🕒 締切予定  {item['close_time']}   （残り {item['remain']}）", font=meta_f, fill=(245, 220, 125))
+              jp_week = "月火水木金土日"[now.weekday()]
+              date_text = f"{now.month}月{now.day}日（{jp_week}）"
+
+              # 絵文字はGitHub Actions環境で豆腐（□）になるため使わず、
+              # Pillowで記号を直接描画して端末に依存しない表示にする。
+              d.text((68, 58), item['race_name'], font=title_f, fill=(245, 245, 245))
+              title_w = d.textbbox((0, 0), item['race_name'], font=title_f)[2]
+              red_x = 92 + title_w
+              d.ellipse((red_x, 65, red_x + 42, 107), fill=(235, 45, 55))
+              d.text((red_x + 55, 58), "S勝負レース", font=title_f, fill=(245, 245, 245))
+
+              # 日付
+              d.rounded_rectangle((72, 137, 103, 166), radius=5, outline=(238,238,238), width=3)
+              d.line((72, 145, 103, 145), fill=(238,238,238), width=3)
+              d.text((120, 128), date_text, font=meta_f, fill=(238, 238, 238))
+
+              # 時計
+              d.ellipse((72, 188, 105, 221), outline=(245,220,125), width=3)
+              d.line((88, 204, 88, 194), fill=(245,220,125), width=3)
+              d.line((88, 204, 97, 204), fill=(245,220,125), width=3)
+              d.text((120, 180), f"締切予定  {item['close_time']}   （残り {item['remain']}）", font=meta_f, fill=(245, 220, 125))
 
               # Webツールの3列順を維持したまま10点を1〜10にする
               rows = []
