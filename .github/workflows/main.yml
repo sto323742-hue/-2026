@@ -28,7 +28,7 @@ jobs:
       - name: Install packages
         run: |
           python -m pip install --upgrade pip
-          pip install requests playwright
+          pip install requests playwright pillow
           python -m playwright install --with-deps chromium
 
       - name: Create Discord notifier
@@ -45,6 +45,7 @@ jobs:
           from datetime import datetime, timedelta, timezone
 
           import requests
+          from PIL import Image, ImageDraw, ImageFont
           from playwright.sync_api import sync_playwright
 
           JST = timezone(timedelta(hours=9))
@@ -78,13 +79,26 @@ jobs:
                   encoding="utf-8"
               )
 
-          def webhook_send(payload):
+          def webhook_send(payload, image_bytes=None):
               if not WEBHOOK:
                   raise RuntimeError(
                       "Discord Webhook Secret がありません。"
                       "DISCORD_WEBHOOK_URL または DISCORD_WEBHOOK を登録してください。"
                   )
-              r = requests.post(WEBHOOK, json=payload, timeout=25)
+
+              if image_bytes is None:
+                  r = requests.post(WEBHOOK, json=payload, timeout=25)
+              else:
+                  # Discordへ画像そのものを添付。これで端末幅に左右されず
+                  # 5点＋5点の左右2列デザインを固定表示できる。
+                  files = {
+                      "files[0]": ("boatrace_ai.png", image_bytes, "image/png")
+                  }
+                  data = {
+                      "payload_json": json.dumps(payload, ensure_ascii=False)
+                  }
+                  r = requests.post(WEBHOOK, data=data, files=files, timeout=25)
+
               print("DISCORD", r.status_code)
               if r.status_code not in (200, 204):
                   raise RuntimeError(f"Discord送信失敗: {r.status_code} {r.text[:300]}")
@@ -177,50 +191,98 @@ jobs:
                   browser.close()
               return found
 
-          BOAT_COLORS = {
-              "1": 0xF4F4F4,
-              "2": 0x444444,
-              "3": 0xE83A3A,
-              "4": 0x2878D8,
-              "5": 0xE8C43A,
-              "6": 0x20A85A,
-          }
+          def _font(size, bold=False):
+              candidates = [
+                  "/usr/share/fonts/opentype/noto/NotoSansCJK-Bold.ttc" if bold else "/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc",
+                  "/usr/share/fonts/truetype/noto/NotoSansCJK-Bold.ttc" if bold else "/usr/share/fonts/truetype/noto/NotoSansCJK-Regular.ttc",
+                  "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf" if bold else "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+              ]
+              for path in candidates:
+                  if Path(path).exists():
+                      return ImageFont.truetype(path, size=size)
+              return ImageFont.load_default()
 
-          def combo_parts(combo):
-              return re.findall(r"[1-6]", combo or "")[:3]
+          def _rounded(draw, box, radius, fill, outline=None, width=1):
+              draw.rounded_rectangle(box, radius=radius, fill=fill, outline=outline, width=width)
 
-          def make_payload(item):
+          def make_notification_image(item):
+              # 参考画像の右側デザイン：黒基調＋赤アクセント＋5点×2列
+              W, H = 1200, 760
+              img = Image.new("RGB", (W, H), (15, 19, 23))
+              d = ImageDraw.Draw(img)
+
+              # 外枠・左アクセント
+              _rounded(d, (18, 18, W-18, H-18), 34, (17, 22, 27), (48, 57, 66), 3)
+              d.rounded_rectangle((18, 18, 34, H-18), radius=8, fill=(255, 59, 69))
+
+              title_f = _font(46, True)
+              meta_f = _font(30, True)
+              rank_f = _font(25, True)
+              combo_f = _font(31, True)
+              odds_f = _font(28, True)
+
               now = now_jst()
               date_text = f"{now.month}月{now.day}日"
+              race_title = f"🚤 {item['race_name']}   🔴 S勝負レース"
+              d.text((68, 58), race_title, font=title_f, fill=(245, 245, 245))
+              d.text((72, 132), f"📅 {date_text}", font=meta_f, fill=(238, 238, 238))
+              d.text((72, 184), f"🕒 締切予定  {item['close_time']}   （残り {item['remain']}）", font=meta_f, fill=(245, 220, 125))
 
-              # 画像右側デザインに寄せたDiscord Embed。
-              # 買い目は左→中央→右の列順を維持し、各列内は既存どおり昇順。
+              # Webツールの3列順を維持したまま10点を1〜10にする
               rows = []
-              rank = 1
               for col in item["columns"]:
-                  for x in col:
-                      parts = combo_parts(x["combo"])
-                      combo = " - ".join(parts) if parts else x["combo"]
-                      rows.append(
-                          f"`{rank:>2}`  **{combo}**　`{x['odds']}倍`"
-                      )
-                      rank += 1
+                  rows.extend(col)
+              rows = rows[:10]
 
-              # Discord標準Embedで、参考画像の黒×金×赤の雰囲気を再現。
-              embed = {
-                  "title": f"🚤 {item['race_name']}　🔴 S勝負レース",
-                  "description": (
-                      f"📅 **{date_text}**\n"
-                      f"🕒 締切予定 **{item['close_time']}**　"
-                      f"（残り **{item['remain']}**）\n\n"
-                      + "\n".join(rows)
-                  ),
-                  "color": 0xFF3B45,
+              # 買い目エリア
+              top = 270
+              left_x, right_x = 58, 616
+              col_w, row_h, gap = 520, 76, 10
+              boat_bg = {
+                  "1": (242,242,242), "2": (55,55,60), "3": (235,55,60),
+                  "4": (38,115,215), "5": (244,205,65), "6": (24,174,91),
               }
+              boat_fg = {"1": (25,25,25), "2": (245,245,245), "3": (255,255,255), "4": (255,255,255), "5": (30,30,30), "6": (255,255,255)}
 
+              for i, x in enumerate(rows):
+                  side = 0 if i < 5 else 1
+                  pos = i if i < 5 else i - 5
+                  x0 = left_x if side == 0 else right_x
+                  y0 = top + pos * (row_h + gap)
+                  _rounded(d, (x0, y0, x0+col_w, y0+row_h), 14, (13,18,22), (64,70,76), 2)
+
+                  # 順位
+                  _rounded(d, (x0+10, y0+10, x0+68, y0+66), 10, (65,51,22), (122,96,39), 2)
+                  rank = str(i+1)
+                  bb = d.textbbox((0,0), rank, font=rank_f)
+                  d.text((x0+39-(bb[2]-bb[0])/2, y0+38-(bb[3]-bb[1])/2-2), rank, font=rank_f, fill=(250,224,146))
+
+                  parts = re.findall(r"[1-6]", x.get("combo", ""))[:3]
+                  bx = x0 + 86
+                  for n in parts:
+                      _rounded(d, (bx, y0+12, bx+58, y0+64), 8, boat_bg[n], (90,90,90), 1)
+                      bb = d.textbbox((0,0), n, font=combo_f)
+                      d.text((bx+29-(bb[2]-bb[0])/2, y0+38-(bb[3]-bb[1])/2-3), n, font=combo_f, fill=boat_fg[n])
+                      bx += 66
+
+                  odds = f"{x.get('odds','-')}倍"
+                  bb = d.textbbox((0,0), odds, font=odds_f)
+                  d.text((x0+col_w-18-(bb[2]-bb[0]), y0+23), odds, font=odds_f, fill=(248,224,145))
+
+              import io
+              buf = io.BytesIO()
+              img.save(buf, format="PNG", optimize=True)
+              return buf.getvalue()
+
+          def make_payload(item):
+              # 文字Embedではなく画像を主役にするため、本文は最小限。
+              # 添付画像をEmbed内に表示して1枚の通知カードとして見せる。
               return {
                   "username": "BOAT2026 AI予想",
-                  "embeds": [embed],
+                  "embeds": [{
+                      "color": 0xFF3B45,
+                      "image": {"url": "attachment://boatrace_ai.png"}
+                  }],
                   "allowed_mentions": {"parse": []},
               }
 
@@ -258,7 +320,8 @@ jobs:
 
                   if unsent:
                       for key, item in unsent:
-                          webhook_send(make_payload(item))
+                          image_bytes = make_notification_image(item)
+                          webhook_send(make_payload(item), image_bytes=image_bytes)
                           sent[key] = {
                               "notified_at": now_jst().isoformat(),
                               "once_only": True,
