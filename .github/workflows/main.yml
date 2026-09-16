@@ -221,10 +221,11 @@ jobs:
               state = load_state()
               sent = state.setdefault("sent", {})
 
-              # 軽量版：起動ごとに1回だけ確認して即終了
-              # GitHub Actions自体が5分ごとに起動する
-              max_attempts = 1
-              wait_seconds = 0
+              # GitHub Actionsは5分ごとに起動。
+              # 各起動内でも1分間隔で最大4回確認し、
+              # Webツールの「最終AI確定」をできるだけ早くDiscordへ通知する。
+              max_attempts = 4
+              wait_seconds = 60
 
               for attempt in range(1, max_attempts + 1):
                   print(
@@ -258,7 +259,7 @@ jobs:
                           save_state(state)
                           time.sleep(1)
 
-                  # 軽量版なので追加待機なし
+                  # 次の確認まで1分待機
                   if attempt < max_attempts and wait_seconds:
                       time.sleep(wait_seconds)
 
