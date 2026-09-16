@@ -721,7 +721,14 @@ function renderOrderLearningStats(rs){
     <div class="learning-module"><h4>③ 展示・ST学習</h4><div class="big">展示1位 ${vr.length?(ex[0]/vr.length*100).toFixed(0):0}%</div><div class="line">展示1位3着内 ／ ST1位3着内 ${vr.length?(st[0]/vr.length*100).toFixed(0):0}%</div><div class="muted">保存済みの展示順位・ST順位と確定着順を照合</div></div>
     <div class="learning-module"><h4>④ 展開学習</h4><div class="big">${best?best[0]:'蓄積中'}</div><div class="line">${best?`${best[1].w}/${best[1].n}R で最有力展開艇が1着一致`:'展開データを収集中です。'}</div><div class="muted">逃げ・差し・まくり・まくり差し・展開突きを会場別に学習</div></div>
   </div><div class="learning-note">※表示会場を切り替えても予想・学習ロジック自体は変更されません。蓄積済みデータを会場別に見やすく表示しています。</div>`;
-  root.querySelectorAll('[data-learning-venue]').forEach(b=>b.onclick=()=>{learningVenue=b.dataset.learningVenue;renderOrderLearningStats(rs)});
+  root.querySelectorAll('[data-learning-venue]').forEach(b=>b.onclick=()=>{
+    const tabsEl=root.querySelector('.learning-venue-tabs');
+    const scrollLeft=tabsEl?tabsEl.scrollLeft:0;
+    learningVenue=b.dataset.learningVenue;
+    renderOrderLearningStats(rs);
+    const nextTabs=root.querySelector('.learning-venue-tabs');
+    if(nextTabs)nextTabs.scrollLeft=scrollLeft;
+  });
 }
 function renderLearningProgress(rs){const root=$('learningProgress');if(!root)return;const done=rs.filter(x=>x.done),rows=Object.values(STADIUMS).map(venue=>{const a=done.filter(x=>x.venue===venue),s=calc(a),count=a.length,pct=Math.min(100,count),status=count>=100?'100R到達':count>=50?'蓄積中':'収集中';return{venue,count,pct,status,hitRate:s.hitRate,roi:s.roi}}).sort((a,b)=>b.count-a.count||a.venue.localeCompare(b.venue,'ja'));root.innerHTML=`<div class="progress-list">${rows.map(x=>`<div class="progress-item"><div class="progress-top"><b>${x.venue}</b><span class="${x.count>=100?'learn-ready':x.count>=50?'learn-mid':'learn-low'}">${x.count}/100R ${x.status}</span></div><div class="progress-track"><div class="progress-fill" style="width:${x.pct}%"></div></div><div class="learning-note">的中率 ${x.hitRate.toFixed(1)}% ／ 回収率 ${x.roi.toFixed(1)}%</div></div>`).join('')}</div><div class="learning-note">100Rは会場別の初回分析ライン。100R到達後も200R・300Rと継続して累計データを残します。</div>`}
 function removePendingPrediction(a){
