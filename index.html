@@ -271,12 +271,77 @@ function linkedMarketScore(x,setInfo){
 }
 
 
+// === 着順補正学習 v1 ===
+// 確定済みの既存成績だけを使用し、3艇一致・順番違い／着順1か所外れを中心に
+// 「艇ごとの1着・2着・3着適性」を弱く補正する。データが少ない間は従来予想をほぼ維持する。
+function buildFinishOrderLearning(a){
+  const venue=STADIUMS[a?.race?.stadium_number]||'';
+  const rs=records().filter(r=>r.done&&r.result&&Array.isArray(r.tickets)&&r.tickets.length);
+  const cells={};
+  const ensure=boat=>cells[boat]||(cells[boat]=[[0,0,0],[0,0,0],[0,0,0]]);
+  let evidence=0;
+  for(const rec of rs){
+    const prox=rec.proximity||analyzePredictionCloseness(rec,rec.result);
+    if(!prox||!prox.bestCombo)continue;
+    // 学習対象を「並びの惜しさ」が確認できるケースに限定。
+    let baseWeight=prox.type==='three_wrong_order'?1:prox.type==='two_positions'?.72:prox.type==='exact'?.30:0;
+    if(!baseWeight)continue;
+    // 同会場を少し強く、他会場も一般傾向として弱く利用。
+    const venueWeight=venue&&rec.venue===venue?1:.35;
+    // 高配当の3艇一致も捨てない。ただし1レースが支配しないよう上限を設ける。
+    const odds=Math.max(1,num(rec.resultOdds,num(rec.payout)/100));
+    const payoutWeight=1+Math.min(.35,Math.log10(odds)*.10);
+    const w=baseWeight*venueWeight*payoutWeight;
+    const pred=comboParts(prox.bestCombo),actual=comboParts(rec.result);
+    if(pred.length!==3||actual.length!==3)continue;
+    for(let actualPos=0;actualPos<3;actualPos++){
+      const boat=actual[actualPos],predPos=pred.indexOf(boat);
+      if(predPos<0)continue;
+      ensure(boat)[predPos][actualPos]+=w;
+      evidence+=w;
+    }
+  }
+  return{cells,evidence};
+}
+function finishOrderLearningFactor(combo,a,model){
+  const parts=comboParts(combo);
+  if(parts.length!==3||!model||model.evidence<=0)return 1;
+  let logAdj=0,used=0;
+  for(let targetPos=0;targetPos<3;targetPos++){
+    const boat=parts[targetPos],m=model.cells[boat];
+    if(!m)continue;
+    // その艇が過去の「惜しい予想」で、実際に各着へ来た比率を集約。
+    const actual=[0,0,0];
+    for(let predPos=0;predPos<3;predPos++)for(let ap=0;ap<3;ap++)actual[ap]+=m[predPos][ap];
+    const total=actual.reduce((x,y)=>x+y,0);
+    if(total<=0)continue;
+    const smoothed=(actual[targetPos]+1.5)/(total+4.5); // 少数データの暴走防止
+    const relative=smoothed/(1/3);
+    const confidence=total/(total+30);               // 蓄積ほど補正を強める
+    logAdj+=Math.log(clamp(relative,.70,1.30))*confidence;
+    used++;
+  }
+  if(!used)return 1;
+  // 全体でも補正幅を制限。従来ロジックを主、学習を従に固定する。
+  return clamp(Math.exp(logAdj/used),.88,1.12);
+}
+function applyFinishOrderLearning(scored,a){
+  const model=buildFinishOrderLearning(a);
+  for(const x of scored){
+    x.orderLearningFactor=finishOrderLearningFactor(x.combo,a,model);
+    x.orderLearningScore=x.probability*x.orderLearningFactor;
+  }
+  return model;
+}
+
 function makeTickets(a){
   const source=Array.isArray(a.comboPool)&&a.comboPool.length
     ? a.comboPool.map(x=>({...x}))
     : allCombos().map(combo=>({combo,probability:comboProbability(combo,a),odds:0,ev:0}));
 
   const scored=addPopularityRank(source);
+  // 現在AI評価→候補120通り→着順補正学習→最終10点、の順で弱く補正。
+  applyFinishOrderLearning(scored,a);
   const withOdds=scored.filter(x=>x.odds>0).length>=80;
   const setInfo=withOdds?popularThreeBoatSet(scored):null;
 
@@ -303,6 +368,7 @@ function makeTickets(a){
     .filter(x=>!withOdds||(x.odds>=10&&x.odds<=40&&x.popRank<=28))
     .sort((x,y)=>
       (y.linkedScore-x.linkedScore) ||
+      (y.orderLearningScore-x.orderLearningScore) ||
       (y.probability-x.probability) ||
       (y.ev-x.ev)
     );
@@ -310,7 +376,7 @@ function makeTickets(a){
   if(main.length<2){
     addUnique(main,[...scored]
       .filter(x=>!withOdds||(x.odds>=10&&x.odds<=60))
-      .sort((x,y)=>(y.linkedScore-x.linkedScore)||(y.probability-x.probability)||(y.ev-x.ev)),2);
+      .sort((x,y)=>(y.linkedScore-x.linkedScore)||(y.orderLearningScore-x.orderLearningScore)||(y.probability-x.probability)||(y.ev-x.ev)),2);
   }
 
   // 狙い4点：40〜100倍を中心に、展開差・並び替え・期待値を重視。
@@ -318,22 +384,22 @@ function makeTickets(a){
   let coverPool=scored
     .filter(x=>!used.has(x.combo)&&(!withOdds||(x.odds>=40&&x.odds<=100&&x.popRank<=60)))
     .sort((x,y)=>{
-      const yScore=(y.ev*0.75)+(y.linkedScore*4.5)+(y.linkedSet?0.25:0)+(y.probability*2);
-      const xScore=(x.ev*0.75)+(x.linkedScore*4.5)+(x.linkedSet?0.25:0)+(x.probability*2);
+      const yScore=(y.ev*0.75)+(y.linkedScore*4.5)+(y.linkedSet?0.25:0)+(y.orderLearningScore*2);
+      const xScore=(x.ev*0.75)+(x.linkedScore*4.5)+(x.linkedSet?0.25:0)+(x.orderLearningScore*2);
       return yScore-xScore;
     });
   addUnique(cover,coverPool,4);
   if(cover.length<4){
     addUnique(cover,[...scored]
       .filter(x=>!used.has(x.combo)&&(!withOdds||(x.odds>=25&&x.odds<=130)))
-      .sort((x,y)=>(y.ev-x.ev)||(y.linkedScore-x.linkedScore)||(y.probability-x.probability)),4);
+      .sort((x,y)=>(y.ev-x.ev)||(y.linkedScore-x.linkedScore)||(y.orderLearningScore-x.orderLearningScore)||(y.probability-x.probability)),4);
   }
 
   // 穴4点：100倍以上を中心に、高配当でもAI確率が残る組み合わせだけを採用。
   // 3艇一致・順番違い対策として、人気3艇セットの有力な裏目には補正を掛ける。
   const hole=[];
   const holeScore=x=>
-    x.probability*Math.log10(Math.max(x.odds,10))*(1+Math.min(x.ev,3.5))
+    x.orderLearningScore*Math.log10(Math.max(x.odds,10))*(1+Math.min(x.ev,3.5))
     *(x.linkedSet?1.55:1);
   let holePool=scored
     .filter(x=>!used.has(x.combo)&&(!withOdds||(x.odds>=100&&x.popRank>=20&&x.probability>=0.0012)))
@@ -356,7 +422,7 @@ function makeTickets(a){
 
   // オッズ未取得時はAI確率順で2-4-4を維持する。
   if(!withOdds){
-    const fallback=[...scored].sort((x,y)=>y.probability-x.probability);
+    const fallback=[...scored].sort((x,y)=>(y.orderLearningScore-x.orderLearningScore)||(y.probability-x.probability));
     addUnique(main,fallback,2);
     addUnique(cover,fallback,4);
     addUnique(hole,fallback,4);
@@ -367,7 +433,7 @@ function makeTickets(a){
     const fill=[...scored].filter(x=>!used.has(x.combo)).sort((x,y)=>{
       const yo=y.odds>=10?1:0, xo=x.odds>=10?1:0;
       const yHigh=y.odds>=40?1:0, xHigh=x.odds>=40?1:0;
-      return (yo-xo)||(yHigh-xHigh)||(y.ev-x.ev)||(y.linkedScore-x.linkedScore)||(y.probability-x.probability);
+      return (yo-xo)||(yHigh-xHigh)||(y.ev-x.ev)||(y.linkedScore-x.linkedScore)||(y.orderLearningScore-x.orderLearningScore)||(y.probability-x.probability);
     });
     addUnique(main,fill,2);
     addUnique(cover,fill,4);
