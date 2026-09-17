@@ -79,6 +79,21 @@ function dailyFinalConfirmed(){
     return{date:d,keys:Array.isArray(x.keys)?x.keys:[]};
   }catch{return{date:d,keys:[]}}
 }
+function reconcileFinalConfirmedRecords(){
+  // 当日の最終確定キーを正本として records 側へ同期する。
+  // 締切後に予想カードが消えても、確定済みレースを結果取得・成績反映から落とさない。
+  const d=todayJST(),keys=new Set(dailyFinalConfirmed().keys),rs=records();
+  let changed=false;
+  for(const rec of rs){
+    if(rec.date!==d||!keys.has(rec.key))continue;
+    if(rec.finalConfirmed!==true||rec.finalStatus!=='confirmed'){
+      rec.finalConfirmed=true;
+      rec.finalStatus='confirmed';
+      changed=true;
+    }
+  }
+  if(changed)save(rs);
+}
 function rememberFinalConfirmed(a){
   const x=dailyFinalConfirmed(),key=raceKey(a.race);
   if(!x.keys.includes(key))x.keys.push(key);
@@ -92,7 +107,7 @@ function renderDailyCounts(){
   const finalDaily=dailyFinalConfirmed();
   const confirmedKeys=new Set(finalDaily.keys);
   for(const r of rs){
-    if(r.finalConfirmed===true||(r.finalConfirmed==null&&r.done===true))confirmedKeys.add(r.key);
+    if(r.finalConfirmed===true||r.finalStatus==='confirmed')confirmedKeys.add(r.key);
   }
   if(confirmedKeys.size!==finalDaily.keys.length){
     localStorage.setItem(DAILY_FINAL_COUNT_KEY,JSON.stringify({date:todayJST(),keys:[...confirmedKeys]}));
@@ -775,7 +790,8 @@ function settle(races){
   const rs=records();let ch=false;
   for(const rec of rs){
     if(rec.done)continue;
-    if(rec.finalStatus==='skip'&&rec.finalConfirmed!==true)continue;
+    // 成績対象は『最終AI確定』したレースだけ。判定待ちの一時保存や見送りは集計しない。
+    if(rec.finalConfirmed!==true&&rec.finalStatus!=='confirmed')continue;
     // 保存時のkey表記に差があっても、日付・会場・R番号で結果レースを再照合する。
     const recDate=String(rec.date||todayJST()).slice(0,10);
     const recStadium=num(rec.stadium);
@@ -939,7 +955,7 @@ if($('learningToggle')){
     $('learningToggle').textContent=o?'会場別 学習進捗を表示 ▼':'会場別 学習進捗を隠す ▲';
   };
 }
-backfillLearningRecords();renderStats();autoRefresh(true);setInterval(()=>{if(!document.hidden)autoRefresh(false)},60000);window.addEventListener('focus',()=>autoRefresh(true));document.addEventListener('visibilitychange',()=>{if(!document.hidden)autoRefresh(true)});
+backfillLearningRecords();reconcileFinalConfirmedRecords();renderStats();autoRefresh(true);setInterval(()=>{if(!document.hidden)autoRefresh(false)},60000);window.addEventListener('focus',()=>autoRefresh(true));document.addEventListener('visibilitychange',()=>{if(!document.hidden)autoRefresh(true)});
 
 
 </script>
