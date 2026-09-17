@@ -40,6 +40,9 @@
 
 /* === 会場別 学習ダッシュボード UI === */
 .learning-venue-tabs{display:flex;gap:7px;overflow-x:auto;padding:3px 0 10px;scrollbar-width:none;-webkit-overflow-scrolling:touch}.learning-venue-tabs::-webkit-scrollbar{display:none}.learning-venue-chip{flex:0 0 auto;min-width:67px;height:40px;padding:0 11px;border:1px solid #55451a;border-radius:10px;background:#111;color:#ddd;font-size:12px;font-weight:900}.learning-venue-chip.active{background:linear-gradient(135deg,#f4d070,#c8901f);color:#080808;border-color:#e9c057}.learning-venue-title{display:flex;justify-content:space-between;align-items:center;gap:8px;margin:4px 0 10px;padding:11px 12px;border:1px solid #5c4918;border-radius:12px;background:linear-gradient(135deg,#151005,#090909)}.learning-venue-title b{color:#f2cd67;font-size:16px}.learning-venue-title span{font-size:10px;color:#aaa}.learning-four-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.learning-module{min-width:0;padding:11px;border:1px solid #342b12;border-radius:12px;background:#090909}.learning-module h4{margin:0 0 8px;color:#e8ca73;font-size:12px}.learning-module .big{font-size:18px;font-weight:950}.learning-module .line{margin-top:5px;color:#c8bb96;font-size:10px;line-height:1.55}.learning-module .muted{color:#81775d;font-size:9px}.learning-course-row{display:grid;grid-template-columns:repeat(3,1fr);gap:5px;margin-top:7px}.learning-course-cell{padding:7px 3px;text-align:center;border-radius:8px;background:#111;font-size:9px}.learning-course-cell b{display:block;margin-top:2px;color:#f0cc68;font-size:13px}@media(max-width:480px){.learning-four-grid{grid-template-columns:1fr}.learning-venue-chip{min-width:64px}}
+
+/* === TELEBOAT 半自動投票導線 === */
+.vote-action{margin-top:10px;padding:10px;border:1px solid #2f8f5a;border-radius:12px;background:#07160f}.vote-action-title{font-size:11px;color:#74e3a8;font-weight:950;margin-bottom:7px}.vote-btn{width:100%;min-height:46px;border:1px solid #2f8f5a;border-radius:12px;background:#0d2519;color:#8ff0b8;font-weight:950}.vote-btn:disabled{opacity:.45;cursor:not-allowed}.vote-note{margin-top:6px;color:#82998a;font-size:9px;line-height:1.55}
 </style>
 
 <style id="prediction-only-mode">
@@ -66,7 +69,7 @@
   例: 2026-09-18 ～ 2026-10-18（日本時間・両日を含む）
 */
 const TOOL_USAGE_START = '2026-09-18';
-const TOOL_USAGE_END   = '2026-09-19';
+const TOOL_USAGE_END   = '2026-10-18';
 (function enforceUsagePeriod(){
   const today=new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Tokyo',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
   if(today>=TOOL_USAGE_START && today<=TOOL_USAGE_END)return;
@@ -879,6 +882,11 @@ function raceHTML(a,i){
       <div class="bet-col hole-col"><div class="bet-head hole">穴 4点</div>${ticketRows(t,'hole')}</div>
     </div>
     <div class="total total-right"><span></span><span>合計15点</span></div>
+    ${(()=>{
+      const u=a.unifiedDecision||unifiedDecision(a);
+      const confirmed=u.status==='confirmed';
+      return `<div class="vote-action"><div class="vote-action-title">🗳️ 投票サポート</div><button class="vote-btn" data-teleboat-open="1" ${confirmed?'':'disabled'}>${confirmed?'公式テレボートを開いて投票する':'最終AI確定後に投票できます'}</button><div class="vote-note">表示中の15点を確認してから公式投票サイトで入力し、最終確定はご自身で行ってください。ログイン情報はこのツールに保存しません。</div></div>`;
+    })()}
 
     <button class="gold-btn ai-toggle" data-ai-detail="${id}">🧠 AI信頼スコアを表示する ▼</button>
     <div class="detail ai-detail" id="${id}">
@@ -900,7 +908,7 @@ function raceHTML(a,i){
     </div>
   </article>`;
 }
-function display(){const allS=analyses.filter(x=>x.grade==='S'),s=allS.filter(x=>(x.valueDecision||expectedValueDecision(x)).pass);$('results').innerHTML=s.length?s.map(raceHTML).join(''):`<div class="empty">現在、最終AI判定の候補レースはありません。<br><small>${allS.length?`S評価 ${allS.length}Rは配当・期待値条件に届かず見送りです。`:'展示・水面・進入・展開条件が整うまでAIは見送ります。'}</small></div>`;document.querySelectorAll('[data-ai-detail]').forEach(b=>b.onclick=()=>{const d=$(b.dataset.aiDetail),open=d.style.display==='block';d.style.display=open?'none':'block';b.textContent=open?'🧠 AI信頼スコアを表示する ▼':'🧠 AI信頼スコアを閉じる ▲'})}
+function display(){const allS=analyses.filter(x=>x.grade==='S'),s=allS.filter(x=>(x.valueDecision||expectedValueDecision(x)).pass);$('results').innerHTML=s.length?s.map(raceHTML).join(''):`<div class="empty">現在、最終AI判定の候補レースはありません。<br><small>${allS.length?`S評価 ${allS.length}Rは配当・期待値条件に届かず見送りです。`:'展示・水面・進入・展開条件が整うまでAIは見送ります。'}</small></div>`;document.querySelectorAll('[data-ai-detail]').forEach(b=>b.onclick=()=>{const d=$(b.dataset.aiDetail),open=d.style.display==='block';d.style.display=open?'none':'block';b.textContent=open?'🧠 AI信頼スコアを表示する ▼':'🧠 AI信頼スコアを閉じる ▲'});document.querySelectorAll('[data-teleboat-open]').forEach(b=>b.onclick=()=>window.open('https://bu.tbbr.jp/','_blank','noopener'))}
 function dataSignature(races,oddsData){
   const oddsSig=Array.isArray(oddsData?.odds)
     ? oddsData.odds.map(x=>[x.stadium_number,x.number,x.trifecta_odds?.['1']?.['2']?.['3'],x.trifecta_odds?.['2']?.['1']?.['4'],x.trifecta_odds?.['6']?.['3']?.['5']])
