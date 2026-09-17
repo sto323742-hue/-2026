@@ -66,7 +66,7 @@
   例: 2026-09-18 ～ 2026-10-18（日本時間・両日を含む）
 */
 const TOOL_USAGE_START = '2026-09-18';
-const TOOL_USAGE_END   = '2026-10-18';
+const TOOL_USAGE_END   = '2026-09-19';
 (function enforceUsagePeriod(){
   const today=new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Tokyo',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
   if(today>=TOOL_USAGE_START && today<=TOOL_USAGE_END)return;
