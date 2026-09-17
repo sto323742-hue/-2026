@@ -52,6 +52,31 @@
 </style>
 </head>
 <body>
+<!-- === 利用期限設定（予想専用版） === -->
+<style id="usage-period-style">
+#usagePeriodLock{position:fixed;inset:0;z-index:99999;background:#050505;color:#fff;display:none;align-items:center;justify-content:center;padding:24px;text-align:center}
+#usagePeriodLock .lock-card{width:min(420px,100%);border:1px solid #765b19;border-radius:18px;background:linear-gradient(180deg,#111,#090909);padding:26px 18px}
+#usagePeriodLock .lock-title{color:#f3ca5b;font-size:21px;font-weight:950;margin-bottom:12px}
+#usagePeriodLock .lock-text{color:#c8c0a8;font-size:13px;line-height:1.8}
+</style>
+<div id="usagePeriodLock"><div class="lock-card"><div class="lock-title">🚤 BOAT RACE AI予想</div><div class="lock-text" id="usagePeriodMessage">このツールは現在ご利用いただけません。</div></div></div>
+<script>
+/*
+  利用期間はここだけ変更します。
+  例: 2026-09-18 ～ 2026-10-18（日本時間・両日を含む）
+*/
+const TOOL_USAGE_START = '2026-09-18';
+const TOOL_USAGE_END   = '2026-10-18';
+(function enforceUsagePeriod(){
+  const today=new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Tokyo',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
+  if(today>=TOOL_USAGE_START && today<=TOOL_USAGE_END)return;
+  const lock=document.getElementById('usagePeriodLock');
+  const msg=document.getElementById('usagePeriodMessage');
+  if(msg)msg.textContent=today<TOOL_USAGE_START?'利用開始日前のため、現在はご利用いただけません。':'利用期間が終了しました。';
+  if(lock)lock.style.display='flex';
+})();
+</script>
+
 <div class="wrap" id="top">
 <header class="header"><div class="brand"><span class="gold">🚤 BOAT RACE</span> AI予想 <span class="ver">Ver.3</span></div><div class="sub">3連単・予想専用</div></header>
 <section class="panel prediction-summary-panel"><div class="panel-title">本日のAI予想</div><div class="prediction-summary" id="status"><div class="summary-item"><span>🔥 S評価</span><b id="summaryS">0R</b></div><div class="summary-item"><span>🎯 最終確定</span><b id="summaryCandidate">0R</b></div><div class="summary-item"><span>💤 見送り</span><b id="summarySkip">0R</b></div></div></section>
