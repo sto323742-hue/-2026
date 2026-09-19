@@ -1,6 +1,272 @@
 {
   "date": "2026-09-19",
-  "updated_at": "2026-09-19T22:05:30.800243+09:00",
+  "updated_at": "2026-09-19T22:05:53.564189+09:00",
   "records": [],
-  "skip_records": []
+  "skip_records": [
+    {
+      "key": "2026-09-19_24_11",
+      "date": "2026-09-19",
+      "stadium": 24,
+      "venue": "大村",
+      "raceNumber": 11,
+      "grade": "S",
+      "rating": 98,
+      "tickets": [
+        {
+          "combo": "1-4-6",
+          "group": "main",
+          "probability": 0.05872132941413994,
+          "odds": 26.6,
+          "ev": 1.5619873624161225,
+          "popRank": 10,
+          "special": false,
+          "money": 100
+        },
+        {
+          "combo": "1-4-5",
+          "group": "main",
+          "probability": 0.05508910211418324,
+          "odds": 20.4,
+          "ev": 1.123817683129338,
+          "popRank": 8,
+          "special": false,
+          "money": 100
+        },
+        {
+          "combo": "1-4-2",
+          "group": "main",
+          "probability": 0.02718868248799374,
+          "odds": 10.9,
+          "ev": 0.2963566391191318,
+          "popRank": 4,
+          "special": false,
+          "money": 100
+        },
+        {
+          "combo": "1-5-2",
+          "group": "main",
+          "probability": 0.021279135684049558,
+          "odds": 30,
+          "ev": 0.6383740705214868,
+          "popRank": 11,
+          "special": false,
+          "money": 100
+        },
+        {
+          "combo": "1-4-3",
+          "group": "main",
+          "probability": 0.020718693435481356,
+          "odds": 22.9,
+          "ev": 0.474458079672523,
+          "popRank": 9,
+          "special": false,
+          "money": 100
+        },
+        {
+          "combo": "1-2-6",
+          "group": "main",
+          "probability": 0.019525598792268246,
+          "odds": 14.6,
+          "ev": 0.28507374236711636,
+          "popRank": 6,
+          "special": false,
+          "money": 100
+        },
+        {
+          "combo": "1-6-4",
+          "group": "cover",
+          "probability": 0.05620679815783659,
+          "odds": 61.4,
+          "ev": 3.451097406891167,
+          "popRank": 18,
+          "special": false,
+          "money": 100
+        },
+        {
+          "combo": "1-6-5",
+          "group": "cover",
+          "probability": 0.046946090627567376,
+          "odds": 72.7,
+          "ev": 3.4129807886241483,
+          "popRank": 20,
+          "special": false,
+          "money": 100
+        },
+        {
+          "combo": "1-5-4",
+          "group": "cover",
+          "probability": 0.0516203480178418,
+          "odds": 49.3,
+          "ev": 2.5448831572796005,
+          "popRank": 15,
+          "special": false,
+          "money": 100
+        },
+        {
+          "combo": "1-5-6",
+          "group": "cover",
+          "probability": 0.045958061289032244,
+          "odds": 48.4,
+          "ev": 2.2243701663891606,
+          "popRank": 14,
+          "special": false,
+          "money": 100
+        },
+        {
+          "combo": "4-1-2",
+          "group": "cover",
+          "probability": 0.018703108869052583,
+          "odds": 91.7,
+          "ev": 1.715075083292122,
+          "popRank": 22,
+          "special": false,
+          "money": 100
+        },
+        {
+          "combo": "4-1-6",
+          "group": "hole",
+          "probability": 0.04039443314155238,
+          "odds": 164.4,
+          "ev": 6.640844808471211,
+          "popRank": 30,
+          "special": false,
+          "money": 100
+        },
+        {
+          "combo": "4-1-5",
+          "group": "hole",
+          "probability": 0.03789582208681539,
+          "odds": 149.4,
+          "ev": 5.661635819770219,
+          "popRank": 28,
+          "special": false,
+          "money": 100
+        },
+        {
+          "combo": "4-6-1",
+          "group": "hole",
+          "probability": 0.023014270756135515,
+          "odds": 355.1,
+          "ev": 8.172367545503722,
+          "popRank": 43,
+          "special": false,
+          "money": 100
+        },
+        {
+          "combo": "4-5-1",
+          "group": "hole",
+          "probability": 0.02131792083965151,
+          "odds": 264.6,
+          "ev": 5.640721854171789,
+          "popRank": 37,
+          "special": false,
+          "money": 100
+        }
+      ],
+      "stake": 1500,
+      "done": false,
+      "hit": false,
+      "result": "",
+      "payout": 0,
+      "resultOdds": 0,
+      "returnAmount": 0,
+      "skip": true,
+      "finalStatus": "skip",
+      "savedAt": "2026-09-19T13:05:43.463Z",
+      "model": "gold-v3-unified-final-learning",
+      "predictionMeta": {
+        "finalDecision": {
+          "status": "hold",
+          "label": "⚠️ 最終見送り",
+          "minutes": 10.2757,
+          "strictPass": false
+        },
+        "valueDecision": {
+          "status": "pass",
+          "pass": true,
+          "label": "✅ S＋期待値 合格",
+          "expectedRoi": 2.9229362805079235,
+          "valueCount": 11,
+          "lowOddsCount": 0,
+          "mainBand": 6,
+          "coverBand": 5,
+          "holeBand": 4,
+          "reasons": []
+        },
+        "unifiedDecision": {
+          "status": "skip",
+          "pass": false,
+          "label": "💤 最終AI見送り",
+          "minutes": 10.2757,
+          "expectedRoi": 2.9229362805079235,
+          "reasons": [
+            "6艇直前情報を反映した最終条件が不足"
+          ]
+        },
+        "windSpeed": 3,
+        "windDirection": 11,
+        "wave": 2,
+        "weather": 2,
+        "airTemperature": 26,
+        "waterTemperature": 29,
+        "exhibitionRank": [
+          6,
+          4,
+          1,
+          3,
+          2,
+          5
+        ],
+        "startRank": [
+          5,
+          4,
+          3,
+          6,
+          1,
+          2
+        ],
+        "courseChanges": [],
+        "scenario": [
+          {
+            "boat": 1,
+            "tactic": "逃げ",
+            "probability": 0.38079989947939297
+          },
+          {
+            "boat": 4,
+            "tactic": "まくり",
+            "probability": 0.22839892907217127
+          },
+          {
+            "boat": 4,
+            "tactic": "まくり差し",
+            "probability": 0.1632618435295588
+          },
+          {
+            "boat": 5,
+            "tactic": "まくり",
+            "probability": 0.07634511431218069
+          },
+          {
+            "boat": 5,
+            "tactic": "まくり差し",
+            "probability": 0.03647432319573504
+          },
+          {
+            "boat": 3,
+            "tactic": "まくり",
+            "probability": 0.03521969837287718
+          }
+        ],
+        "attacker": {
+          "boat": 4,
+          "tactic": "まくり"
+        },
+        "reasons": [
+          "6艇直前情報を反映した最終条件が不足"
+        ],
+        "specialHole": null
+      }
+    }
+  ]
 }
