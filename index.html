@@ -44,7 +44,7 @@
 </head>
 <body>
 <div class="wrap" id="top">
-<header class="header"><div class="brand"><span class="gold">🚤 BOAT RACE</span> AI予想 <span class="ver">Ver.3</span></div><div class="sub">3連単専用</div></header>
+<header class="header"><div class="brand"><span class="gold">🚤 BOAT RACE</span> AI予想 <span class="ver">Ver.3</span></div></header>
 <section class="panel prediction-summary-panel"><div class="panel-title">本日のAI予想</div><div class="prediction-summary" id="status"><div class="summary-item"><span>🔥 S評価</span><b id="summaryS">0R</b></div><div class="summary-item"><span>🎯 最終確定</span><b id="summaryCandidate">0R</b></div><div class="summary-item"><span>💤 見送り</span><b id="summarySkip">0R</b></div></div></section>
 <div id="results"></div>
 <section class="panel"><div class="menu menu-horizontal"><button id="statsOpen"><span class="menu-icon">📊</span><span class="menu-label">AI成績を見る</span><span class="menu-arrow">›</span></button><button id="historyOpen"><span class="menu-icon">🎯</span><span class="menu-label">的中・不的中</span><span class="menu-arrow">›</span></button><button id="venueOpen"><span class="menu-icon">📍</span><span class="menu-label">会場別成績</span><span class="menu-arrow">›</span></button></div></section>
@@ -913,6 +913,23 @@ function raceHTML(a,i){
     </div>
   </article>`;
 }
+function renderSharedDailySummary(races,oddsData){
+  let s=0,confirmed=0,skip=0;
+  for(const r of races){
+    if(!previewReady(r))continue;
+    const a=evaluate(r,oddsData);
+    if(a?.grade!=='S')continue;
+    s++;
+    a.finalDecision=finalDecision(a);
+    a.valueDecision=expectedValueDecision(a);
+    a.unifiedDecision=unifiedDecision(a);
+    if(a.unifiedDecision.status==='confirmed')confirmed++;
+    else if(a.unifiedDecision.status==='skip')skip++;
+  }
+  if($('summaryS'))$('summaryS').textContent=s+'R';
+  if($('summaryCandidate'))$('summaryCandidate').textContent=confirmed+'R';
+  if($('summarySkip'))$('summarySkip').textContent=skip+'R';
+}
 function display(){const allS=analyses.filter(x=>x.grade==='S'),s=allS.filter(x=>(x.valueDecision||expectedValueDecision(x)).pass);$('results').innerHTML=s.length?s.map(raceHTML).join(''):`<div class="empty">現在、最終AI判定の候補レースはありません。<br><small>${allS.length?`S評価 ${allS.length}Rは配当・期待値条件に届かず見送りです。`:'展示・水面・進入・展開条件が整うまでAIは見送ります。'}</small></div>`;document.querySelectorAll('[data-ai-detail]').forEach(b=>b.onclick=()=>{const d=$(b.dataset.aiDetail),open=d.style.display==='block';d.style.display=open?'none':'block';b.textContent=open?'🧠 AI信頼スコアを表示する ▼':'🧠 AI信頼スコアを閉じる ▲'})}
 function dataSignature(races,oddsData){
   const oddsSig=Array.isArray(oddsData?.odds)
@@ -954,7 +971,11 @@ async function autoRefresh(force=false){
     if(kEl)kEl.textContent=`${skipCount}R`;
   };
   try{
-    if(force&&!analyses.length)renderDailyCounts();
+    if(force&&!analyses.length){
+      if($('summaryS'))$('summaryS').textContent='--';
+      if($('summaryCandidate'))$('summaryCandidate').textContent='--';
+      if($('summarySkip'))$('summarySkip').textContent='--';
+    }
     const [data,oddsData]=await Promise.all([fetchToday(),fetchOddsToday()]);
     lastOddsData=oddsData;
     const races=flatten(data);
@@ -964,14 +985,13 @@ async function autoRefresh(force=false){
     if(force||sig!==lastDataSignature){
       lastDataSignature=sig;
       const arr=analyzeRaces(races,oddsData);
-      renderDailyCounts();
+      renderSharedDailySummary(races,oddsData);
     }else{
       renderStats();
-      analyses.forEach(x=>{x.finalDecision=finalDecision(x);x.valueDecision=expectedValueDecision(x);x.unifiedDecision=unifiedDecision(x)});display();renderDailyCounts();
+      analyses.forEach(x=>{x.finalDecision=finalDecision(x);x.valueDecision=expectedValueDecision(x);x.unifiedDecision=unifiedDecision(x)});display();renderSharedDailySummary(races,oddsData);
     }
   }catch(e){
     console.error(e);
-    renderDailyCounts();
   }finally{
     autoUpdateBusy=false;
   }
