@@ -1057,8 +1057,40 @@ if($('learningToggle')){
     $('learningToggle').textContent=o?'会場別 学習進捗を表示 ▼':'会場別 学習進捗を隠す ▲';
   };
 }
-async function loadSharedResults(){try{const r=await fetch(SHARED_RESULTS_URL+'?t='+Date.now(),{cache:'no-store'});if(!r.ok)return;const x=await r.json();if(String(x?.date||'')!==todayJST())return;SHARED_RECORDS=Array.isArray(x.records)?x.records:[];SHARED_SKIP_RECORDS=Array.isArray(x.skip_records)?x.skip_records:[];renderDailyCounts();renderStats()}catch(e){console.warn('shared results unavailable',e)}}
-backfillLearningRecords();reconcileFinalConfirmedRecords();renderStats();loadSharedResults();autoRefresh(true);setInterval(()=>{if(!document.hidden)autoRefresh(false)},60000);window.addEventListener('focus',()=>autoRefresh(true));document.addEventListener('visibilitychange',()=>{if(!document.hidden)autoRefresh(true)});
+let sharedResultsBusy=false;
+async function loadSharedResults(){
+  if(sharedResultsBusy)return;
+  sharedResultsBusy=true;
+  try{
+    const r=await fetch(SHARED_RESULTS_URL+'?t='+Date.now(),{cache:'no-store'});
+    if(!r.ok)return;
+    const x=await r.json();
+    if(String(x?.date||'')!==todayJST())return;
+    const nextRecords=Array.isArray(x.records)?x.records:[];
+    const nextSkip=Array.isArray(x.skip_records)?x.skip_records:[];
+    const changed=JSON.stringify(nextRecords)!==JSON.stringify(SHARED_RECORDS)||JSON.stringify(nextSkip)!==JSON.stringify(SHARED_SKIP_RECORDS);
+    SHARED_RECORDS=nextRecords;
+    SHARED_SKIP_RECORDS=nextSkip;
+    if(changed){
+      renderDailyCounts();
+      renderStats();
+    }
+  }catch(e){
+    console.warn('shared results unavailable',e);
+  }finally{
+    sharedResultsBusy=false;
+  }
+}
+backfillLearningRecords();
+reconcileFinalConfirmedRecords();
+renderStats();
+loadSharedResults();
+autoRefresh(true);
+// results_today.json は予想データとは別に短い間隔で確認し、確定成績を素早く画面へ反映する。
+setInterval(()=>{if(!document.hidden)loadSharedResults()},15000);
+setInterval(()=>{if(!document.hidden)autoRefresh(false)},60000);
+window.addEventListener('focus',()=>{loadSharedResults();autoRefresh(true)});
+document.addEventListener('visibilitychange',()=>{if(!document.hidden){loadSharedResults();autoRefresh(true)}});
 
 
 </script>
