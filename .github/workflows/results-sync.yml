@@ -30,11 +30,17 @@ jobs:
           pip install playwright
           python -m playwright install --with-deps chromium
 
+      - name: Configure Git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
       - name: Sync shared results
         run: |
           cat > sync_results.py <<'PY'
           import json
           import time
+          import subprocess
           from pathlib import Path
           from datetime import datetime, timedelta, timezone
           from playwright.sync_api import sync_playwright
@@ -95,15 +101,20 @@ jobs:
               }
 
               # ページのJavaScriptが動く前に、GitHub上の共通成績をlocalStorageへ復元。
+              # Playwright Python の add_init_script は引数を別渡しできないため、
+              # seed をJSONとしてJavaScript内へ安全に埋め込む。
+              seed_json = json.dumps(seed, ensure_ascii=False)
               context.add_init_script(
-                  """seed => {
-                    try {
-                      for (const [k,v] of Object.entries(seed)) {
+                  script=f"""
+                  (() => {{
+                    const seed = {seed_json};
+                    try {{
+                      for (const [k,v] of Object.entries(seed)) {{
                         localStorage.setItem(k, JSON.stringify(v));
-                      }
-                    } catch(e) {}
-                  }""",
-                  seed,
+                      }}
+                    }} catch(e) {{}}
+                  }})();
+                  """
               )
 
               page = context.new_page()
@@ -117,22 +128,81 @@ jobs:
               except Exception:
                   pass
 
-              # API・odds・結果照合・settle処理の完了待ち
-              page.wait_for_timeout(20000)
+              # 高速同期: 1回のActions内で複数回、結果照合・settle処理を確認する。
+              # GitHub Actionsのcronは5分間隔のままにし、実行中に確定した結果も拾う。
+              data = {"records": [], "skip_records": []}
+              for attempt in range(12):
+                  # 初回はページ側のAPI・odds・結果照合処理を少し待つ。
+                  # 2回目以降は約20秒間隔で再確認する。
+                  page.wait_for_timeout(12000 if attempt == 0 else 20000)
 
-              data = page.evaluate(
-                  """([recordsKey, skipKey]) => {
-                    const read = k => {
-                      try { return JSON.parse(localStorage.getItem(k) || "[]"); }
-                      catch(e) { return []; }
-                    };
-                    return {
-                      records: read(recordsKey),
-                      skip_records: read(skipKey)
-                    };
-                  }""",
-                  [STORAGE_KEY, SKIP_STORAGE_KEY],
-              )
+                  # ページ側に結果照合/成績更新関数が公開されていれば、その場で再実行する。
+                  # 関数名が版によって異なっても、存在するものだけ安全に呼ぶ。
+                  page.evaluate(
+                      """async () => {
+                        const names = [
+                          'settleResults', 'settleRecords', 'syncResults',
+                          'updateResults', 'refreshResults', 'checkResults'
+                        ];
+                        for (const name of names) {
+                          try {
+                            const fn = window[name];
+                            if (typeof fn === 'function') await fn();
+                          } catch (e) {}
+                        }
+                      }"""
+                  )
+                  page.wait_for_timeout(1500)
+
+                  current = page.evaluate(
+                      """([recordsKey, skipKey]) => {
+                        const read = k => {
+                          try { return JSON.parse(localStorage.getItem(k) || "[]"); }
+                          catch(e) { return []; }
+                        };
+                        return {
+                          records: read(recordsKey),
+                          skip_records: read(skipKey)
+                        };
+                      }""",
+                      [STORAGE_KEY, SKIP_STORAGE_KEY],
+                  )
+
+                  # 実行中に取得できたデータも消さずに累積する。
+                  data["records"] = merge(data.get("records", []), current.get("records", []))
+                  data["skip_records"] = merge(data.get("skip_records", []), current.get("skip_records", []))
+
+                  done_count = sum(1 for x in data["records"] if x.get("done"))
+                  skip_done_count = sum(1 for x in data["skip_records"] if x.get("done"))
+                  print(
+                      f"check {attempt + 1}/12: "
+                      f"records={len(data['records'])} done={done_count}, "
+                      f"skip={len(data['skip_records'])} done={skip_done_count}"
+                  )
+
+                  # 重要: ループ終了まで待たず、この確認で増えた確定成績を即座に results_today.json へ保存・公開する。
+                  # これにより「20秒ごとに確認しているのに、画面反映は約4分後」という遅延をなくす。
+                  live_out = {
+                      "date": today(),
+                      "updated_at": datetime.now(JST).isoformat(),
+                      "records": merge(existing.get("records", []), data.get("records", [])),
+                      "skip_records": merge(existing.get("skip_records", []), data.get("skip_records", [])),
+                  }
+                  OUT.write_text(
+                      json.dumps(live_out, ensure_ascii=False, indent=2),
+                      encoding="utf-8",
+                  )
+                  subprocess.run(["git", "add", str(OUT)], check=True)
+                  staged = subprocess.run(["git", "diff", "--cached", "--quiet"])
+                  if staged.returncode != 0:
+                      subprocess.run(["git", "commit", "-m", "Update BOATRACE shared results"], check=True)
+                      subprocess.run(["git", "pull", "--rebase"], check=True)
+                      subprocess.run(["git", "push"], check=True)
+                      print("published immediately", done_count, skip_done_count)
+
+                  # ページ側の定期処理が動き続けるためreloadはしない。
+                  # 最終確認まで同じページを維持してlocalStorageの更新を拾う。
+
               browser.close()
 
           out = {
