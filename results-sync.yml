@@ -1,0 +1,188 @@
+name: BOATRACE Shared Results Sync
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "*/5 * * * *"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: boatrace-shared-results
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Playwright
+        run: |
+          python -m pip install --upgrade pip
+          pip install playwright
+          python -m playwright install --with-deps chromium
+
+      - name: Sync shared results
+        run: |
+          cat > sync_results.py <<'PY'
+          import json
+          import time
+          from pathlib import Path
+          from datetime import datetime, timedelta, timezone
+          from playwright.sync_api import sync_playwright
+
+          JST = timezone(timedelta(hours=9))
+          TOOL_URL = "https://sto323742-hue.github.io/-2026/"
+          OUT = Path("results_today.json")
+
+          STORAGE_KEY = "boat_ai_gold_v1_records"
+          SKIP_STORAGE_KEY = "boat_ai_gold_v1_skip_records"
+          DAILY_COUNT_KEY = "boat_ai_gold_v1_daily_counts"
+          DAILY_FINAL_COUNT_KEY = "boat_ai_gold_v1_daily_final_confirmed"
+
+          def today():
+              return datetime.now(JST).strftime("%Y-%m-%d")
+
+          def load_existing():
+              try:
+                  if OUT.exists():
+                      x = json.loads(OUT.read_text(encoding="utf-8"))
+                      if x.get("date") == today():
+                          return x
+              except Exception as e:
+                  print("existing load error", repr(e))
+              return {"date": today(), "records": [], "skip_records": []}
+
+          def merge(a, b):
+              merged = {}
+              for x in list(a or []) + list(b or []):
+                  key = x.get("key")
+                  if not key:
+                      continue
+                  old = merged.get(key)
+                  if old is None:
+                      merged[key] = x
+                      continue
+                  old_done = bool(old.get("done"))
+                  new_done = bool(x.get("done"))
+                  old_ts = str(old.get("settledAt") or old.get("savedAt") or "")
+                  new_ts = str(x.get("settledAt") or x.get("savedAt") or "")
+                  if (not old_done and new_done) or new_ts > old_ts:
+                      merged[key] = x
+              return list(merged.values())
+
+          existing = load_existing()
+
+          with sync_playwright() as p:
+              browser = p.chromium.launch(headless=True)
+              context = browser.new_context(
+                  viewport={"width": 390, "height": 844},
+                  locale="ja-JP",
+                  timezone_id="Asia/Tokyo",
+              )
+
+              seed = {
+                  STORAGE_KEY: existing.get("records", []),
+                  SKIP_STORAGE_KEY: existing.get("skip_records", []),
+              }
+
+              # ページのJavaScriptが動く前に、GitHub上の共通成績をlocalStorageへ復元。
+              context.add_init_script(
+                  """seed => {
+                    try {
+                      for (const [k,v] of Object.entries(seed)) {
+                        localStorage.setItem(k, JSON.stringify(v));
+                      }
+                    } catch(e) {}
+                  }""",
+                  seed,
+              )
+
+              page = context.new_page()
+              page.goto(
+                  TOOL_URL + "?results_sync=" + str(int(time.time())),
+                  wait_until="domcontentloaded",
+                  timeout=60000,
+              )
+              try:
+                  page.wait_for_selector("#results", timeout=30000)
+              except Exception:
+                  pass
+
+              # 高速同期: 1回のActions内で複数回、結果照合・settle処理を確認する。
+              # GitHub Actionsのcronは5分間隔のままにし、実行中に確定した結果も拾う。
+              data = {"records": [], "skip_records": []}
+              for attempt in range(6):
+                  # 初回はページ側のAPI・odds・結果照合処理を少し待つ。
+                  # 2回目以降は約20秒間隔で再確認する。
+                  page.wait_for_timeout(12000 if attempt == 0 else 20000)
+
+                  current = page.evaluate(
+                      """([recordsKey, skipKey]) => {
+                        const read = k => {
+                          try { return JSON.parse(localStorage.getItem(k) || "[]"); }
+                          catch(e) { return []; }
+                        };
+                        return {
+                          records: read(recordsKey),
+                          skip_records: read(skipKey)
+                        };
+                      }""",
+                      [STORAGE_KEY, SKIP_STORAGE_KEY],
+                  )
+
+                  # 実行中に取得できたデータも消さずに累積する。
+                  data["records"] = merge(data.get("records", []), current.get("records", []))
+                  data["skip_records"] = merge(data.get("skip_records", []), current.get("skip_records", []))
+
+                  done_count = sum(1 for x in data["records"] if x.get("done"))
+                  skip_done_count = sum(1 for x in data["skip_records"] if x.get("done"))
+                  print(
+                      f"check {attempt + 1}/6: "
+                      f"records={len(data['records'])} done={done_count}, "
+                      f"skip={len(data['skip_records'])} done={skip_done_count}"
+                  )
+
+                  # ページ側の定期処理が動き続けるためreloadはしない。
+                  # 最終確認まで同じページを維持してlocalStorageの更新を拾う。
+
+              browser.close()
+
+          out = {
+              "date": today(),
+              "updated_at": datetime.now(JST).isoformat(),
+              "records": merge(existing.get("records", []), data.get("records", [])),
+              "skip_records": merge(existing.get("skip_records", []), data.get("skip_records", [])),
+          }
+
+          OUT.write_text(
+              json.dumps(out, ensure_ascii=False, indent=2),
+              encoding="utf-8",
+          )
+          print("records", len(out["records"]))
+          print("skip_records", len(out["skip_records"]))
+          PY
+
+          python sync_results.py
+
+      - name: Save shared results
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add results_today.json
+
+          if git diff --cached --quiet; then
+            echo "共通成績に変更なし"
+          else
+            git commit -m "Update BOATRACE shared results"
+            git pull --rebase
+            git push
+          fi
