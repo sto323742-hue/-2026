@@ -61,6 +61,9 @@ const STORAGE_KEY='boat_ai_gold_v1_records';
 const DAILY_COUNT_KEY='boat_ai_gold_v1_daily_counts';
 const DAILY_FINAL_COUNT_KEY='boat_ai_gold_v1_daily_final_confirmed';
 const SKIP_STORAGE_KEY='boat_ai_gold_v1_skip_records';
+const SHARED_RESULTS_URL='./results_today.json';
+let SHARED_RECORDS=[];
+let SHARED_SKIP_RECORDS=[];
 function dailyCounts(){
   const d=todayJST();
   try{
@@ -702,7 +705,8 @@ function allocate(t,budget,a){
   }
   return out;
 }
-function skipRecords(){try{const x=JSON.parse(localStorage.getItem(SKIP_STORAGE_KEY)||'[]');return Array.isArray(x)?x:[]}catch{return[]}}
+function mergeShared(local,shared){const m=new Map();for(const x of [...(Array.isArray(shared)?shared:[]),...(Array.isArray(local)?local:[])]){if(!x?.key)continue;const old=m.get(x.key);if(!old||(!old.done&&x.done)||String(x.settledAt||x.savedAt||'')>String(old.settledAt||old.savedAt||''))m.set(x.key,x)}return [...m.values()]}
+function skipRecords(){try{const x=JSON.parse(localStorage.getItem(SKIP_STORAGE_KEY)||'[]');return mergeShared(Array.isArray(x)?x:[],SHARED_SKIP_RECORDS)}catch{return mergeShared([],SHARED_SKIP_RECORDS)}}
 function saveSkipRecords(x){localStorage.setItem(SKIP_STORAGE_KEY,JSON.stringify(x))}
 function saveSkipPrediction(a){
   const r=a.race,key=raceKey(r),rs=skipRecords(),ticketSet=makeTickets(a),tickets=allocate(ticketSet,EVALUATION_STAKE,a);
@@ -725,7 +729,7 @@ function saveSkipPrediction(a){
   if(old){if(!old.done)Object.assign(old,data)}else rs.push(data);
   saveSkipRecords(rs);
 }
-function records(){try{const x=JSON.parse(localStorage.getItem(STORAGE_KEY)||'[]');return Array.isArray(x)?x:[]}catch{return[]}}
+function records(){try{const x=JSON.parse(localStorage.getItem(STORAGE_KEY)||'[]');return mergeShared(Array.isArray(x)?x:[],SHARED_RECORDS)}catch{return mergeShared([],SHARED_RECORDS)}}
 function save(x){localStorage.setItem(STORAGE_KEY,JSON.stringify(x))}
 function comboParts(combo){return String(combo||'').split('-').map(Number).filter(x=>x>=1&&x<=6).slice(0,3)}
 function analyzeTicketCloseness(ticketCombo,resultCombo){const p=comboParts(ticketCombo),r=comboParts(resultCombo);if(p.length!==3||r.length!==3)return{score:0,type:'unknown',label:'分析不可',overlap:0,positionMatches:0,missPositions:[]};const pos=[0,1,2].filter(i=>p[i]===r[i]),positionMatches=pos.length,overlap=p.filter(x=>r.includes(x)).length,missPositions=[0,1,2].filter(i=>p[i]!==r[i]).map(i=>i+1);if(ticketCombo===resultCombo)return{score:100,type:'exact',label:'完全一致',overlap:3,positionMatches:3,missPositions:[]};if(overlap===3)return{score:90,type:'three_wrong_order',label:'3艇一致・順番違い',overlap,positionMatches,missPositions};if(positionMatches===2){const miss=missPositions[0];return{score:82,type:'two_positions',label:`${miss}着だけ外れ`,overlap,positionMatches,missPositions}}if(overlap===2)return{score:65,type:'two_boats',label:'2艇一致',overlap,positionMatches,missPositions};if(overlap===1)return{score:35,type:'one_boat',label:'1艇一致',overlap,positionMatches,missPositions};return{score:0,type:'none',label:'完全外れ',overlap:0,positionMatches:0,missPositions:[1,2,3]}}
@@ -1053,7 +1057,8 @@ if($('learningToggle')){
     $('learningToggle').textContent=o?'会場別 学習進捗を表示 ▼':'会場別 学習進捗を隠す ▲';
   };
 }
-backfillLearningRecords();reconcileFinalConfirmedRecords();renderStats();autoRefresh(true);setInterval(()=>{if(!document.hidden)autoRefresh(false)},60000);window.addEventListener('focus',()=>autoRefresh(true));document.addEventListener('visibilitychange',()=>{if(!document.hidden)autoRefresh(true)});
+async function loadSharedResults(){try{const r=await fetch(SHARED_RESULTS_URL+'?t='+Date.now(),{cache:'no-store'});if(!r.ok)return;const x=await r.json();if(String(x?.date||'')!==todayJST())return;SHARED_RECORDS=Array.isArray(x.records)?x.records:[];SHARED_SKIP_RECORDS=Array.isArray(x.skip_records)?x.skip_records:[];renderDailyCounts();renderStats()}catch(e){console.warn('shared results unavailable',e)}}
+backfillLearningRecords();reconcileFinalConfirmedRecords();renderStats();loadSharedResults();autoRefresh(true);setInterval(()=>{if(!document.hidden)autoRefresh(false)},60000);window.addEventListener('focus',()=>autoRefresh(true));document.addEventListener('visibilitychange',()=>{if(!document.hidden)autoRefresh(true)});
 
 
 </script>
