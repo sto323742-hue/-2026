@@ -101,15 +101,20 @@ jobs:
               }
 
               # ページのJavaScriptが動く前に、GitHub上の共通成績をlocalStorageへ復元。
+              # Playwright Python の add_init_script は引数を別渡しできないため、
+              # seed をJSONとしてJavaScript内へ安全に埋め込む。
+              seed_json = json.dumps(seed, ensure_ascii=False)
               context.add_init_script(
-                  """seed => {
-                    try {
-                      for (const [k,v] of Object.entries(seed)) {
+                  script=f"""
+                  (() => {{
+                    const seed = {seed_json};
+                    try {{
+                      for (const [k,v] of Object.entries(seed)) {{
                         localStorage.setItem(k, JSON.stringify(v));
-                      }
-                    } catch(e) {}
-                  }""",
-                  seed,
+                      }}
+                    }} catch(e) {{}}
+                  }})();
+                  """
               )
 
               page = context.new_page()
