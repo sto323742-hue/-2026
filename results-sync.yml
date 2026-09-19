@@ -120,10 +120,28 @@ jobs:
               # 高速同期: 1回のActions内で複数回、結果照合・settle処理を確認する。
               # GitHub Actionsのcronは5分間隔のままにし、実行中に確定した結果も拾う。
               data = {"records": [], "skip_records": []}
-              for attempt in range(6):
+              for attempt in range(12):
                   # 初回はページ側のAPI・odds・結果照合処理を少し待つ。
                   # 2回目以降は約20秒間隔で再確認する。
                   page.wait_for_timeout(12000 if attempt == 0 else 20000)
+
+                  # ページ側に結果照合/成績更新関数が公開されていれば、その場で再実行する。
+                  # 関数名が版によって異なっても、存在するものだけ安全に呼ぶ。
+                  page.evaluate(
+                      """async () => {
+                        const names = [
+                          'settleResults', 'settleRecords', 'syncResults',
+                          'updateResults', 'refreshResults', 'checkResults'
+                        ];
+                        for (const name of names) {
+                          try {
+                            const fn = window[name];
+                            if (typeof fn === 'function') await fn();
+                          } catch (e) {}
+                        }
+                      }"""
+                  )
+                  page.wait_for_timeout(1500)
 
                   current = page.evaluate(
                       """([recordsKey, skipKey]) => {
@@ -146,7 +164,7 @@ jobs:
                   done_count = sum(1 for x in data["records"] if x.get("done"))
                   skip_done_count = sum(1 for x in data["skip_records"] if x.get("done"))
                   print(
-                      f"check {attempt + 1}/6: "
+                      f"check {attempt + 1}/12: "
                       f"records={len(data['records'])} done={done_count}, "
                       f"skip={len(data['skip_records'])} done={skip_done_count}"
                   )
