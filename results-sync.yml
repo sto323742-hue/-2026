@@ -30,11 +30,17 @@ jobs:
           pip install playwright
           python -m playwright install --with-deps chromium
 
+      - name: Configure Git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
       - name: Sync shared results
         run: |
           cat > sync_results.py <<'PY'
           import json
           import time
+          import subprocess
           from pathlib import Path
           from datetime import datetime, timedelta, timezone
           from playwright.sync_api import sync_playwright
@@ -168,6 +174,26 @@ jobs:
                       f"records={len(data['records'])} done={done_count}, "
                       f"skip={len(data['skip_records'])} done={skip_done_count}"
                   )
+
+                  # 重要: ループ終了まで待たず、この確認で増えた確定成績を即座に results_today.json へ保存・公開する。
+                  # これにより「20秒ごとに確認しているのに、画面反映は約4分後」という遅延をなくす。
+                  live_out = {
+                      "date": today(),
+                      "updated_at": datetime.now(JST).isoformat(),
+                      "records": merge(existing.get("records", []), data.get("records", [])),
+                      "skip_records": merge(existing.get("skip_records", []), data.get("skip_records", [])),
+                  }
+                  OUT.write_text(
+                      json.dumps(live_out, ensure_ascii=False, indent=2),
+                      encoding="utf-8",
+                  )
+                  subprocess.run(["git", "add", str(OUT)], check=True)
+                  staged = subprocess.run(["git", "diff", "--cached", "--quiet"])
+                  if staged.returncode != 0:
+                      subprocess.run(["git", "commit", "-m", "Update BOATRACE shared results"], check=True)
+                      subprocess.run(["git", "pull", "--rebase"], check=True)
+                      subprocess.run(["git", "push"], check=True)
+                      print("published immediately", done_count, skip_done_count)
 
                   # ページ側の定期処理が動き続けるためreloadはしない。
                   # 最終確認まで同じページを維持してlocalStorageの更新を拾う。
